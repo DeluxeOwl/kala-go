@@ -9,6 +9,7 @@ tasks:
       - go generate ./ent
   run:
     cmds:
+      - go mod tidy
       - reflex -d fancy -g 'cmd/kala.go' -s go run ./cmd/kala.go
   reflex:
     cmds:

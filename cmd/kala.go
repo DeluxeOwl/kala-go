@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"log"
 
+	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqljson"
 	"github.com/DeluxeOwl/kala-go/ent"
 	"github.com/DeluxeOwl/kala-go/ent/schema"
 	"github.com/DeluxeOwl/kala-go/ent/typeconfig"
@@ -36,7 +38,9 @@ func QueryTypeConfig(ctx context.Context, client *ent.Client) (*ent.TypeConfig, 
 	tc, err := client.TypeConfig.
 		Query().
 		// TODO: figure out json
-		Where(typeconfig.Name("document")).
+		Where(func(s *sql.Selector) {
+			s.Where(sqljson.ValueEQ(typeconfig.FieldRelations, "parent_folder", sqljson.Path("folder")))
+		}).
 		Only(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed querying type config: %w", err)
