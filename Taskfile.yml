@@ -1,0 +1,15 @@
+version: "3"
+
+tasks:
+  tidy:
+    cmds:
+      - go mod tidy
+  gen:
+    cmds:
+      - go generate ./ent
+  run:
+    cmds:
+      - reflex -d fancy -g 'cmd/kala.go' -s go run ./cmd/kala.go
+  reflex:
+    cmds:
+      - reflex -d none -g 'ent/schema/*.go' -s task gen
