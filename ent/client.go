@@ -9,10 +9,13 @@ import (
 
 	"github.com/DeluxeOwl/kala-go/ent/migrate"
 
+	"github.com/DeluxeOwl/kala-go/ent/permission"
+	"github.com/DeluxeOwl/kala-go/ent/relation"
 	"github.com/DeluxeOwl/kala-go/ent/typeconfig"
 
 	"entgo.io/ent/dialect"
 	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
 )
 
 // Client is the client that holds all ent builders.
@@ -20,6 +23,10 @@ type Client struct {
 	config
 	// Schema is the client for creating, migrating and dropping schema.
 	Schema *migrate.Schema
+	// Permission is the client for interacting with the Permission builders.
+	Permission *PermissionClient
+	// Relation is the client for interacting with the Relation builders.
+	Relation *RelationClient
 	// TypeConfig is the client for interacting with the TypeConfig builders.
 	TypeConfig *TypeConfigClient
 }
@@ -35,6 +42,8 @@ func NewClient(opts ...Option) *Client {
 
 func (c *Client) init() {
 	c.Schema = migrate.NewSchema(c.driver)
+	c.Permission = NewPermissionClient(c.config)
+	c.Relation = NewRelationClient(c.config)
 	c.TypeConfig = NewTypeConfigClient(c.config)
 }
 
@@ -69,6 +78,8 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 	return &Tx{
 		ctx:        ctx,
 		config:     cfg,
+		Permission: NewPermissionClient(cfg),
+		Relation:   NewRelationClient(cfg),
 		TypeConfig: NewTypeConfigClient(cfg),
 	}, nil
 }
@@ -89,6 +100,8 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 	return &Tx{
 		ctx:        ctx,
 		config:     cfg,
+		Permission: NewPermissionClient(cfg),
+		Relation:   NewRelationClient(cfg),
 		TypeConfig: NewTypeConfigClient(cfg),
 	}, nil
 }
@@ -96,7 +109,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 // Debug returns a new debug-client. It's used to get verbose logging on specific operations.
 //
 //	client.Debug().
-//		TypeConfig.
+//		Permission.
 //		Query().
 //		Count(ctx)
 //
@@ -119,7 +132,221 @@ func (c *Client) Close() error {
 // Use adds the mutation hooks to all the entity clients.
 // In order to add hooks to a specific client, call: `client.Node.Use(...)`.
 func (c *Client) Use(hooks ...Hook) {
+	c.Permission.Use(hooks...)
+	c.Relation.Use(hooks...)
 	c.TypeConfig.Use(hooks...)
+}
+
+// PermissionClient is a client for the Permission schema.
+type PermissionClient struct {
+	config
+}
+
+// NewPermissionClient returns a client for the Permission from the given config.
+func NewPermissionClient(c config) *PermissionClient {
+	return &PermissionClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `permission.Hooks(f(g(h())))`.
+func (c *PermissionClient) Use(hooks ...Hook) {
+	c.hooks.Permission = append(c.hooks.Permission, hooks...)
+}
+
+// Create returns a create builder for Permission.
+func (c *PermissionClient) Create() *PermissionCreate {
+	mutation := newPermissionMutation(c.config, OpCreate)
+	return &PermissionCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of Permission entities.
+func (c *PermissionClient) CreateBulk(builders ...*PermissionCreate) *PermissionCreateBulk {
+	return &PermissionCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for Permission.
+func (c *PermissionClient) Update() *PermissionUpdate {
+	mutation := newPermissionMutation(c.config, OpUpdate)
+	return &PermissionUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *PermissionClient) UpdateOne(pe *Permission) *PermissionUpdateOne {
+	mutation := newPermissionMutation(c.config, OpUpdateOne, withPermission(pe))
+	return &PermissionUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *PermissionClient) UpdateOneID(id int) *PermissionUpdateOne {
+	mutation := newPermissionMutation(c.config, OpUpdateOne, withPermissionID(id))
+	return &PermissionUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for Permission.
+func (c *PermissionClient) Delete() *PermissionDelete {
+	mutation := newPermissionMutation(c.config, OpDelete)
+	return &PermissionDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a delete builder for the given entity.
+func (c *PermissionClient) DeleteOne(pe *Permission) *PermissionDeleteOne {
+	return c.DeleteOneID(pe.ID)
+}
+
+// DeleteOneID returns a delete builder for the given id.
+func (c *PermissionClient) DeleteOneID(id int) *PermissionDeleteOne {
+	builder := c.Delete().Where(permission.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &PermissionDeleteOne{builder}
+}
+
+// Query returns a query builder for Permission.
+func (c *PermissionClient) Query() *PermissionQuery {
+	return &PermissionQuery{
+		config: c.config,
+	}
+}
+
+// Get returns a Permission entity by its id.
+func (c *PermissionClient) Get(ctx context.Context, id int) (*Permission, error) {
+	return c.Query().Where(permission.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *PermissionClient) GetX(ctx context.Context, id int) *Permission {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryTypeconfig queries the typeconfig edge of a Permission.
+func (c *PermissionClient) QueryTypeconfig(pe *Permission) *TypeConfigQuery {
+	query := &TypeConfigQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := pe.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(permission.Table, permission.FieldID, id),
+			sqlgraph.To(typeconfig.Table, typeconfig.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, permission.TypeconfigTable, permission.TypeconfigColumn),
+		)
+		fromV = sqlgraph.Neighbors(pe.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *PermissionClient) Hooks() []Hook {
+	return c.hooks.Permission
+}
+
+// RelationClient is a client for the Relation schema.
+type RelationClient struct {
+	config
+}
+
+// NewRelationClient returns a client for the Relation from the given config.
+func NewRelationClient(c config) *RelationClient {
+	return &RelationClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `relation.Hooks(f(g(h())))`.
+func (c *RelationClient) Use(hooks ...Hook) {
+	c.hooks.Relation = append(c.hooks.Relation, hooks...)
+}
+
+// Create returns a create builder for Relation.
+func (c *RelationClient) Create() *RelationCreate {
+	mutation := newRelationMutation(c.config, OpCreate)
+	return &RelationCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of Relation entities.
+func (c *RelationClient) CreateBulk(builders ...*RelationCreate) *RelationCreateBulk {
+	return &RelationCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for Relation.
+func (c *RelationClient) Update() *RelationUpdate {
+	mutation := newRelationMutation(c.config, OpUpdate)
+	return &RelationUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *RelationClient) UpdateOne(r *Relation) *RelationUpdateOne {
+	mutation := newRelationMutation(c.config, OpUpdateOne, withRelation(r))
+	return &RelationUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *RelationClient) UpdateOneID(id int) *RelationUpdateOne {
+	mutation := newRelationMutation(c.config, OpUpdateOne, withRelationID(id))
+	return &RelationUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for Relation.
+func (c *RelationClient) Delete() *RelationDelete {
+	mutation := newRelationMutation(c.config, OpDelete)
+	return &RelationDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a delete builder for the given entity.
+func (c *RelationClient) DeleteOne(r *Relation) *RelationDeleteOne {
+	return c.DeleteOneID(r.ID)
+}
+
+// DeleteOneID returns a delete builder for the given id.
+func (c *RelationClient) DeleteOneID(id int) *RelationDeleteOne {
+	builder := c.Delete().Where(relation.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &RelationDeleteOne{builder}
+}
+
+// Query returns a query builder for Relation.
+func (c *RelationClient) Query() *RelationQuery {
+	return &RelationQuery{
+		config: c.config,
+	}
+}
+
+// Get returns a Relation entity by its id.
+func (c *RelationClient) Get(ctx context.Context, id int) (*Relation, error) {
+	return c.Query().Where(relation.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *RelationClient) GetX(ctx context.Context, id int) *Relation {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryTypeconfig queries the typeconfig edge of a Relation.
+func (c *RelationClient) QueryTypeconfig(r *Relation) *TypeConfigQuery {
+	query := &TypeConfigQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := r.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(relation.Table, relation.FieldID, id),
+			sqlgraph.To(typeconfig.Table, typeconfig.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, relation.TypeconfigTable, relation.TypeconfigColumn),
+		)
+		fromV = sqlgraph.Neighbors(r.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *RelationClient) Hooks() []Hook {
+	return c.hooks.Relation
 }
 
 // TypeConfigClient is a client for the TypeConfig schema.
@@ -205,6 +432,38 @@ func (c *TypeConfigClient) GetX(ctx context.Context, id int) *TypeConfig {
 		panic(err)
 	}
 	return obj
+}
+
+// QueryRelations queries the relations edge of a TypeConfig.
+func (c *TypeConfigClient) QueryRelations(tc *TypeConfig) *RelationQuery {
+	query := &RelationQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := tc.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(typeconfig.Table, typeconfig.FieldID, id),
+			sqlgraph.To(relation.Table, relation.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, typeconfig.RelationsTable, typeconfig.RelationsColumn),
+		)
+		fromV = sqlgraph.Neighbors(tc.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryPermissions queries the permissions edge of a TypeConfig.
+func (c *TypeConfigClient) QueryPermissions(tc *TypeConfig) *PermissionQuery {
+	query := &PermissionQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := tc.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(typeconfig.Table, typeconfig.FieldID, id),
+			sqlgraph.To(permission.Table, permission.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, typeconfig.PermissionsTable, typeconfig.PermissionsColumn),
+		)
+		fromV = sqlgraph.Neighbors(tc.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
 }
 
 // Hooks returns the client hooks.

@@ -9,20 +9,32 @@ const (
 	FieldID = "id"
 	// FieldName holds the string denoting the name field in the database.
 	FieldName = "name"
-	// FieldRelations holds the string denoting the relations field in the database.
-	FieldRelations = "relations"
-	// FieldPermissions holds the string denoting the permissions field in the database.
-	FieldPermissions = "permissions"
+	// EdgeRelations holds the string denoting the relations edge name in mutations.
+	EdgeRelations = "relations"
+	// EdgePermissions holds the string denoting the permissions edge name in mutations.
+	EdgePermissions = "permissions"
 	// Table holds the table name of the typeconfig in the database.
 	Table = "type_configs"
+	// RelationsTable is the table that holds the relations relation/edge.
+	RelationsTable = "relations"
+	// RelationsInverseTable is the table name for the Relation entity.
+	// It exists in this package in order to avoid circular dependency with the "relation" package.
+	RelationsInverseTable = "relations"
+	// RelationsColumn is the table column denoting the relations relation/edge.
+	RelationsColumn = "type_config_relations"
+	// PermissionsTable is the table that holds the permissions relation/edge.
+	PermissionsTable = "permissions"
+	// PermissionsInverseTable is the table name for the Permission entity.
+	// It exists in this package in order to avoid circular dependency with the "permission" package.
+	PermissionsInverseTable = "permissions"
+	// PermissionsColumn is the table column denoting the permissions relation/edge.
+	PermissionsColumn = "type_config_permissions"
 )
 
 // Columns holds all SQL columns for typeconfig fields.
 var Columns = []string{
 	FieldID,
 	FieldName,
-	FieldRelations,
-	FieldPermissions,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).

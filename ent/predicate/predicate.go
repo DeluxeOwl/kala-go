@@ -6,5 +6,11 @@ import (
 	"entgo.io/ent/dialect/sql"
 )
 
+// Permission is the predicate function for permission builders.
+type Permission func(*sql.Selector)
+
+// Relation is the predicate function for relation builders.
+type Relation func(*sql.Selector)
+
 // TypeConfig is the predicate function for typeconfig builders.
 type TypeConfig func(*sql.Selector)

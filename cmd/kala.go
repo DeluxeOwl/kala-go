@@ -5,29 +5,64 @@ import (
 	"fmt"
 	"log"
 
-	"entgo.io/ent/dialect/sql"
-	"entgo.io/ent/dialect/sql/sqljson"
 	"github.com/DeluxeOwl/kala-go/ent"
-	"github.com/DeluxeOwl/kala-go/ent/schema"
 	"github.com/DeluxeOwl/kala-go/ent/typeconfig"
 	_ "github.com/mattn/go-sqlite3"
 )
 
 func CreateTypeConfig(ctx context.Context, client *ent.Client) (*ent.TypeConfig, error) {
+
+	relations := map[string]string{
+		"parent_folder": "folder",
+		"writer":        "user",
+		"reader":        "user",
+	}
+
+	permissions := map[string]string{
+		"read":           "reader | writer | parent_folder.reader",
+		"read_and_write": "reader & writer",
+		"read_only":      "reader & !writer",
+	}
+
+	relSlice := make([]*ent.Relation, len(relations))
+	cnt := 0
+	for i, r := range relations {
+		rel, err := client.Relation.
+			Create().
+			SetName(i).
+			SetValue(r).
+			Save(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("failed creating relation: %w", err)
+		}
+		relSlice[cnt] = rel
+		cnt++
+		log.Println("relation was created: ", rel)
+	}
+
+	permSlice := make([]*ent.Permission, len(permissions))
+	cnt = 0
+	for i, r := range permissions {
+		rel, err := client.Permission.
+			Create().
+			SetName(i).
+			SetValue(r).
+			Save(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("failed creating permission: %w", err)
+		}
+		permSlice[cnt] = rel
+		cnt++
+		log.Println("permission was created: ", rel)
+	}
+
 	tc, err := client.TypeConfig.
 		Create().
 		SetName("document").
-		SetRelations(&schema.Relations{
-			"parent_folder": "folder",
-			"writer":        "user",
-			"reader":        "user",
-		}).
-		SetPermissions(&schema.Permissions{
-			"read":           "reader | writer | parent_folder.reader",
-			"read_and_write": "reader & writer",
-			"read_only":      "reader & !writer",
-		}).
+		AddRelations(relSlice...).
+		AddPermissions(permSlice...).
 		Save(ctx)
+
 	if err != nil {
 		return nil, fmt.Errorf("failed creating type config: %w", err)
 	}
@@ -37,16 +72,24 @@ func CreateTypeConfig(ctx context.Context, client *ent.Client) (*ent.TypeConfig,
 func QueryTypeConfig(ctx context.Context, client *ent.Client) (*ent.TypeConfig, error) {
 	tc, err := client.TypeConfig.
 		Query().
-		// TODO: figure out json
-		Where(func(s *sql.Selector) {
-			s.Where(sqljson.ValueEQ(typeconfig.FieldRelations, "parent_folder", sqljson.Path("folder")))
-		}).
+		Where(typeconfig.Name("document")).
 		Only(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed querying type config: %w", err)
 	}
 	log.Println("type config returned: ", tc)
 	return tc, nil
+}
+
+func QueryRelations(ctx context.Context, tc *ent.TypeConfig) error {
+	relations, err := tc.QueryRelations().
+		All(ctx)
+	if err != nil {
+		return fmt.Errorf("failed querying tc relations: %w", err)
+	}
+	log.Println("returned relations:\n", relations)
+
+	return nil
 }
 func main() {
 	// TODO: handler struct
@@ -61,6 +104,8 @@ func main() {
 	}
 	ctx := context.Background()
 
-	CreateTypeConfig(ctx, client)
+	tc, _ := CreateTypeConfig(ctx, client)
 	QueryTypeConfig(ctx, client)
+	QueryRelations(ctx, tc)
+
 }

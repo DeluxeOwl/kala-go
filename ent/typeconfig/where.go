@@ -4,6 +4,7 @@ package typeconfig
 
 import (
 	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
 	"github.com/DeluxeOwl/kala-go/ent/predicate"
 )
 
@@ -205,6 +206,62 @@ func NameEqualFold(v string) predicate.TypeConfig {
 func NameContainsFold(v string) predicate.TypeConfig {
 	return predicate.TypeConfig(func(s *sql.Selector) {
 		s.Where(sql.ContainsFold(s.C(FieldName), v))
+	})
+}
+
+// HasRelations applies the HasEdge predicate on the "relations" edge.
+func HasRelations() predicate.TypeConfig {
+	return predicate.TypeConfig(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(RelationsTable, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, RelationsTable, RelationsColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasRelationsWith applies the HasEdge predicate on the "relations" edge with a given conditions (other predicates).
+func HasRelationsWith(preds ...predicate.Relation) predicate.TypeConfig {
+	return predicate.TypeConfig(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(RelationsInverseTable, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, RelationsTable, RelationsColumn),
+		)
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasPermissions applies the HasEdge predicate on the "permissions" edge.
+func HasPermissions() predicate.TypeConfig {
+	return predicate.TypeConfig(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(PermissionsTable, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, PermissionsTable, PermissionsColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasPermissionsWith applies the HasEdge predicate on the "permissions" edge with a given conditions (other predicates).
+func HasPermissionsWith(preds ...predicate.Permission) predicate.TypeConfig {
+	return predicate.TypeConfig(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(PermissionsInverseTable, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, PermissionsTable, PermissionsColumn),
+		)
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
 	})
 }
 

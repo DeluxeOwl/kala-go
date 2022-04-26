@@ -12,6 +12,10 @@ import (
 // Tx is a transactional client that is created by calling Client.Tx().
 type Tx struct {
 	config
+	// Permission is the client for interacting with the Permission builders.
+	Permission *PermissionClient
+	// Relation is the client for interacting with the Relation builders.
+	Relation *RelationClient
 	// TypeConfig is the client for interacting with the TypeConfig builders.
 	TypeConfig *TypeConfigClient
 
@@ -149,6 +153,8 @@ func (tx *Tx) Client() *Client {
 }
 
 func (tx *Tx) init() {
+	tx.Permission = NewPermissionClient(tx.config)
+	tx.Relation = NewRelationClient(tx.config)
 	tx.TypeConfig = NewTypeConfigClient(tx.config)
 }
 
@@ -159,7 +165,7 @@ func (tx *Tx) init() {
 // of them in order to commit or rollback the transaction.
 //
 // If a closed transaction is embedded in one of the generated entities, and the entity
-// applies a query, for example: TypeConfig.QueryXXX(), the query will be executed
+// applies a query, for example: Permission.QueryXXX(), the query will be executed
 // through the driver which created this transaction.
 //
 // Note that txDriver is not goroutine safe.

@@ -10,8 +10,9 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/DeluxeOwl/kala-go/ent/permission"
 	"github.com/DeluxeOwl/kala-go/ent/predicate"
-	"github.com/DeluxeOwl/kala-go/ent/schema"
+	"github.com/DeluxeOwl/kala-go/ent/relation"
 	"github.com/DeluxeOwl/kala-go/ent/typeconfig"
 )
 
@@ -34,21 +35,81 @@ func (tcu *TypeConfigUpdate) SetName(s string) *TypeConfigUpdate {
 	return tcu
 }
 
-// SetRelations sets the "relations" field.
-func (tcu *TypeConfigUpdate) SetRelations(s *schema.Relations) *TypeConfigUpdate {
-	tcu.mutation.SetRelations(s)
+// AddRelationIDs adds the "relations" edge to the Relation entity by IDs.
+func (tcu *TypeConfigUpdate) AddRelationIDs(ids ...int) *TypeConfigUpdate {
+	tcu.mutation.AddRelationIDs(ids...)
 	return tcu
 }
 
-// SetPermissions sets the "permissions" field.
-func (tcu *TypeConfigUpdate) SetPermissions(s *schema.Permissions) *TypeConfigUpdate {
-	tcu.mutation.SetPermissions(s)
+// AddRelations adds the "relations" edges to the Relation entity.
+func (tcu *TypeConfigUpdate) AddRelations(r ...*Relation) *TypeConfigUpdate {
+	ids := make([]int, len(r))
+	for i := range r {
+		ids[i] = r[i].ID
+	}
+	return tcu.AddRelationIDs(ids...)
+}
+
+// AddPermissionIDs adds the "permissions" edge to the Permission entity by IDs.
+func (tcu *TypeConfigUpdate) AddPermissionIDs(ids ...int) *TypeConfigUpdate {
+	tcu.mutation.AddPermissionIDs(ids...)
 	return tcu
+}
+
+// AddPermissions adds the "permissions" edges to the Permission entity.
+func (tcu *TypeConfigUpdate) AddPermissions(p ...*Permission) *TypeConfigUpdate {
+	ids := make([]int, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return tcu.AddPermissionIDs(ids...)
 }
 
 // Mutation returns the TypeConfigMutation object of the builder.
 func (tcu *TypeConfigUpdate) Mutation() *TypeConfigMutation {
 	return tcu.mutation
+}
+
+// ClearRelations clears all "relations" edges to the Relation entity.
+func (tcu *TypeConfigUpdate) ClearRelations() *TypeConfigUpdate {
+	tcu.mutation.ClearRelations()
+	return tcu
+}
+
+// RemoveRelationIDs removes the "relations" edge to Relation entities by IDs.
+func (tcu *TypeConfigUpdate) RemoveRelationIDs(ids ...int) *TypeConfigUpdate {
+	tcu.mutation.RemoveRelationIDs(ids...)
+	return tcu
+}
+
+// RemoveRelations removes "relations" edges to Relation entities.
+func (tcu *TypeConfigUpdate) RemoveRelations(r ...*Relation) *TypeConfigUpdate {
+	ids := make([]int, len(r))
+	for i := range r {
+		ids[i] = r[i].ID
+	}
+	return tcu.RemoveRelationIDs(ids...)
+}
+
+// ClearPermissions clears all "permissions" edges to the Permission entity.
+func (tcu *TypeConfigUpdate) ClearPermissions() *TypeConfigUpdate {
+	tcu.mutation.ClearPermissions()
+	return tcu
+}
+
+// RemovePermissionIDs removes the "permissions" edge to Permission entities by IDs.
+func (tcu *TypeConfigUpdate) RemovePermissionIDs(ids ...int) *TypeConfigUpdate {
+	tcu.mutation.RemovePermissionIDs(ids...)
+	return tcu
+}
+
+// RemovePermissions removes "permissions" edges to Permission entities.
+func (tcu *TypeConfigUpdate) RemovePermissions(p ...*Permission) *TypeConfigUpdate {
+	ids := make([]int, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return tcu.RemovePermissionIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -130,19 +191,113 @@ func (tcu *TypeConfigUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Column: typeconfig.FieldName,
 		})
 	}
-	if value, ok := tcu.mutation.Relations(); ok {
-		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
-			Type:   field.TypeJSON,
-			Value:  value,
-			Column: typeconfig.FieldRelations,
-		})
+	if tcu.mutation.RelationsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   typeconfig.RelationsTable,
+			Columns: []string{typeconfig.RelationsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: relation.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if value, ok := tcu.mutation.Permissions(); ok {
-		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
-			Type:   field.TypeJSON,
-			Value:  value,
-			Column: typeconfig.FieldPermissions,
-		})
+	if nodes := tcu.mutation.RemovedRelationsIDs(); len(nodes) > 0 && !tcu.mutation.RelationsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   typeconfig.RelationsTable,
+			Columns: []string{typeconfig.RelationsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: relation.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := tcu.mutation.RelationsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   typeconfig.RelationsTable,
+			Columns: []string{typeconfig.RelationsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: relation.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if tcu.mutation.PermissionsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   typeconfig.PermissionsTable,
+			Columns: []string{typeconfig.PermissionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: permission.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := tcu.mutation.RemovedPermissionsIDs(); len(nodes) > 0 && !tcu.mutation.PermissionsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   typeconfig.PermissionsTable,
+			Columns: []string{typeconfig.PermissionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: permission.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := tcu.mutation.PermissionsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   typeconfig.PermissionsTable,
+			Columns: []string{typeconfig.PermissionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: permission.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	if n, err = sqlgraph.UpdateNodes(ctx, tcu.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
@@ -169,21 +324,81 @@ func (tcuo *TypeConfigUpdateOne) SetName(s string) *TypeConfigUpdateOne {
 	return tcuo
 }
 
-// SetRelations sets the "relations" field.
-func (tcuo *TypeConfigUpdateOne) SetRelations(s *schema.Relations) *TypeConfigUpdateOne {
-	tcuo.mutation.SetRelations(s)
+// AddRelationIDs adds the "relations" edge to the Relation entity by IDs.
+func (tcuo *TypeConfigUpdateOne) AddRelationIDs(ids ...int) *TypeConfigUpdateOne {
+	tcuo.mutation.AddRelationIDs(ids...)
 	return tcuo
 }
 
-// SetPermissions sets the "permissions" field.
-func (tcuo *TypeConfigUpdateOne) SetPermissions(s *schema.Permissions) *TypeConfigUpdateOne {
-	tcuo.mutation.SetPermissions(s)
+// AddRelations adds the "relations" edges to the Relation entity.
+func (tcuo *TypeConfigUpdateOne) AddRelations(r ...*Relation) *TypeConfigUpdateOne {
+	ids := make([]int, len(r))
+	for i := range r {
+		ids[i] = r[i].ID
+	}
+	return tcuo.AddRelationIDs(ids...)
+}
+
+// AddPermissionIDs adds the "permissions" edge to the Permission entity by IDs.
+func (tcuo *TypeConfigUpdateOne) AddPermissionIDs(ids ...int) *TypeConfigUpdateOne {
+	tcuo.mutation.AddPermissionIDs(ids...)
 	return tcuo
+}
+
+// AddPermissions adds the "permissions" edges to the Permission entity.
+func (tcuo *TypeConfigUpdateOne) AddPermissions(p ...*Permission) *TypeConfigUpdateOne {
+	ids := make([]int, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return tcuo.AddPermissionIDs(ids...)
 }
 
 // Mutation returns the TypeConfigMutation object of the builder.
 func (tcuo *TypeConfigUpdateOne) Mutation() *TypeConfigMutation {
 	return tcuo.mutation
+}
+
+// ClearRelations clears all "relations" edges to the Relation entity.
+func (tcuo *TypeConfigUpdateOne) ClearRelations() *TypeConfigUpdateOne {
+	tcuo.mutation.ClearRelations()
+	return tcuo
+}
+
+// RemoveRelationIDs removes the "relations" edge to Relation entities by IDs.
+func (tcuo *TypeConfigUpdateOne) RemoveRelationIDs(ids ...int) *TypeConfigUpdateOne {
+	tcuo.mutation.RemoveRelationIDs(ids...)
+	return tcuo
+}
+
+// RemoveRelations removes "relations" edges to Relation entities.
+func (tcuo *TypeConfigUpdateOne) RemoveRelations(r ...*Relation) *TypeConfigUpdateOne {
+	ids := make([]int, len(r))
+	for i := range r {
+		ids[i] = r[i].ID
+	}
+	return tcuo.RemoveRelationIDs(ids...)
+}
+
+// ClearPermissions clears all "permissions" edges to the Permission entity.
+func (tcuo *TypeConfigUpdateOne) ClearPermissions() *TypeConfigUpdateOne {
+	tcuo.mutation.ClearPermissions()
+	return tcuo
+}
+
+// RemovePermissionIDs removes the "permissions" edge to Permission entities by IDs.
+func (tcuo *TypeConfigUpdateOne) RemovePermissionIDs(ids ...int) *TypeConfigUpdateOne {
+	tcuo.mutation.RemovePermissionIDs(ids...)
+	return tcuo
+}
+
+// RemovePermissions removes "permissions" edges to Permission entities.
+func (tcuo *TypeConfigUpdateOne) RemovePermissions(p ...*Permission) *TypeConfigUpdateOne {
+	ids := make([]int, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return tcuo.RemovePermissionIDs(ids...)
 }
 
 // Select allows selecting one or more fields (columns) of the returned entity.
@@ -289,19 +504,113 @@ func (tcuo *TypeConfigUpdateOne) sqlSave(ctx context.Context) (_node *TypeConfig
 			Column: typeconfig.FieldName,
 		})
 	}
-	if value, ok := tcuo.mutation.Relations(); ok {
-		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
-			Type:   field.TypeJSON,
-			Value:  value,
-			Column: typeconfig.FieldRelations,
-		})
+	if tcuo.mutation.RelationsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   typeconfig.RelationsTable,
+			Columns: []string{typeconfig.RelationsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: relation.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if value, ok := tcuo.mutation.Permissions(); ok {
-		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
-			Type:   field.TypeJSON,
-			Value:  value,
-			Column: typeconfig.FieldPermissions,
-		})
+	if nodes := tcuo.mutation.RemovedRelationsIDs(); len(nodes) > 0 && !tcuo.mutation.RelationsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   typeconfig.RelationsTable,
+			Columns: []string{typeconfig.RelationsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: relation.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := tcuo.mutation.RelationsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   typeconfig.RelationsTable,
+			Columns: []string{typeconfig.RelationsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: relation.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if tcuo.mutation.PermissionsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   typeconfig.PermissionsTable,
+			Columns: []string{typeconfig.PermissionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: permission.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := tcuo.mutation.RemovedPermissionsIDs(); len(nodes) > 0 && !tcuo.mutation.PermissionsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   typeconfig.PermissionsTable,
+			Columns: []string{typeconfig.PermissionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: permission.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := tcuo.mutation.PermissionsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   typeconfig.PermissionsTable,
+			Columns: []string{typeconfig.PermissionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: permission.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	_node = &TypeConfig{config: tcuo.config}
 	_spec.Assign = _node.assignValues

@@ -8,8 +8,9 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/DeluxeOwl/kala-go/ent/permission"
 	"github.com/DeluxeOwl/kala-go/ent/predicate"
-	"github.com/DeluxeOwl/kala-go/ent/schema"
+	"github.com/DeluxeOwl/kala-go/ent/relation"
 	"github.com/DeluxeOwl/kala-go/ent/typeconfig"
 
 	"entgo.io/ent"
@@ -24,22 +25,896 @@ const (
 	OpUpdateOne = ent.OpUpdateOne
 
 	// Node types.
+	TypePermission = "Permission"
+	TypeRelation   = "Relation"
 	TypeTypeConfig = "TypeConfig"
 )
+
+// PermissionMutation represents an operation that mutates the Permission nodes in the graph.
+type PermissionMutation struct {
+	config
+	op                Op
+	typ               string
+	id                *int
+	name              *string
+	value             *string
+	clearedFields     map[string]struct{}
+	typeconfig        *int
+	clearedtypeconfig bool
+	done              bool
+	oldValue          func(context.Context) (*Permission, error)
+	predicates        []predicate.Permission
+}
+
+var _ ent.Mutation = (*PermissionMutation)(nil)
+
+// permissionOption allows management of the mutation configuration using functional options.
+type permissionOption func(*PermissionMutation)
+
+// newPermissionMutation creates new mutation for the Permission entity.
+func newPermissionMutation(c config, op Op, opts ...permissionOption) *PermissionMutation {
+	m := &PermissionMutation{
+		config:        c,
+		op:            op,
+		typ:           TypePermission,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withPermissionID sets the ID field of the mutation.
+func withPermissionID(id int) permissionOption {
+	return func(m *PermissionMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *Permission
+		)
+		m.oldValue = func(ctx context.Context) (*Permission, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().Permission.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withPermission sets the old Permission of the mutation.
+func withPermission(node *Permission) permissionOption {
+	return func(m *PermissionMutation) {
+		m.oldValue = func(context.Context) (*Permission, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m PermissionMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m PermissionMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *PermissionMutation) ID() (id int, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *PermissionMutation) IDs(ctx context.Context) ([]int, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []int{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().Permission.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetName sets the "name" field.
+func (m *PermissionMutation) SetName(s string) {
+	m.name = &s
+}
+
+// Name returns the value of the "name" field in the mutation.
+func (m *PermissionMutation) Name() (r string, exists bool) {
+	v := m.name
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldName returns the old "name" field's value of the Permission entity.
+// If the Permission object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *PermissionMutation) OldName(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldName is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldName requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldName: %w", err)
+	}
+	return oldValue.Name, nil
+}
+
+// ResetName resets all changes to the "name" field.
+func (m *PermissionMutation) ResetName() {
+	m.name = nil
+}
+
+// SetValue sets the "value" field.
+func (m *PermissionMutation) SetValue(s string) {
+	m.value = &s
+}
+
+// Value returns the value of the "value" field in the mutation.
+func (m *PermissionMutation) Value() (r string, exists bool) {
+	v := m.value
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldValue returns the old "value" field's value of the Permission entity.
+// If the Permission object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *PermissionMutation) OldValue(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldValue is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldValue requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldValue: %w", err)
+	}
+	return oldValue.Value, nil
+}
+
+// ResetValue resets all changes to the "value" field.
+func (m *PermissionMutation) ResetValue() {
+	m.value = nil
+}
+
+// SetTypeconfigID sets the "typeconfig" edge to the TypeConfig entity by id.
+func (m *PermissionMutation) SetTypeconfigID(id int) {
+	m.typeconfig = &id
+}
+
+// ClearTypeconfig clears the "typeconfig" edge to the TypeConfig entity.
+func (m *PermissionMutation) ClearTypeconfig() {
+	m.clearedtypeconfig = true
+}
+
+// TypeconfigCleared reports if the "typeconfig" edge to the TypeConfig entity was cleared.
+func (m *PermissionMutation) TypeconfigCleared() bool {
+	return m.clearedtypeconfig
+}
+
+// TypeconfigID returns the "typeconfig" edge ID in the mutation.
+func (m *PermissionMutation) TypeconfigID() (id int, exists bool) {
+	if m.typeconfig != nil {
+		return *m.typeconfig, true
+	}
+	return
+}
+
+// TypeconfigIDs returns the "typeconfig" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// TypeconfigID instead. It exists only for internal usage by the builders.
+func (m *PermissionMutation) TypeconfigIDs() (ids []int) {
+	if id := m.typeconfig; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetTypeconfig resets all changes to the "typeconfig" edge.
+func (m *PermissionMutation) ResetTypeconfig() {
+	m.typeconfig = nil
+	m.clearedtypeconfig = false
+}
+
+// Where appends a list predicates to the PermissionMutation builder.
+func (m *PermissionMutation) Where(ps ...predicate.Permission) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// Op returns the operation name.
+func (m *PermissionMutation) Op() Op {
+	return m.op
+}
+
+// Type returns the node type of this mutation (Permission).
+func (m *PermissionMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *PermissionMutation) Fields() []string {
+	fields := make([]string, 0, 2)
+	if m.name != nil {
+		fields = append(fields, permission.FieldName)
+	}
+	if m.value != nil {
+		fields = append(fields, permission.FieldValue)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *PermissionMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case permission.FieldName:
+		return m.Name()
+	case permission.FieldValue:
+		return m.Value()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *PermissionMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case permission.FieldName:
+		return m.OldName(ctx)
+	case permission.FieldValue:
+		return m.OldValue(ctx)
+	}
+	return nil, fmt.Errorf("unknown Permission field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *PermissionMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case permission.FieldName:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetName(v)
+		return nil
+	case permission.FieldValue:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetValue(v)
+		return nil
+	}
+	return fmt.Errorf("unknown Permission field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *PermissionMutation) AddedFields() []string {
+	return nil
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *PermissionMutation) AddedField(name string) (ent.Value, bool) {
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *PermissionMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown Permission numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *PermissionMutation) ClearedFields() []string {
+	return nil
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *PermissionMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *PermissionMutation) ClearField(name string) error {
+	return fmt.Errorf("unknown Permission nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *PermissionMutation) ResetField(name string) error {
+	switch name {
+	case permission.FieldName:
+		m.ResetName()
+		return nil
+	case permission.FieldValue:
+		m.ResetValue()
+		return nil
+	}
+	return fmt.Errorf("unknown Permission field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *PermissionMutation) AddedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.typeconfig != nil {
+		edges = append(edges, permission.EdgeTypeconfig)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *PermissionMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case permission.EdgeTypeconfig:
+		if id := m.typeconfig; id != nil {
+			return []ent.Value{*id}
+		}
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *PermissionMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 1)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *PermissionMutation) RemovedIDs(name string) []ent.Value {
+	switch name {
+	}
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *PermissionMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.clearedtypeconfig {
+		edges = append(edges, permission.EdgeTypeconfig)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *PermissionMutation) EdgeCleared(name string) bool {
+	switch name {
+	case permission.EdgeTypeconfig:
+		return m.clearedtypeconfig
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *PermissionMutation) ClearEdge(name string) error {
+	switch name {
+	case permission.EdgeTypeconfig:
+		m.ClearTypeconfig()
+		return nil
+	}
+	return fmt.Errorf("unknown Permission unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *PermissionMutation) ResetEdge(name string) error {
+	switch name {
+	case permission.EdgeTypeconfig:
+		m.ResetTypeconfig()
+		return nil
+	}
+	return fmt.Errorf("unknown Permission edge %s", name)
+}
+
+// RelationMutation represents an operation that mutates the Relation nodes in the graph.
+type RelationMutation struct {
+	config
+	op                Op
+	typ               string
+	id                *int
+	name              *string
+	value             *string
+	clearedFields     map[string]struct{}
+	typeconfig        *int
+	clearedtypeconfig bool
+	done              bool
+	oldValue          func(context.Context) (*Relation, error)
+	predicates        []predicate.Relation
+}
+
+var _ ent.Mutation = (*RelationMutation)(nil)
+
+// relationOption allows management of the mutation configuration using functional options.
+type relationOption func(*RelationMutation)
+
+// newRelationMutation creates new mutation for the Relation entity.
+func newRelationMutation(c config, op Op, opts ...relationOption) *RelationMutation {
+	m := &RelationMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeRelation,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withRelationID sets the ID field of the mutation.
+func withRelationID(id int) relationOption {
+	return func(m *RelationMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *Relation
+		)
+		m.oldValue = func(ctx context.Context) (*Relation, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().Relation.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withRelation sets the old Relation of the mutation.
+func withRelation(node *Relation) relationOption {
+	return func(m *RelationMutation) {
+		m.oldValue = func(context.Context) (*Relation, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m RelationMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m RelationMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *RelationMutation) ID() (id int, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *RelationMutation) IDs(ctx context.Context) ([]int, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []int{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().Relation.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetName sets the "name" field.
+func (m *RelationMutation) SetName(s string) {
+	m.name = &s
+}
+
+// Name returns the value of the "name" field in the mutation.
+func (m *RelationMutation) Name() (r string, exists bool) {
+	v := m.name
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldName returns the old "name" field's value of the Relation entity.
+// If the Relation object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RelationMutation) OldName(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldName is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldName requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldName: %w", err)
+	}
+	return oldValue.Name, nil
+}
+
+// ResetName resets all changes to the "name" field.
+func (m *RelationMutation) ResetName() {
+	m.name = nil
+}
+
+// SetValue sets the "value" field.
+func (m *RelationMutation) SetValue(s string) {
+	m.value = &s
+}
+
+// Value returns the value of the "value" field in the mutation.
+func (m *RelationMutation) Value() (r string, exists bool) {
+	v := m.value
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldValue returns the old "value" field's value of the Relation entity.
+// If the Relation object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RelationMutation) OldValue(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldValue is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldValue requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldValue: %w", err)
+	}
+	return oldValue.Value, nil
+}
+
+// ResetValue resets all changes to the "value" field.
+func (m *RelationMutation) ResetValue() {
+	m.value = nil
+}
+
+// SetTypeconfigID sets the "typeconfig" edge to the TypeConfig entity by id.
+func (m *RelationMutation) SetTypeconfigID(id int) {
+	m.typeconfig = &id
+}
+
+// ClearTypeconfig clears the "typeconfig" edge to the TypeConfig entity.
+func (m *RelationMutation) ClearTypeconfig() {
+	m.clearedtypeconfig = true
+}
+
+// TypeconfigCleared reports if the "typeconfig" edge to the TypeConfig entity was cleared.
+func (m *RelationMutation) TypeconfigCleared() bool {
+	return m.clearedtypeconfig
+}
+
+// TypeconfigID returns the "typeconfig" edge ID in the mutation.
+func (m *RelationMutation) TypeconfigID() (id int, exists bool) {
+	if m.typeconfig != nil {
+		return *m.typeconfig, true
+	}
+	return
+}
+
+// TypeconfigIDs returns the "typeconfig" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// TypeconfigID instead. It exists only for internal usage by the builders.
+func (m *RelationMutation) TypeconfigIDs() (ids []int) {
+	if id := m.typeconfig; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetTypeconfig resets all changes to the "typeconfig" edge.
+func (m *RelationMutation) ResetTypeconfig() {
+	m.typeconfig = nil
+	m.clearedtypeconfig = false
+}
+
+// Where appends a list predicates to the RelationMutation builder.
+func (m *RelationMutation) Where(ps ...predicate.Relation) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// Op returns the operation name.
+func (m *RelationMutation) Op() Op {
+	return m.op
+}
+
+// Type returns the node type of this mutation (Relation).
+func (m *RelationMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *RelationMutation) Fields() []string {
+	fields := make([]string, 0, 2)
+	if m.name != nil {
+		fields = append(fields, relation.FieldName)
+	}
+	if m.value != nil {
+		fields = append(fields, relation.FieldValue)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *RelationMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case relation.FieldName:
+		return m.Name()
+	case relation.FieldValue:
+		return m.Value()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *RelationMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case relation.FieldName:
+		return m.OldName(ctx)
+	case relation.FieldValue:
+		return m.OldValue(ctx)
+	}
+	return nil, fmt.Errorf("unknown Relation field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *RelationMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case relation.FieldName:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetName(v)
+		return nil
+	case relation.FieldValue:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetValue(v)
+		return nil
+	}
+	return fmt.Errorf("unknown Relation field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *RelationMutation) AddedFields() []string {
+	return nil
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *RelationMutation) AddedField(name string) (ent.Value, bool) {
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *RelationMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown Relation numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *RelationMutation) ClearedFields() []string {
+	return nil
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *RelationMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *RelationMutation) ClearField(name string) error {
+	return fmt.Errorf("unknown Relation nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *RelationMutation) ResetField(name string) error {
+	switch name {
+	case relation.FieldName:
+		m.ResetName()
+		return nil
+	case relation.FieldValue:
+		m.ResetValue()
+		return nil
+	}
+	return fmt.Errorf("unknown Relation field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *RelationMutation) AddedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.typeconfig != nil {
+		edges = append(edges, relation.EdgeTypeconfig)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *RelationMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case relation.EdgeTypeconfig:
+		if id := m.typeconfig; id != nil {
+			return []ent.Value{*id}
+		}
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *RelationMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 1)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *RelationMutation) RemovedIDs(name string) []ent.Value {
+	switch name {
+	}
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *RelationMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.clearedtypeconfig {
+		edges = append(edges, relation.EdgeTypeconfig)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *RelationMutation) EdgeCleared(name string) bool {
+	switch name {
+	case relation.EdgeTypeconfig:
+		return m.clearedtypeconfig
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *RelationMutation) ClearEdge(name string) error {
+	switch name {
+	case relation.EdgeTypeconfig:
+		m.ClearTypeconfig()
+		return nil
+	}
+	return fmt.Errorf("unknown Relation unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *RelationMutation) ResetEdge(name string) error {
+	switch name {
+	case relation.EdgeTypeconfig:
+		m.ResetTypeconfig()
+		return nil
+	}
+	return fmt.Errorf("unknown Relation edge %s", name)
+}
 
 // TypeConfigMutation represents an operation that mutates the TypeConfig nodes in the graph.
 type TypeConfigMutation struct {
 	config
-	op            Op
-	typ           string
-	id            *int
-	name          *string
-	relations     **schema.Relations
-	permissions   **schema.Permissions
-	clearedFields map[string]struct{}
-	done          bool
-	oldValue      func(context.Context) (*TypeConfig, error)
-	predicates    []predicate.TypeConfig
+	op                 Op
+	typ                string
+	id                 *int
+	name               *string
+	clearedFields      map[string]struct{}
+	relations          map[int]struct{}
+	removedrelations   map[int]struct{}
+	clearedrelations   bool
+	permissions        map[int]struct{}
+	removedpermissions map[int]struct{}
+	clearedpermissions bool
+	done               bool
+	oldValue           func(context.Context) (*TypeConfig, error)
+	predicates         []predicate.TypeConfig
 }
 
 var _ ent.Mutation = (*TypeConfigMutation)(nil)
@@ -176,76 +1051,112 @@ func (m *TypeConfigMutation) ResetName() {
 	m.name = nil
 }
 
-// SetRelations sets the "relations" field.
-func (m *TypeConfigMutation) SetRelations(s *schema.Relations) {
-	m.relations = &s
+// AddRelationIDs adds the "relations" edge to the Relation entity by ids.
+func (m *TypeConfigMutation) AddRelationIDs(ids ...int) {
+	if m.relations == nil {
+		m.relations = make(map[int]struct{})
+	}
+	for i := range ids {
+		m.relations[ids[i]] = struct{}{}
+	}
 }
 
-// Relations returns the value of the "relations" field in the mutation.
-func (m *TypeConfigMutation) Relations() (r *schema.Relations, exists bool) {
-	v := m.relations
-	if v == nil {
-		return
-	}
-	return *v, true
+// ClearRelations clears the "relations" edge to the Relation entity.
+func (m *TypeConfigMutation) ClearRelations() {
+	m.clearedrelations = true
 }
 
-// OldRelations returns the old "relations" field's value of the TypeConfig entity.
-// If the TypeConfig object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *TypeConfigMutation) OldRelations(ctx context.Context) (v *schema.Relations, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldRelations is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldRelations requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldRelations: %w", err)
-	}
-	return oldValue.Relations, nil
+// RelationsCleared reports if the "relations" edge to the Relation entity was cleared.
+func (m *TypeConfigMutation) RelationsCleared() bool {
+	return m.clearedrelations
 }
 
-// ResetRelations resets all changes to the "relations" field.
+// RemoveRelationIDs removes the "relations" edge to the Relation entity by IDs.
+func (m *TypeConfigMutation) RemoveRelationIDs(ids ...int) {
+	if m.removedrelations == nil {
+		m.removedrelations = make(map[int]struct{})
+	}
+	for i := range ids {
+		delete(m.relations, ids[i])
+		m.removedrelations[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedRelations returns the removed IDs of the "relations" edge to the Relation entity.
+func (m *TypeConfigMutation) RemovedRelationsIDs() (ids []int) {
+	for id := range m.removedrelations {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// RelationsIDs returns the "relations" edge IDs in the mutation.
+func (m *TypeConfigMutation) RelationsIDs() (ids []int) {
+	for id := range m.relations {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetRelations resets all changes to the "relations" edge.
 func (m *TypeConfigMutation) ResetRelations() {
 	m.relations = nil
+	m.clearedrelations = false
+	m.removedrelations = nil
 }
 
-// SetPermissions sets the "permissions" field.
-func (m *TypeConfigMutation) SetPermissions(s *schema.Permissions) {
-	m.permissions = &s
+// AddPermissionIDs adds the "permissions" edge to the Permission entity by ids.
+func (m *TypeConfigMutation) AddPermissionIDs(ids ...int) {
+	if m.permissions == nil {
+		m.permissions = make(map[int]struct{})
+	}
+	for i := range ids {
+		m.permissions[ids[i]] = struct{}{}
+	}
 }
 
-// Permissions returns the value of the "permissions" field in the mutation.
-func (m *TypeConfigMutation) Permissions() (r *schema.Permissions, exists bool) {
-	v := m.permissions
-	if v == nil {
-		return
-	}
-	return *v, true
+// ClearPermissions clears the "permissions" edge to the Permission entity.
+func (m *TypeConfigMutation) ClearPermissions() {
+	m.clearedpermissions = true
 }
 
-// OldPermissions returns the old "permissions" field's value of the TypeConfig entity.
-// If the TypeConfig object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *TypeConfigMutation) OldPermissions(ctx context.Context) (v *schema.Permissions, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldPermissions is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldPermissions requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldPermissions: %w", err)
-	}
-	return oldValue.Permissions, nil
+// PermissionsCleared reports if the "permissions" edge to the Permission entity was cleared.
+func (m *TypeConfigMutation) PermissionsCleared() bool {
+	return m.clearedpermissions
 }
 
-// ResetPermissions resets all changes to the "permissions" field.
+// RemovePermissionIDs removes the "permissions" edge to the Permission entity by IDs.
+func (m *TypeConfigMutation) RemovePermissionIDs(ids ...int) {
+	if m.removedpermissions == nil {
+		m.removedpermissions = make(map[int]struct{})
+	}
+	for i := range ids {
+		delete(m.permissions, ids[i])
+		m.removedpermissions[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedPermissions returns the removed IDs of the "permissions" edge to the Permission entity.
+func (m *TypeConfigMutation) RemovedPermissionsIDs() (ids []int) {
+	for id := range m.removedpermissions {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// PermissionsIDs returns the "permissions" edge IDs in the mutation.
+func (m *TypeConfigMutation) PermissionsIDs() (ids []int) {
+	for id := range m.permissions {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetPermissions resets all changes to the "permissions" edge.
 func (m *TypeConfigMutation) ResetPermissions() {
 	m.permissions = nil
+	m.clearedpermissions = false
+	m.removedpermissions = nil
 }
 
 // Where appends a list predicates to the TypeConfigMutation builder.
@@ -267,15 +1178,9 @@ func (m *TypeConfigMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *TypeConfigMutation) Fields() []string {
-	fields := make([]string, 0, 3)
+	fields := make([]string, 0, 1)
 	if m.name != nil {
 		fields = append(fields, typeconfig.FieldName)
-	}
-	if m.relations != nil {
-		fields = append(fields, typeconfig.FieldRelations)
-	}
-	if m.permissions != nil {
-		fields = append(fields, typeconfig.FieldPermissions)
 	}
 	return fields
 }
@@ -287,10 +1192,6 @@ func (m *TypeConfigMutation) Field(name string) (ent.Value, bool) {
 	switch name {
 	case typeconfig.FieldName:
 		return m.Name()
-	case typeconfig.FieldRelations:
-		return m.Relations()
-	case typeconfig.FieldPermissions:
-		return m.Permissions()
 	}
 	return nil, false
 }
@@ -302,10 +1203,6 @@ func (m *TypeConfigMutation) OldField(ctx context.Context, name string) (ent.Val
 	switch name {
 	case typeconfig.FieldName:
 		return m.OldName(ctx)
-	case typeconfig.FieldRelations:
-		return m.OldRelations(ctx)
-	case typeconfig.FieldPermissions:
-		return m.OldPermissions(ctx)
 	}
 	return nil, fmt.Errorf("unknown TypeConfig field %s", name)
 }
@@ -321,20 +1218,6 @@ func (m *TypeConfigMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetName(v)
-		return nil
-	case typeconfig.FieldRelations:
-		v, ok := value.(*schema.Relations)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetRelations(v)
-		return nil
-	case typeconfig.FieldPermissions:
-		v, ok := value.(*schema.Permissions)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetPermissions(v)
 		return nil
 	}
 	return fmt.Errorf("unknown TypeConfig field %s", name)
@@ -388,60 +1271,116 @@ func (m *TypeConfigMutation) ResetField(name string) error {
 	case typeconfig.FieldName:
 		m.ResetName()
 		return nil
-	case typeconfig.FieldRelations:
-		m.ResetRelations()
-		return nil
-	case typeconfig.FieldPermissions:
-		m.ResetPermissions()
-		return nil
 	}
 	return fmt.Errorf("unknown TypeConfig field %s", name)
 }
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *TypeConfigMutation) AddedEdges() []string {
-	edges := make([]string, 0, 0)
+	edges := make([]string, 0, 2)
+	if m.relations != nil {
+		edges = append(edges, typeconfig.EdgeRelations)
+	}
+	if m.permissions != nil {
+		edges = append(edges, typeconfig.EdgePermissions)
+	}
 	return edges
 }
 
 // AddedIDs returns all IDs (to other nodes) that were added for the given edge
 // name in this mutation.
 func (m *TypeConfigMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case typeconfig.EdgeRelations:
+		ids := make([]ent.Value, 0, len(m.relations))
+		for id := range m.relations {
+			ids = append(ids, id)
+		}
+		return ids
+	case typeconfig.EdgePermissions:
+		ids := make([]ent.Value, 0, len(m.permissions))
+		for id := range m.permissions {
+			ids = append(ids, id)
+		}
+		return ids
+	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *TypeConfigMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 0)
+	edges := make([]string, 0, 2)
+	if m.removedrelations != nil {
+		edges = append(edges, typeconfig.EdgeRelations)
+	}
+	if m.removedpermissions != nil {
+		edges = append(edges, typeconfig.EdgePermissions)
+	}
 	return edges
 }
 
 // RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
 // the given name in this mutation.
 func (m *TypeConfigMutation) RemovedIDs(name string) []ent.Value {
+	switch name {
+	case typeconfig.EdgeRelations:
+		ids := make([]ent.Value, 0, len(m.removedrelations))
+		for id := range m.removedrelations {
+			ids = append(ids, id)
+		}
+		return ids
+	case typeconfig.EdgePermissions:
+		ids := make([]ent.Value, 0, len(m.removedpermissions))
+		for id := range m.removedpermissions {
+			ids = append(ids, id)
+		}
+		return ids
+	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *TypeConfigMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 0)
+	edges := make([]string, 0, 2)
+	if m.clearedrelations {
+		edges = append(edges, typeconfig.EdgeRelations)
+	}
+	if m.clearedpermissions {
+		edges = append(edges, typeconfig.EdgePermissions)
+	}
 	return edges
 }
 
 // EdgeCleared returns a boolean which indicates if the edge with the given name
 // was cleared in this mutation.
 func (m *TypeConfigMutation) EdgeCleared(name string) bool {
+	switch name {
+	case typeconfig.EdgeRelations:
+		return m.clearedrelations
+	case typeconfig.EdgePermissions:
+		return m.clearedpermissions
+	}
 	return false
 }
 
 // ClearEdge clears the value of the edge with the given name. It returns an error
 // if that edge is not defined in the schema.
 func (m *TypeConfigMutation) ClearEdge(name string) error {
+	switch name {
+	}
 	return fmt.Errorf("unknown TypeConfig unique edge %s", name)
 }
 
 // ResetEdge resets all changes to the edge with the given name in this mutation.
 // It returns an error if the edge is not defined in the schema.
 func (m *TypeConfigMutation) ResetEdge(name string) error {
+	switch name {
+	case typeconfig.EdgeRelations:
+		m.ResetRelations()
+		return nil
+	case typeconfig.EdgePermissions:
+		m.ResetPermissions()
+		return nil
+	}
 	return fmt.Errorf("unknown TypeConfig edge %s", name)
 }

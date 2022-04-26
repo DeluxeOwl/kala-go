@@ -4,6 +4,7 @@ package ent
 
 import (
 	"context"
+	"database/sql/driver"
 	"errors"
 	"fmt"
 	"math"
@@ -11,7 +12,9 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/DeluxeOwl/kala-go/ent/permission"
 	"github.com/DeluxeOwl/kala-go/ent/predicate"
+	"github.com/DeluxeOwl/kala-go/ent/relation"
 	"github.com/DeluxeOwl/kala-go/ent/typeconfig"
 )
 
@@ -24,6 +27,9 @@ type TypeConfigQuery struct {
 	order      []OrderFunc
 	fields     []string
 	predicates []predicate.TypeConfig
+	// eager-loading edges.
+	withRelations   *RelationQuery
+	withPermissions *PermissionQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -58,6 +64,50 @@ func (tcq *TypeConfigQuery) Unique(unique bool) *TypeConfigQuery {
 func (tcq *TypeConfigQuery) Order(o ...OrderFunc) *TypeConfigQuery {
 	tcq.order = append(tcq.order, o...)
 	return tcq
+}
+
+// QueryRelations chains the current query on the "relations" edge.
+func (tcq *TypeConfigQuery) QueryRelations() *RelationQuery {
+	query := &RelationQuery{config: tcq.config}
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := tcq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := tcq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(typeconfig.Table, typeconfig.FieldID, selector),
+			sqlgraph.To(relation.Table, relation.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, typeconfig.RelationsTable, typeconfig.RelationsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(tcq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryPermissions chains the current query on the "permissions" edge.
+func (tcq *TypeConfigQuery) QueryPermissions() *PermissionQuery {
+	query := &PermissionQuery{config: tcq.config}
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := tcq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := tcq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(typeconfig.Table, typeconfig.FieldID, selector),
+			sqlgraph.To(permission.Table, permission.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, typeconfig.PermissionsTable, typeconfig.PermissionsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(tcq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
 }
 
 // First returns the first TypeConfig entity from the query.
@@ -236,16 +286,40 @@ func (tcq *TypeConfigQuery) Clone() *TypeConfigQuery {
 		return nil
 	}
 	return &TypeConfigQuery{
-		config:     tcq.config,
-		limit:      tcq.limit,
-		offset:     tcq.offset,
-		order:      append([]OrderFunc{}, tcq.order...),
-		predicates: append([]predicate.TypeConfig{}, tcq.predicates...),
+		config:          tcq.config,
+		limit:           tcq.limit,
+		offset:          tcq.offset,
+		order:           append([]OrderFunc{}, tcq.order...),
+		predicates:      append([]predicate.TypeConfig{}, tcq.predicates...),
+		withRelations:   tcq.withRelations.Clone(),
+		withPermissions: tcq.withPermissions.Clone(),
 		// clone intermediate query.
 		sql:    tcq.sql.Clone(),
 		path:   tcq.path,
 		unique: tcq.unique,
 	}
+}
+
+// WithRelations tells the query-builder to eager-load the nodes that are connected to
+// the "relations" edge. The optional arguments are used to configure the query builder of the edge.
+func (tcq *TypeConfigQuery) WithRelations(opts ...func(*RelationQuery)) *TypeConfigQuery {
+	query := &RelationQuery{config: tcq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	tcq.withRelations = query
+	return tcq
+}
+
+// WithPermissions tells the query-builder to eager-load the nodes that are connected to
+// the "permissions" edge. The optional arguments are used to configure the query builder of the edge.
+func (tcq *TypeConfigQuery) WithPermissions(opts ...func(*PermissionQuery)) *TypeConfigQuery {
+	query := &PermissionQuery{config: tcq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	tcq.withPermissions = query
+	return tcq
 }
 
 // GroupBy is used to group vertices by one or more fields/columns.
@@ -311,8 +385,12 @@ func (tcq *TypeConfigQuery) prepareQuery(ctx context.Context) error {
 
 func (tcq *TypeConfigQuery) sqlAll(ctx context.Context) ([]*TypeConfig, error) {
 	var (
-		nodes = []*TypeConfig{}
-		_spec = tcq.querySpec()
+		nodes       = []*TypeConfig{}
+		_spec       = tcq.querySpec()
+		loadedTypes = [2]bool{
+			tcq.withRelations != nil,
+			tcq.withPermissions != nil,
+		}
 	)
 	_spec.ScanValues = func(columns []string) ([]interface{}, error) {
 		node := &TypeConfig{config: tcq.config}
@@ -324,6 +402,7 @@ func (tcq *TypeConfigQuery) sqlAll(ctx context.Context) ([]*TypeConfig, error) {
 			return fmt.Errorf("ent: Assign called without calling ScanValues")
 		}
 		node := nodes[len(nodes)-1]
+		node.Edges.loadedTypes = loadedTypes
 		return node.assignValues(columns, values)
 	}
 	if err := sqlgraph.QueryNodes(ctx, tcq.driver, _spec); err != nil {
@@ -332,6 +411,65 @@ func (tcq *TypeConfigQuery) sqlAll(ctx context.Context) ([]*TypeConfig, error) {
 	if len(nodes) == 0 {
 		return nodes, nil
 	}
+
+	if query := tcq.withRelations; query != nil {
+		fks := make([]driver.Value, 0, len(nodes))
+		nodeids := make(map[int]*TypeConfig)
+		for i := range nodes {
+			fks = append(fks, nodes[i].ID)
+			nodeids[nodes[i].ID] = nodes[i]
+			nodes[i].Edges.Relations = []*Relation{}
+		}
+		query.withFKs = true
+		query.Where(predicate.Relation(func(s *sql.Selector) {
+			s.Where(sql.InValues(typeconfig.RelationsColumn, fks...))
+		}))
+		neighbors, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, n := range neighbors {
+			fk := n.type_config_relations
+			if fk == nil {
+				return nil, fmt.Errorf(`foreign-key "type_config_relations" is nil for node %v`, n.ID)
+			}
+			node, ok := nodeids[*fk]
+			if !ok {
+				return nil, fmt.Errorf(`unexpected foreign-key "type_config_relations" returned %v for node %v`, *fk, n.ID)
+			}
+			node.Edges.Relations = append(node.Edges.Relations, n)
+		}
+	}
+
+	if query := tcq.withPermissions; query != nil {
+		fks := make([]driver.Value, 0, len(nodes))
+		nodeids := make(map[int]*TypeConfig)
+		for i := range nodes {
+			fks = append(fks, nodes[i].ID)
+			nodeids[nodes[i].ID] = nodes[i]
+			nodes[i].Edges.Permissions = []*Permission{}
+		}
+		query.withFKs = true
+		query.Where(predicate.Permission(func(s *sql.Selector) {
+			s.Where(sql.InValues(typeconfig.PermissionsColumn, fks...))
+		}))
+		neighbors, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, n := range neighbors {
+			fk := n.type_config_permissions
+			if fk == nil {
+				return nil, fmt.Errorf(`foreign-key "type_config_permissions" is nil for node %v`, n.ID)
+			}
+			node, ok := nodeids[*fk]
+			if !ok {
+				return nil, fmt.Errorf(`unexpected foreign-key "type_config_permissions" returned %v for node %v`, *fk, n.ID)
+			}
+			node.Edges.Permissions = append(node.Edges.Permissions, n)
+		}
+	}
+
 	return nodes, nil
 }
 

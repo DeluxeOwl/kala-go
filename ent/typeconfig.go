@@ -3,12 +3,10 @@
 package ent
 
 import (
-	"encoding/json"
 	"fmt"
 	"strings"
 
 	"entgo.io/ent/dialect/sql"
-	"github.com/DeluxeOwl/kala-go/ent/schema"
 	"github.com/DeluxeOwl/kala-go/ent/typeconfig"
 )
 
@@ -19,10 +17,38 @@ type TypeConfig struct {
 	ID int `json:"id,omitempty"`
 	// Name holds the value of the "name" field.
 	Name string `json:"name,omitempty"`
-	// Relations holds the value of the "relations" field.
-	Relations *schema.Relations `json:"relations,omitempty"`
-	// Permissions holds the value of the "permissions" field.
-	Permissions *schema.Permissions `json:"permissions,omitempty"`
+	// Edges holds the relations/edges for other nodes in the graph.
+	// The values are being populated by the TypeConfigQuery when eager-loading is set.
+	Edges TypeConfigEdges `json:"edges"`
+}
+
+// TypeConfigEdges holds the relations/edges for other nodes in the graph.
+type TypeConfigEdges struct {
+	// Relations holds the value of the relations edge.
+	Relations []*Relation `json:"relations,omitempty"`
+	// Permissions holds the value of the permissions edge.
+	Permissions []*Permission `json:"permissions,omitempty"`
+	// loadedTypes holds the information for reporting if a
+	// type was loaded (or requested) in eager-loading or not.
+	loadedTypes [2]bool
+}
+
+// RelationsOrErr returns the Relations value or an error if the edge
+// was not loaded in eager-loading.
+func (e TypeConfigEdges) RelationsOrErr() ([]*Relation, error) {
+	if e.loadedTypes[0] {
+		return e.Relations, nil
+	}
+	return nil, &NotLoadedError{edge: "relations"}
+}
+
+// PermissionsOrErr returns the Permissions value or an error if the edge
+// was not loaded in eager-loading.
+func (e TypeConfigEdges) PermissionsOrErr() ([]*Permission, error) {
+	if e.loadedTypes[1] {
+		return e.Permissions, nil
+	}
+	return nil, &NotLoadedError{edge: "permissions"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -30,8 +56,6 @@ func (*TypeConfig) scanValues(columns []string) ([]interface{}, error) {
 	values := make([]interface{}, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case typeconfig.FieldRelations, typeconfig.FieldPermissions:
-			values[i] = new([]byte)
 		case typeconfig.FieldID:
 			values[i] = new(sql.NullInt64)
 		case typeconfig.FieldName:
@@ -63,25 +87,19 @@ func (tc *TypeConfig) assignValues(columns []string, values []interface{}) error
 			} else if value.Valid {
 				tc.Name = value.String
 			}
-		case typeconfig.FieldRelations:
-			if value, ok := values[i].(*[]byte); !ok {
-				return fmt.Errorf("unexpected type %T for field relations", values[i])
-			} else if value != nil && len(*value) > 0 {
-				if err := json.Unmarshal(*value, &tc.Relations); err != nil {
-					return fmt.Errorf("unmarshal field relations: %w", err)
-				}
-			}
-		case typeconfig.FieldPermissions:
-			if value, ok := values[i].(*[]byte); !ok {
-				return fmt.Errorf("unexpected type %T for field permissions", values[i])
-			} else if value != nil && len(*value) > 0 {
-				if err := json.Unmarshal(*value, &tc.Permissions); err != nil {
-					return fmt.Errorf("unmarshal field permissions: %w", err)
-				}
-			}
 		}
 	}
 	return nil
+}
+
+// QueryRelations queries the "relations" edge of the TypeConfig entity.
+func (tc *TypeConfig) QueryRelations() *RelationQuery {
+	return (&TypeConfigClient{config: tc.config}).QueryRelations(tc)
+}
+
+// QueryPermissions queries the "permissions" edge of the TypeConfig entity.
+func (tc *TypeConfig) QueryPermissions() *PermissionQuery {
+	return (&TypeConfigClient{config: tc.config}).QueryPermissions(tc)
 }
 
 // Update returns a builder for updating this TypeConfig.
@@ -109,10 +127,6 @@ func (tc *TypeConfig) String() string {
 	builder.WriteString(fmt.Sprintf("id=%v", tc.ID))
 	builder.WriteString(", name=")
 	builder.WriteString(tc.Name)
-	builder.WriteString(", relations=")
-	builder.WriteString(fmt.Sprintf("%v", tc.Relations))
-	builder.WriteString(", permissions=")
-	builder.WriteString(fmt.Sprintf("%v", tc.Permissions))
 	builder.WriteByte(')')
 	return builder.String()
 }

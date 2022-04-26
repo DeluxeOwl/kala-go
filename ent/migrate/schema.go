@@ -8,12 +8,52 @@ import (
 )
 
 var (
+	// PermissionsColumns holds the columns for the "permissions" table.
+	PermissionsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "name", Type: field.TypeString},
+		{Name: "value", Type: field.TypeString},
+		{Name: "type_config_permissions", Type: field.TypeInt, Nullable: true},
+	}
+	// PermissionsTable holds the schema information for the "permissions" table.
+	PermissionsTable = &schema.Table{
+		Name:       "permissions",
+		Columns:    PermissionsColumns,
+		PrimaryKey: []*schema.Column{PermissionsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "permissions_type_configs_permissions",
+				Columns:    []*schema.Column{PermissionsColumns[3]},
+				RefColumns: []*schema.Column{TypeConfigsColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+		},
+	}
+	// RelationsColumns holds the columns for the "relations" table.
+	RelationsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "name", Type: field.TypeString},
+		{Name: "value", Type: field.TypeString},
+		{Name: "type_config_relations", Type: field.TypeInt, Nullable: true},
+	}
+	// RelationsTable holds the schema information for the "relations" table.
+	RelationsTable = &schema.Table{
+		Name:       "relations",
+		Columns:    RelationsColumns,
+		PrimaryKey: []*schema.Column{RelationsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "relations_type_configs_relations",
+				Columns:    []*schema.Column{RelationsColumns[3]},
+				RefColumns: []*schema.Column{TypeConfigsColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+		},
+	}
 	// TypeConfigsColumns holds the columns for the "type_configs" table.
 	TypeConfigsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
 		{Name: "name", Type: field.TypeString},
-		{Name: "relations", Type: field.TypeJSON},
-		{Name: "permissions", Type: field.TypeJSON},
 	}
 	// TypeConfigsTable holds the schema information for the "type_configs" table.
 	TypeConfigsTable = &schema.Table{
@@ -23,9 +63,13 @@ var (
 	}
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{
+		PermissionsTable,
+		RelationsTable,
 		TypeConfigsTable,
 	}
 )
 
 func init() {
+	PermissionsTable.ForeignKeys[0].RefTable = TypeConfigsTable
+	RelationsTable.ForeignKeys[0].RefTable = TypeConfigsTable
 }

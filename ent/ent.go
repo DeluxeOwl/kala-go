@@ -8,6 +8,8 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
+	"github.com/DeluxeOwl/kala-go/ent/permission"
+	"github.com/DeluxeOwl/kala-go/ent/relation"
 	"github.com/DeluxeOwl/kala-go/ent/typeconfig"
 )
 
@@ -29,6 +31,8 @@ type OrderFunc func(*sql.Selector)
 // columnChecker returns a function indicates if the column exists in the given column.
 func columnChecker(table string) func(string) error {
 	checks := map[string]func(string) bool{
+		permission.Table: permission.ValidColumn,
+		relation.Table:   relation.ValidColumn,
 		typeconfig.Table: typeconfig.ValidColumn,
 	}
 	check, ok := checks[table]

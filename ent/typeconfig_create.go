@@ -9,7 +9,8 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/DeluxeOwl/kala-go/ent/schema"
+	"github.com/DeluxeOwl/kala-go/ent/permission"
+	"github.com/DeluxeOwl/kala-go/ent/relation"
 	"github.com/DeluxeOwl/kala-go/ent/typeconfig"
 )
 
@@ -26,16 +27,34 @@ func (tcc *TypeConfigCreate) SetName(s string) *TypeConfigCreate {
 	return tcc
 }
 
-// SetRelations sets the "relations" field.
-func (tcc *TypeConfigCreate) SetRelations(s *schema.Relations) *TypeConfigCreate {
-	tcc.mutation.SetRelations(s)
+// AddRelationIDs adds the "relations" edge to the Relation entity by IDs.
+func (tcc *TypeConfigCreate) AddRelationIDs(ids ...int) *TypeConfigCreate {
+	tcc.mutation.AddRelationIDs(ids...)
 	return tcc
 }
 
-// SetPermissions sets the "permissions" field.
-func (tcc *TypeConfigCreate) SetPermissions(s *schema.Permissions) *TypeConfigCreate {
-	tcc.mutation.SetPermissions(s)
+// AddRelations adds the "relations" edges to the Relation entity.
+func (tcc *TypeConfigCreate) AddRelations(r ...*Relation) *TypeConfigCreate {
+	ids := make([]int, len(r))
+	for i := range r {
+		ids[i] = r[i].ID
+	}
+	return tcc.AddRelationIDs(ids...)
+}
+
+// AddPermissionIDs adds the "permissions" edge to the Permission entity by IDs.
+func (tcc *TypeConfigCreate) AddPermissionIDs(ids ...int) *TypeConfigCreate {
+	tcc.mutation.AddPermissionIDs(ids...)
 	return tcc
+}
+
+// AddPermissions adds the "permissions" edges to the Permission entity.
+func (tcc *TypeConfigCreate) AddPermissions(p ...*Permission) *TypeConfigCreate {
+	ids := make([]int, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return tcc.AddPermissionIDs(ids...)
 }
 
 // Mutation returns the TypeConfigMutation object of the builder.
@@ -111,12 +130,6 @@ func (tcc *TypeConfigCreate) check() error {
 	if _, ok := tcc.mutation.Name(); !ok {
 		return &ValidationError{Name: "name", err: errors.New(`ent: missing required field "TypeConfig.name"`)}
 	}
-	if _, ok := tcc.mutation.Relations(); !ok {
-		return &ValidationError{Name: "relations", err: errors.New(`ent: missing required field "TypeConfig.relations"`)}
-	}
-	if _, ok := tcc.mutation.Permissions(); !ok {
-		return &ValidationError{Name: "permissions", err: errors.New(`ent: missing required field "TypeConfig.permissions"`)}
-	}
 	return nil
 }
 
@@ -152,21 +165,43 @@ func (tcc *TypeConfigCreate) createSpec() (*TypeConfig, *sqlgraph.CreateSpec) {
 		})
 		_node.Name = value
 	}
-	if value, ok := tcc.mutation.Relations(); ok {
-		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
-			Type:   field.TypeJSON,
-			Value:  value,
-			Column: typeconfig.FieldRelations,
-		})
-		_node.Relations = value
+	if nodes := tcc.mutation.RelationsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   typeconfig.RelationsTable,
+			Columns: []string{typeconfig.RelationsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: relation.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
 	}
-	if value, ok := tcc.mutation.Permissions(); ok {
-		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
-			Type:   field.TypeJSON,
-			Value:  value,
-			Column: typeconfig.FieldPermissions,
-		})
-		_node.Permissions = value
+	if nodes := tcc.mutation.PermissionsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   typeconfig.PermissionsTable,
+			Columns: []string{typeconfig.PermissionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: permission.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec
 }

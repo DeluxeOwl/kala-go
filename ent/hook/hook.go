@@ -9,6 +9,32 @@ import (
 	"github.com/DeluxeOwl/kala-go/ent"
 )
 
+// The PermissionFunc type is an adapter to allow the use of ordinary
+// function as Permission mutator.
+type PermissionFunc func(context.Context, *ent.PermissionMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f PermissionFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	mv, ok := m.(*ent.PermissionMutation)
+	if !ok {
+		return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.PermissionMutation", m)
+	}
+	return f(ctx, mv)
+}
+
+// The RelationFunc type is an adapter to allow the use of ordinary
+// function as Relation mutator.
+type RelationFunc func(context.Context, *ent.RelationMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f RelationFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	mv, ok := m.(*ent.RelationMutation)
+	if !ok {
+		return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.RelationMutation", m)
+	}
+	return f(ctx, mv)
+}
+
 // The TypeConfigFunc type is an adapter to allow the use of ordinary
 // function as TypeConfig mutator.
 type TypeConfigFunc func(context.Context, *ent.TypeConfigMutation) (ent.Value, error)
