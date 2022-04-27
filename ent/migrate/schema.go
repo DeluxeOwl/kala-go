@@ -53,7 +53,7 @@ var (
 	// TypeConfigsColumns holds the columns for the "type_configs" table.
 	TypeConfigsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
-		{Name: "name", Type: field.TypeString},
+		{Name: "name", Type: field.TypeString, Unique: true},
 	}
 	// TypeConfigsTable holds the schema information for the "type_configs" table.
 	TypeConfigsTable = &schema.Table{

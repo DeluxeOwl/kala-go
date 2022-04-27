@@ -15,7 +15,7 @@ type TypeConfig struct {
 // TODO: validation
 func (TypeConfig) Fields() []ent.Field {
 	return []ent.Field{
-		field.String("name"),
+		field.String("name").Unique(),
 	}
 }
 
