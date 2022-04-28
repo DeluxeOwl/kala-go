@@ -10,6 +10,7 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
+// TODO: add functionality for connecting edges between relations and permissions
 func (h *Handler) CreateTypeConfig(ctx context.Context) (*ent.TypeConfig, error) {
 
 	subj, err := h.client.Subject.Create().
@@ -32,7 +33,6 @@ func (h *Handler) CreateTypeConfig(ctx context.Context) (*ent.TypeConfig, error)
 		"read_only":      "reader & !writer",
 	}
 
-	// TODO: add anna, add the rest of the edges
 	relSlice := make([]*ent.RelationCreate, len(relations))
 	cnt := 0
 	for i, r := range relations {
