@@ -14,6 +14,7 @@ type Subject struct {
 // Fields of the Subject.
 func (Subject) Fields() []ent.Field {
 	return []ent.Field{
+		// Has a unique name
 		field.String("name").
 			Unique(),
 	}
@@ -22,9 +23,11 @@ func (Subject) Fields() []ent.Field {
 // Edges of the Subject.
 func (Subject) Edges() []ent.Edge {
 	return []ent.Edge{
+		// Has a unique type
 		edge.From("type", TypeConfig.Type).
 			Ref("subjects").
 			Unique(),
+		// The subject has the following relations
 		edge.From("relations", Relation.Type).
 			Ref("subjects"),
 	}

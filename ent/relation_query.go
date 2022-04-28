@@ -29,10 +29,11 @@ type RelationQuery struct {
 	fields     []string
 	predicates []predicate.Relation
 	// eager-loading edges.
-	withSubjects    *SubjectQuery
-	withPermissions *PermissionQuery
-	withTypeconfig  *TypeConfigQuery
-	withFKs         bool
+	withSubjects       *SubjectQuery
+	withRelTypeconfigs *TypeConfigQuery
+	withPermissions    *PermissionQuery
+	withTypeconfig     *TypeConfigQuery
+	withFKs            bool
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -84,6 +85,28 @@ func (rq *RelationQuery) QuerySubjects() *SubjectQuery {
 			sqlgraph.From(relation.Table, relation.FieldID, selector),
 			sqlgraph.To(subject.Table, subject.FieldID),
 			sqlgraph.Edge(sqlgraph.M2M, false, relation.SubjectsTable, relation.SubjectsPrimaryKey...),
+		)
+		fromU = sqlgraph.SetNeighbors(rq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryRelTypeconfigs chains the current query on the "rel_typeconfigs" edge.
+func (rq *RelationQuery) QueryRelTypeconfigs() *TypeConfigQuery {
+	query := &TypeConfigQuery{config: rq.config}
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := rq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := rq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(relation.Table, relation.FieldID, selector),
+			sqlgraph.To(typeconfig.Table, typeconfig.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, relation.RelTypeconfigsTable, relation.RelTypeconfigsColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(rq.driver.Dialect(), step)
 		return fromU, nil
@@ -311,14 +334,15 @@ func (rq *RelationQuery) Clone() *RelationQuery {
 		return nil
 	}
 	return &RelationQuery{
-		config:          rq.config,
-		limit:           rq.limit,
-		offset:          rq.offset,
-		order:           append([]OrderFunc{}, rq.order...),
-		predicates:      append([]predicate.Relation{}, rq.predicates...),
-		withSubjects:    rq.withSubjects.Clone(),
-		withPermissions: rq.withPermissions.Clone(),
-		withTypeconfig:  rq.withTypeconfig.Clone(),
+		config:             rq.config,
+		limit:              rq.limit,
+		offset:             rq.offset,
+		order:              append([]OrderFunc{}, rq.order...),
+		predicates:         append([]predicate.Relation{}, rq.predicates...),
+		withSubjects:       rq.withSubjects.Clone(),
+		withRelTypeconfigs: rq.withRelTypeconfigs.Clone(),
+		withPermissions:    rq.withPermissions.Clone(),
+		withTypeconfig:     rq.withTypeconfig.Clone(),
 		// clone intermediate query.
 		sql:    rq.sql.Clone(),
 		path:   rq.path,
@@ -334,6 +358,17 @@ func (rq *RelationQuery) WithSubjects(opts ...func(*SubjectQuery)) *RelationQuer
 		opt(query)
 	}
 	rq.withSubjects = query
+	return rq
+}
+
+// WithRelTypeconfigs tells the query-builder to eager-load the nodes that are connected to
+// the "rel_typeconfigs" edge. The optional arguments are used to configure the query builder of the edge.
+func (rq *RelationQuery) WithRelTypeconfigs(opts ...func(*TypeConfigQuery)) *RelationQuery {
+	query := &TypeConfigQuery{config: rq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	rq.withRelTypeconfigs = query
 	return rq
 }
 
@@ -425,8 +460,9 @@ func (rq *RelationQuery) sqlAll(ctx context.Context) ([]*Relation, error) {
 		nodes       = []*Relation{}
 		withFKs     = rq.withFKs
 		_spec       = rq.querySpec()
-		loadedTypes = [3]bool{
+		loadedTypes = [4]bool{
 			rq.withSubjects != nil,
+			rq.withRelTypeconfigs != nil,
 			rq.withPermissions != nil,
 			rq.withTypeconfig != nil,
 		}
@@ -519,6 +555,35 @@ func (rq *RelationQuery) sqlAll(ctx context.Context) ([]*Relation, error) {
 			for i := range nodes {
 				nodes[i].Edges.Subjects = append(nodes[i].Edges.Subjects, n)
 			}
+		}
+	}
+
+	if query := rq.withRelTypeconfigs; query != nil {
+		fks := make([]driver.Value, 0, len(nodes))
+		nodeids := make(map[int]*Relation)
+		for i := range nodes {
+			fks = append(fks, nodes[i].ID)
+			nodeids[nodes[i].ID] = nodes[i]
+			nodes[i].Edges.RelTypeconfigs = []*TypeConfig{}
+		}
+		query.withFKs = true
+		query.Where(predicate.TypeConfig(func(s *sql.Selector) {
+			s.Where(sql.InValues(relation.RelTypeconfigsColumn, fks...))
+		}))
+		neighbors, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, n := range neighbors {
+			fk := n.relation_rel_typeconfigs
+			if fk == nil {
+				return nil, fmt.Errorf(`foreign-key "relation_rel_typeconfigs" is nil for node %v`, n.ID)
+			}
+			node, ok := nodeids[*fk]
+			if !ok {
+				return nil, fmt.Errorf(`unexpected foreign-key "relation_rel_typeconfigs" returned %v for node %v`, *fk, n.ID)
+			}
+			node.Edges.RelTypeconfigs = append(node.Edges.RelTypeconfigs, n)
 		}
 	}
 

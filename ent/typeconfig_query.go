@@ -32,6 +32,7 @@ type TypeConfigQuery struct {
 	withRelations   *RelationQuery
 	withPermissions *PermissionQuery
 	withSubjects    *SubjectQuery
+	withFKs         bool
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -422,6 +423,7 @@ func (tcq *TypeConfigQuery) prepareQuery(ctx context.Context) error {
 func (tcq *TypeConfigQuery) sqlAll(ctx context.Context) ([]*TypeConfig, error) {
 	var (
 		nodes       = []*TypeConfig{}
+		withFKs     = tcq.withFKs
 		_spec       = tcq.querySpec()
 		loadedTypes = [3]bool{
 			tcq.withRelations != nil,
@@ -429,6 +431,9 @@ func (tcq *TypeConfigQuery) sqlAll(ctx context.Context) ([]*TypeConfig, error) {
 			tcq.withSubjects != nil,
 		}
 	)
+	if withFKs {
+		_spec.Node.Columns = append(_spec.Node.Columns, typeconfig.ForeignKeys...)
+	}
 	_spec.ScanValues = func(columns []string) ([]interface{}, error) {
 		node := &TypeConfig{config: tcq.config}
 		nodes = append(nodes, node)

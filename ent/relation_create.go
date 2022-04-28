@@ -49,6 +49,21 @@ func (rc *RelationCreate) AddSubjects(s ...*Subject) *RelationCreate {
 	return rc.AddSubjectIDs(ids...)
 }
 
+// AddRelTypeconfigIDs adds the "rel_typeconfigs" edge to the TypeConfig entity by IDs.
+func (rc *RelationCreate) AddRelTypeconfigIDs(ids ...int) *RelationCreate {
+	rc.mutation.AddRelTypeconfigIDs(ids...)
+	return rc
+}
+
+// AddRelTypeconfigs adds the "rel_typeconfigs" edges to the TypeConfig entity.
+func (rc *RelationCreate) AddRelTypeconfigs(t ...*TypeConfig) *RelationCreate {
+	ids := make([]int, len(t))
+	for i := range t {
+		ids[i] = t[i].ID
+	}
+	return rc.AddRelTypeconfigIDs(ids...)
+}
+
 // AddPermissionIDs adds the "permissions" edge to the Permission entity by IDs.
 func (rc *RelationCreate) AddPermissionIDs(ids ...int) *RelationCreate {
 	rc.mutation.AddPermissionIDs(ids...)
@@ -213,6 +228,25 @@ func (rc *RelationCreate) createSpec() (*Relation, *sqlgraph.CreateSpec) {
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
 					Column: subject.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := rc.mutation.RelTypeconfigsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   relation.RelTypeconfigsTable,
+			Columns: []string{relation.RelTypeconfigsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: typeconfig.FieldID,
 				},
 			},
 		}

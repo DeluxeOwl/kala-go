@@ -19,7 +19,8 @@ type TypeConfig struct {
 	Name string `json:"name,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the TypeConfigQuery when eager-loading is set.
-	Edges TypeConfigEdges `json:"edges"`
+	Edges                    TypeConfigEdges `json:"edges"`
+	relation_rel_typeconfigs *int
 }
 
 // TypeConfigEdges holds the relations/edges for other nodes in the graph.
@@ -71,6 +72,8 @@ func (*TypeConfig) scanValues(columns []string) ([]interface{}, error) {
 			values[i] = new(sql.NullInt64)
 		case typeconfig.FieldName:
 			values[i] = new(sql.NullString)
+		case typeconfig.ForeignKeys[0]: // relation_rel_typeconfigs
+			values[i] = new(sql.NullInt64)
 		default:
 			return nil, fmt.Errorf("unexpected column %q for type TypeConfig", columns[i])
 		}
@@ -97,6 +100,13 @@ func (tc *TypeConfig) assignValues(columns []string, values []interface{}) error
 				return fmt.Errorf("unexpected type %T for field name", values[i])
 			} else if value.Valid {
 				tc.Name = value.String
+			}
+		case typeconfig.ForeignKeys[0]:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for edge-field relation_rel_typeconfigs", value)
+			} else if value.Valid {
+				tc.relation_rel_typeconfigs = new(int)
+				*tc.relation_rel_typeconfigs = int(value.Int64)
 			}
 		}
 	}

@@ -355,6 +355,34 @@ func HasSubjectsWith(preds ...predicate.Subject) predicate.Relation {
 	})
 }
 
+// HasRelTypeconfigs applies the HasEdge predicate on the "rel_typeconfigs" edge.
+func HasRelTypeconfigs() predicate.Relation {
+	return predicate.Relation(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(RelTypeconfigsTable, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, RelTypeconfigsTable, RelTypeconfigsColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasRelTypeconfigsWith applies the HasEdge predicate on the "rel_typeconfigs" edge with a given conditions (other predicates).
+func HasRelTypeconfigsWith(preds ...predicate.TypeConfig) predicate.Relation {
+	return predicate.Relation(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(RelTypeconfigsInverseTable, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, RelTypeconfigsTable, RelTypeconfigsColumn),
+		)
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // HasPermissions applies the HasEdge predicate on the "permissions" edge.
 func HasPermissions() predicate.Relation {
 	return predicate.Relation(func(s *sql.Selector) {

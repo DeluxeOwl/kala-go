@@ -74,12 +74,21 @@ var (
 	TypeConfigsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
 		{Name: "name", Type: field.TypeString, Unique: true},
+		{Name: "relation_rel_typeconfigs", Type: field.TypeInt, Nullable: true},
 	}
 	// TypeConfigsTable holds the schema information for the "type_configs" table.
 	TypeConfigsTable = &schema.Table{
 		Name:       "type_configs",
 		Columns:    TypeConfigsColumns,
 		PrimaryKey: []*schema.Column{TypeConfigsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "type_configs_relations_rel_typeconfigs",
+				Columns:    []*schema.Column{TypeConfigsColumns[2]},
+				RefColumns: []*schema.Column{RelationsColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+		},
 	}
 	// PermissionRelationsColumns holds the columns for the "permission_relations" table.
 	PermissionRelationsColumns = []*schema.Column{
@@ -146,6 +155,7 @@ func init() {
 	PermissionsTable.ForeignKeys[0].RefTable = TypeConfigsTable
 	RelationsTable.ForeignKeys[0].RefTable = TypeConfigsTable
 	SubjectsTable.ForeignKeys[0].RefTable = TypeConfigsTable
+	TypeConfigsTable.ForeignKeys[0].RefTable = RelationsTable
 	PermissionRelationsTable.ForeignKeys[0].RefTable = PermissionsTable
 	PermissionRelationsTable.ForeignKeys[1].RefTable = RelationsTable
 	RelationSubjectsTable.ForeignKeys[0].RefTable = RelationsTable

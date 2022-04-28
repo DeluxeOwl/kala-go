@@ -15,6 +15,7 @@ type TypeConfig struct {
 // TODO: validation
 func (TypeConfig) Fields() []ent.Field {
 	return []ent.Field{
+		// The name of the type
 		field.String("name").Unique(),
 	}
 }
@@ -22,8 +23,11 @@ func (TypeConfig) Fields() []ent.Field {
 // Edges of the TypeConfig.
 func (TypeConfig) Edges() []ent.Edge {
 	return []ent.Edge{
+		// Points to these relations in the config
 		edge.To("relations", Relation.Type),
+		// and these permissions
 		edge.To("permissions", Permission.Type),
+		// Points to a list of subjects with this type
 		edge.To("subjects", Subject.Type),
 	}
 }

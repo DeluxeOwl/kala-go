@@ -13,6 +13,8 @@ const (
 	FieldValue = "value"
 	// EdgeSubjects holds the string denoting the subjects edge name in mutations.
 	EdgeSubjects = "subjects"
+	// EdgeRelTypeconfigs holds the string denoting the rel_typeconfigs edge name in mutations.
+	EdgeRelTypeconfigs = "rel_typeconfigs"
 	// EdgePermissions holds the string denoting the permissions edge name in mutations.
 	EdgePermissions = "permissions"
 	// EdgeTypeconfig holds the string denoting the typeconfig edge name in mutations.
@@ -24,6 +26,13 @@ const (
 	// SubjectsInverseTable is the table name for the Subject entity.
 	// It exists in this package in order to avoid circular dependency with the "subject" package.
 	SubjectsInverseTable = "subjects"
+	// RelTypeconfigsTable is the table that holds the rel_typeconfigs relation/edge.
+	RelTypeconfigsTable = "type_configs"
+	// RelTypeconfigsInverseTable is the table name for the TypeConfig entity.
+	// It exists in this package in order to avoid circular dependency with the "typeconfig" package.
+	RelTypeconfigsInverseTable = "type_configs"
+	// RelTypeconfigsColumn is the table column denoting the rel_typeconfigs relation/edge.
+	RelTypeconfigsColumn = "relation_rel_typeconfigs"
 	// PermissionsTable is the table that holds the permissions relation/edge. The primary key declared below.
 	PermissionsTable = "permission_relations"
 	// PermissionsInverseTable is the table name for the Permission entity.

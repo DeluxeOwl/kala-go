@@ -57,6 +57,21 @@ func (ru *RelationUpdate) AddSubjects(s ...*Subject) *RelationUpdate {
 	return ru.AddSubjectIDs(ids...)
 }
 
+// AddRelTypeconfigIDs adds the "rel_typeconfigs" edge to the TypeConfig entity by IDs.
+func (ru *RelationUpdate) AddRelTypeconfigIDs(ids ...int) *RelationUpdate {
+	ru.mutation.AddRelTypeconfigIDs(ids...)
+	return ru
+}
+
+// AddRelTypeconfigs adds the "rel_typeconfigs" edges to the TypeConfig entity.
+func (ru *RelationUpdate) AddRelTypeconfigs(t ...*TypeConfig) *RelationUpdate {
+	ids := make([]int, len(t))
+	for i := range t {
+		ids[i] = t[i].ID
+	}
+	return ru.AddRelTypeconfigIDs(ids...)
+}
+
 // AddPermissionIDs adds the "permissions" edge to the Permission entity by IDs.
 func (ru *RelationUpdate) AddPermissionIDs(ids ...int) *RelationUpdate {
 	ru.mutation.AddPermissionIDs(ids...)
@@ -115,6 +130,27 @@ func (ru *RelationUpdate) RemoveSubjects(s ...*Subject) *RelationUpdate {
 		ids[i] = s[i].ID
 	}
 	return ru.RemoveSubjectIDs(ids...)
+}
+
+// ClearRelTypeconfigs clears all "rel_typeconfigs" edges to the TypeConfig entity.
+func (ru *RelationUpdate) ClearRelTypeconfigs() *RelationUpdate {
+	ru.mutation.ClearRelTypeconfigs()
+	return ru
+}
+
+// RemoveRelTypeconfigIDs removes the "rel_typeconfigs" edge to TypeConfig entities by IDs.
+func (ru *RelationUpdate) RemoveRelTypeconfigIDs(ids ...int) *RelationUpdate {
+	ru.mutation.RemoveRelTypeconfigIDs(ids...)
+	return ru
+}
+
+// RemoveRelTypeconfigs removes "rel_typeconfigs" edges to TypeConfig entities.
+func (ru *RelationUpdate) RemoveRelTypeconfigs(t ...*TypeConfig) *RelationUpdate {
+	ids := make([]int, len(t))
+	for i := range t {
+		ids[i] = t[i].ID
+	}
+	return ru.RemoveRelTypeconfigIDs(ids...)
 }
 
 // ClearPermissions clears all "permissions" edges to the Permission entity.
@@ -284,6 +320,60 @@ func (ru *RelationUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if ru.mutation.RelTypeconfigsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   relation.RelTypeconfigsTable,
+			Columns: []string{relation.RelTypeconfigsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: typeconfig.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := ru.mutation.RemovedRelTypeconfigsIDs(); len(nodes) > 0 && !ru.mutation.RelTypeconfigsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   relation.RelTypeconfigsTable,
+			Columns: []string{relation.RelTypeconfigsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: typeconfig.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := ru.mutation.RelTypeconfigsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   relation.RelTypeconfigsTable,
+			Columns: []string{relation.RelTypeconfigsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: typeconfig.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if ru.mutation.PermissionsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
@@ -419,6 +509,21 @@ func (ruo *RelationUpdateOne) AddSubjects(s ...*Subject) *RelationUpdateOne {
 	return ruo.AddSubjectIDs(ids...)
 }
 
+// AddRelTypeconfigIDs adds the "rel_typeconfigs" edge to the TypeConfig entity by IDs.
+func (ruo *RelationUpdateOne) AddRelTypeconfigIDs(ids ...int) *RelationUpdateOne {
+	ruo.mutation.AddRelTypeconfigIDs(ids...)
+	return ruo
+}
+
+// AddRelTypeconfigs adds the "rel_typeconfigs" edges to the TypeConfig entity.
+func (ruo *RelationUpdateOne) AddRelTypeconfigs(t ...*TypeConfig) *RelationUpdateOne {
+	ids := make([]int, len(t))
+	for i := range t {
+		ids[i] = t[i].ID
+	}
+	return ruo.AddRelTypeconfigIDs(ids...)
+}
+
 // AddPermissionIDs adds the "permissions" edge to the Permission entity by IDs.
 func (ruo *RelationUpdateOne) AddPermissionIDs(ids ...int) *RelationUpdateOne {
 	ruo.mutation.AddPermissionIDs(ids...)
@@ -477,6 +582,27 @@ func (ruo *RelationUpdateOne) RemoveSubjects(s ...*Subject) *RelationUpdateOne {
 		ids[i] = s[i].ID
 	}
 	return ruo.RemoveSubjectIDs(ids...)
+}
+
+// ClearRelTypeconfigs clears all "rel_typeconfigs" edges to the TypeConfig entity.
+func (ruo *RelationUpdateOne) ClearRelTypeconfigs() *RelationUpdateOne {
+	ruo.mutation.ClearRelTypeconfigs()
+	return ruo
+}
+
+// RemoveRelTypeconfigIDs removes the "rel_typeconfigs" edge to TypeConfig entities by IDs.
+func (ruo *RelationUpdateOne) RemoveRelTypeconfigIDs(ids ...int) *RelationUpdateOne {
+	ruo.mutation.RemoveRelTypeconfigIDs(ids...)
+	return ruo
+}
+
+// RemoveRelTypeconfigs removes "rel_typeconfigs" edges to TypeConfig entities.
+func (ruo *RelationUpdateOne) RemoveRelTypeconfigs(t ...*TypeConfig) *RelationUpdateOne {
+	ids := make([]int, len(t))
+	for i := range t {
+		ids[i] = t[i].ID
+	}
+	return ruo.RemoveRelTypeconfigIDs(ids...)
 }
 
 // ClearPermissions clears all "permissions" edges to the Permission entity.
@@ -662,6 +788,60 @@ func (ruo *RelationUpdateOne) sqlSave(ctx context.Context) (_node *Relation, err
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
 					Column: subject.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if ruo.mutation.RelTypeconfigsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   relation.RelTypeconfigsTable,
+			Columns: []string{relation.RelTypeconfigsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: typeconfig.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := ruo.mutation.RemovedRelTypeconfigsIDs(); len(nodes) > 0 && !ruo.mutation.RelTypeconfigsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   relation.RelTypeconfigsTable,
+			Columns: []string{relation.RelTypeconfigsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: typeconfig.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := ruo.mutation.RelTypeconfigsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   relation.RelTypeconfigsTable,
+			Columns: []string{relation.RelTypeconfigsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: typeconfig.FieldID,
 				},
 			},
 		}

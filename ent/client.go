@@ -367,6 +367,22 @@ func (c *RelationClient) QuerySubjects(r *Relation) *SubjectQuery {
 	return query
 }
 
+// QueryRelTypeconfigs queries the rel_typeconfigs edge of a Relation.
+func (c *RelationClient) QueryRelTypeconfigs(r *Relation) *TypeConfigQuery {
+	query := &TypeConfigQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := r.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(relation.Table, relation.FieldID, id),
+			sqlgraph.To(typeconfig.Table, typeconfig.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, relation.RelTypeconfigsTable, relation.RelTypeconfigsColumn),
+		)
+		fromV = sqlgraph.Neighbors(r.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // QueryPermissions queries the permissions edge of a Relation.
 func (c *RelationClient) QueryPermissions(r *Relation) *PermissionQuery {
 	query := &PermissionQuery{config: c.config}

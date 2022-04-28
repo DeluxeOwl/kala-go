@@ -552,23 +552,26 @@ func (m *PermissionMutation) ResetEdge(name string) error {
 // RelationMutation represents an operation that mutates the Relation nodes in the graph.
 type RelationMutation struct {
 	config
-	op                 Op
-	typ                string
-	id                 *int
-	name               *string
-	value              *string
-	clearedFields      map[string]struct{}
-	subjects           map[int]struct{}
-	removedsubjects    map[int]struct{}
-	clearedsubjects    bool
-	permissions        map[int]struct{}
-	removedpermissions map[int]struct{}
-	clearedpermissions bool
-	typeconfig         *int
-	clearedtypeconfig  bool
-	done               bool
-	oldValue           func(context.Context) (*Relation, error)
-	predicates         []predicate.Relation
+	op                     Op
+	typ                    string
+	id                     *int
+	name                   *string
+	value                  *string
+	clearedFields          map[string]struct{}
+	subjects               map[int]struct{}
+	removedsubjects        map[int]struct{}
+	clearedsubjects        bool
+	rel_typeconfigs        map[int]struct{}
+	removedrel_typeconfigs map[int]struct{}
+	clearedrel_typeconfigs bool
+	permissions            map[int]struct{}
+	removedpermissions     map[int]struct{}
+	clearedpermissions     bool
+	typeconfig             *int
+	clearedtypeconfig      bool
+	done                   bool
+	oldValue               func(context.Context) (*Relation, error)
+	predicates             []predicate.Relation
 }
 
 var _ ent.Mutation = (*RelationMutation)(nil)
@@ -793,6 +796,60 @@ func (m *RelationMutation) ResetSubjects() {
 	m.subjects = nil
 	m.clearedsubjects = false
 	m.removedsubjects = nil
+}
+
+// AddRelTypeconfigIDs adds the "rel_typeconfigs" edge to the TypeConfig entity by ids.
+func (m *RelationMutation) AddRelTypeconfigIDs(ids ...int) {
+	if m.rel_typeconfigs == nil {
+		m.rel_typeconfigs = make(map[int]struct{})
+	}
+	for i := range ids {
+		m.rel_typeconfigs[ids[i]] = struct{}{}
+	}
+}
+
+// ClearRelTypeconfigs clears the "rel_typeconfigs" edge to the TypeConfig entity.
+func (m *RelationMutation) ClearRelTypeconfigs() {
+	m.clearedrel_typeconfigs = true
+}
+
+// RelTypeconfigsCleared reports if the "rel_typeconfigs" edge to the TypeConfig entity was cleared.
+func (m *RelationMutation) RelTypeconfigsCleared() bool {
+	return m.clearedrel_typeconfigs
+}
+
+// RemoveRelTypeconfigIDs removes the "rel_typeconfigs" edge to the TypeConfig entity by IDs.
+func (m *RelationMutation) RemoveRelTypeconfigIDs(ids ...int) {
+	if m.removedrel_typeconfigs == nil {
+		m.removedrel_typeconfigs = make(map[int]struct{})
+	}
+	for i := range ids {
+		delete(m.rel_typeconfigs, ids[i])
+		m.removedrel_typeconfigs[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedRelTypeconfigs returns the removed IDs of the "rel_typeconfigs" edge to the TypeConfig entity.
+func (m *RelationMutation) RemovedRelTypeconfigsIDs() (ids []int) {
+	for id := range m.removedrel_typeconfigs {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// RelTypeconfigsIDs returns the "rel_typeconfigs" edge IDs in the mutation.
+func (m *RelationMutation) RelTypeconfigsIDs() (ids []int) {
+	for id := range m.rel_typeconfigs {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetRelTypeconfigs resets all changes to the "rel_typeconfigs" edge.
+func (m *RelationMutation) ResetRelTypeconfigs() {
+	m.rel_typeconfigs = nil
+	m.clearedrel_typeconfigs = false
+	m.removedrel_typeconfigs = nil
 }
 
 // AddPermissionIDs adds the "permissions" edge to the Permission entity by ids.
@@ -1023,9 +1080,12 @@ func (m *RelationMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *RelationMutation) AddedEdges() []string {
-	edges := make([]string, 0, 3)
+	edges := make([]string, 0, 4)
 	if m.subjects != nil {
 		edges = append(edges, relation.EdgeSubjects)
+	}
+	if m.rel_typeconfigs != nil {
+		edges = append(edges, relation.EdgeRelTypeconfigs)
 	}
 	if m.permissions != nil {
 		edges = append(edges, relation.EdgePermissions)
@@ -1046,6 +1106,12 @@ func (m *RelationMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case relation.EdgeRelTypeconfigs:
+		ids := make([]ent.Value, 0, len(m.rel_typeconfigs))
+		for id := range m.rel_typeconfigs {
+			ids = append(ids, id)
+		}
+		return ids
 	case relation.EdgePermissions:
 		ids := make([]ent.Value, 0, len(m.permissions))
 		for id := range m.permissions {
@@ -1062,9 +1128,12 @@ func (m *RelationMutation) AddedIDs(name string) []ent.Value {
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *RelationMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 3)
+	edges := make([]string, 0, 4)
 	if m.removedsubjects != nil {
 		edges = append(edges, relation.EdgeSubjects)
+	}
+	if m.removedrel_typeconfigs != nil {
+		edges = append(edges, relation.EdgeRelTypeconfigs)
 	}
 	if m.removedpermissions != nil {
 		edges = append(edges, relation.EdgePermissions)
@@ -1082,6 +1151,12 @@ func (m *RelationMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case relation.EdgeRelTypeconfigs:
+		ids := make([]ent.Value, 0, len(m.removedrel_typeconfigs))
+		for id := range m.removedrel_typeconfigs {
+			ids = append(ids, id)
+		}
+		return ids
 	case relation.EdgePermissions:
 		ids := make([]ent.Value, 0, len(m.removedpermissions))
 		for id := range m.removedpermissions {
@@ -1094,9 +1169,12 @@ func (m *RelationMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *RelationMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 3)
+	edges := make([]string, 0, 4)
 	if m.clearedsubjects {
 		edges = append(edges, relation.EdgeSubjects)
+	}
+	if m.clearedrel_typeconfigs {
+		edges = append(edges, relation.EdgeRelTypeconfigs)
 	}
 	if m.clearedpermissions {
 		edges = append(edges, relation.EdgePermissions)
@@ -1113,6 +1191,8 @@ func (m *RelationMutation) EdgeCleared(name string) bool {
 	switch name {
 	case relation.EdgeSubjects:
 		return m.clearedsubjects
+	case relation.EdgeRelTypeconfigs:
+		return m.clearedrel_typeconfigs
 	case relation.EdgePermissions:
 		return m.clearedpermissions
 	case relation.EdgeTypeconfig:
@@ -1138,6 +1218,9 @@ func (m *RelationMutation) ResetEdge(name string) error {
 	switch name {
 	case relation.EdgeSubjects:
 		m.ResetSubjects()
+		return nil
+	case relation.EdgeRelTypeconfigs:
+		m.ResetRelTypeconfigs()
 		return nil
 	case relation.EdgePermissions:
 		m.ResetPermissions()
