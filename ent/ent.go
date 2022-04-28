@@ -10,6 +10,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"github.com/DeluxeOwl/kala-go/ent/permission"
 	"github.com/DeluxeOwl/kala-go/ent/relation"
+	"github.com/DeluxeOwl/kala-go/ent/subject"
 	"github.com/DeluxeOwl/kala-go/ent/typeconfig"
 )
 
@@ -33,6 +34,7 @@ func columnChecker(table string) func(string) error {
 	checks := map[string]func(string) bool{
 		permission.Table: permission.ValidColumn,
 		relation.Table:   relation.ValidColumn,
+		subject.Table:    subject.ValidColumn,
 		typeconfig.Table: typeconfig.ValidColumn,
 	}
 	check, ok := checks[table]

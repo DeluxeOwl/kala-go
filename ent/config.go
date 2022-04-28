@@ -26,6 +26,7 @@ type config struct {
 type hooks struct {
 	Permission []ent.Hook
 	Relation   []ent.Hook
+	Subject    []ent.Hook
 	TypeConfig []ent.Hook
 }
 

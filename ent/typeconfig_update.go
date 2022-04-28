@@ -13,6 +13,7 @@ import (
 	"github.com/DeluxeOwl/kala-go/ent/permission"
 	"github.com/DeluxeOwl/kala-go/ent/predicate"
 	"github.com/DeluxeOwl/kala-go/ent/relation"
+	"github.com/DeluxeOwl/kala-go/ent/subject"
 	"github.com/DeluxeOwl/kala-go/ent/typeconfig"
 )
 
@@ -65,6 +66,21 @@ func (tcu *TypeConfigUpdate) AddPermissions(p ...*Permission) *TypeConfigUpdate 
 	return tcu.AddPermissionIDs(ids...)
 }
 
+// AddSubjectIDs adds the "subjects" edge to the Subject entity by IDs.
+func (tcu *TypeConfigUpdate) AddSubjectIDs(ids ...int) *TypeConfigUpdate {
+	tcu.mutation.AddSubjectIDs(ids...)
+	return tcu
+}
+
+// AddSubjects adds the "subjects" edges to the Subject entity.
+func (tcu *TypeConfigUpdate) AddSubjects(s ...*Subject) *TypeConfigUpdate {
+	ids := make([]int, len(s))
+	for i := range s {
+		ids[i] = s[i].ID
+	}
+	return tcu.AddSubjectIDs(ids...)
+}
+
 // Mutation returns the TypeConfigMutation object of the builder.
 func (tcu *TypeConfigUpdate) Mutation() *TypeConfigMutation {
 	return tcu.mutation
@@ -110,6 +126,27 @@ func (tcu *TypeConfigUpdate) RemovePermissions(p ...*Permission) *TypeConfigUpda
 		ids[i] = p[i].ID
 	}
 	return tcu.RemovePermissionIDs(ids...)
+}
+
+// ClearSubjects clears all "subjects" edges to the Subject entity.
+func (tcu *TypeConfigUpdate) ClearSubjects() *TypeConfigUpdate {
+	tcu.mutation.ClearSubjects()
+	return tcu
+}
+
+// RemoveSubjectIDs removes the "subjects" edge to Subject entities by IDs.
+func (tcu *TypeConfigUpdate) RemoveSubjectIDs(ids ...int) *TypeConfigUpdate {
+	tcu.mutation.RemoveSubjectIDs(ids...)
+	return tcu
+}
+
+// RemoveSubjects removes "subjects" edges to Subject entities.
+func (tcu *TypeConfigUpdate) RemoveSubjects(s ...*Subject) *TypeConfigUpdate {
+	ids := make([]int, len(s))
+	for i := range s {
+		ids[i] = s[i].ID
+	}
+	return tcu.RemoveSubjectIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -299,6 +336,60 @@ func (tcu *TypeConfigUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if tcu.mutation.SubjectsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   typeconfig.SubjectsTable,
+			Columns: []string{typeconfig.SubjectsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: subject.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := tcu.mutation.RemovedSubjectsIDs(); len(nodes) > 0 && !tcu.mutation.SubjectsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   typeconfig.SubjectsTable,
+			Columns: []string{typeconfig.SubjectsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: subject.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := tcu.mutation.SubjectsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   typeconfig.SubjectsTable,
+			Columns: []string{typeconfig.SubjectsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: subject.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if n, err = sqlgraph.UpdateNodes(ctx, tcu.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{typeconfig.Label}
@@ -354,6 +445,21 @@ func (tcuo *TypeConfigUpdateOne) AddPermissions(p ...*Permission) *TypeConfigUpd
 	return tcuo.AddPermissionIDs(ids...)
 }
 
+// AddSubjectIDs adds the "subjects" edge to the Subject entity by IDs.
+func (tcuo *TypeConfigUpdateOne) AddSubjectIDs(ids ...int) *TypeConfigUpdateOne {
+	tcuo.mutation.AddSubjectIDs(ids...)
+	return tcuo
+}
+
+// AddSubjects adds the "subjects" edges to the Subject entity.
+func (tcuo *TypeConfigUpdateOne) AddSubjects(s ...*Subject) *TypeConfigUpdateOne {
+	ids := make([]int, len(s))
+	for i := range s {
+		ids[i] = s[i].ID
+	}
+	return tcuo.AddSubjectIDs(ids...)
+}
+
 // Mutation returns the TypeConfigMutation object of the builder.
 func (tcuo *TypeConfigUpdateOne) Mutation() *TypeConfigMutation {
 	return tcuo.mutation
@@ -399,6 +505,27 @@ func (tcuo *TypeConfigUpdateOne) RemovePermissions(p ...*Permission) *TypeConfig
 		ids[i] = p[i].ID
 	}
 	return tcuo.RemovePermissionIDs(ids...)
+}
+
+// ClearSubjects clears all "subjects" edges to the Subject entity.
+func (tcuo *TypeConfigUpdateOne) ClearSubjects() *TypeConfigUpdateOne {
+	tcuo.mutation.ClearSubjects()
+	return tcuo
+}
+
+// RemoveSubjectIDs removes the "subjects" edge to Subject entities by IDs.
+func (tcuo *TypeConfigUpdateOne) RemoveSubjectIDs(ids ...int) *TypeConfigUpdateOne {
+	tcuo.mutation.RemoveSubjectIDs(ids...)
+	return tcuo
+}
+
+// RemoveSubjects removes "subjects" edges to Subject entities.
+func (tcuo *TypeConfigUpdateOne) RemoveSubjects(s ...*Subject) *TypeConfigUpdateOne {
+	ids := make([]int, len(s))
+	for i := range s {
+		ids[i] = s[i].ID
+	}
+	return tcuo.RemoveSubjectIDs(ids...)
 }
 
 // Select allows selecting one or more fields (columns) of the returned entity.
@@ -604,6 +731,60 @@ func (tcuo *TypeConfigUpdateOne) sqlSave(ctx context.Context) (_node *TypeConfig
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
 					Column: permission.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if tcuo.mutation.SubjectsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   typeconfig.SubjectsTable,
+			Columns: []string{typeconfig.SubjectsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: subject.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := tcuo.mutation.RemovedSubjectsIDs(); len(nodes) > 0 && !tcuo.mutation.SubjectsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   typeconfig.SubjectsTable,
+			Columns: []string{typeconfig.SubjectsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: subject.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := tcuo.mutation.SubjectsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   typeconfig.SubjectsTable,
+			Columns: []string{typeconfig.SubjectsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: subject.FieldID,
 				},
 			},
 		}

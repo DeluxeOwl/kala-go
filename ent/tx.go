@@ -16,6 +16,8 @@ type Tx struct {
 	Permission *PermissionClient
 	// Relation is the client for interacting with the Relation builders.
 	Relation *RelationClient
+	// Subject is the client for interacting with the Subject builders.
+	Subject *SubjectClient
 	// TypeConfig is the client for interacting with the TypeConfig builders.
 	TypeConfig *TypeConfigClient
 
@@ -155,6 +157,7 @@ func (tx *Tx) Client() *Client {
 func (tx *Tx) init() {
 	tx.Permission = NewPermissionClient(tx.config)
 	tx.Relation = NewRelationClient(tx.config)
+	tx.Subject = NewSubjectClient(tx.config)
 	tx.TypeConfig = NewTypeConfigClient(tx.config)
 }
 

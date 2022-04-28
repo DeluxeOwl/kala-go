@@ -28,9 +28,11 @@ type TypeConfigEdges struct {
 	Relations []*Relation `json:"relations,omitempty"`
 	// Permissions holds the value of the permissions edge.
 	Permissions []*Permission `json:"permissions,omitempty"`
+	// Subjects holds the value of the subjects edge.
+	Subjects []*Subject `json:"subjects,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [2]bool
+	loadedTypes [3]bool
 }
 
 // RelationsOrErr returns the Relations value or an error if the edge
@@ -49,6 +51,15 @@ func (e TypeConfigEdges) PermissionsOrErr() ([]*Permission, error) {
 		return e.Permissions, nil
 	}
 	return nil, &NotLoadedError{edge: "permissions"}
+}
+
+// SubjectsOrErr returns the Subjects value or an error if the edge
+// was not loaded in eager-loading.
+func (e TypeConfigEdges) SubjectsOrErr() ([]*Subject, error) {
+	if e.loadedTypes[2] {
+		return e.Subjects, nil
+	}
+	return nil, &NotLoadedError{edge: "subjects"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -100,6 +111,11 @@ func (tc *TypeConfig) QueryRelations() *RelationQuery {
 // QueryPermissions queries the "permissions" edge of the TypeConfig entity.
 func (tc *TypeConfig) QueryPermissions() *PermissionQuery {
 	return (&TypeConfigClient{config: tc.config}).QueryPermissions(tc)
+}
+
+// QuerySubjects queries the "subjects" edge of the TypeConfig entity.
+func (tc *TypeConfig) QuerySubjects() *SubjectQuery {
+	return (&TypeConfigClient{config: tc.config}).QuerySubjects(tc)
 }
 
 // Update returns a builder for updating this TypeConfig.

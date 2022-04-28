@@ -50,6 +50,26 @@ var (
 			},
 		},
 	}
+	// SubjectsColumns holds the columns for the "subjects" table.
+	SubjectsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "name", Type: field.TypeString, Unique: true},
+		{Name: "type_config_subjects", Type: field.TypeInt, Nullable: true},
+	}
+	// SubjectsTable holds the schema information for the "subjects" table.
+	SubjectsTable = &schema.Table{
+		Name:       "subjects",
+		Columns:    SubjectsColumns,
+		PrimaryKey: []*schema.Column{SubjectsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "subjects_type_configs_subjects",
+				Columns:    []*schema.Column{SubjectsColumns[2]},
+				RefColumns: []*schema.Column{TypeConfigsColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+		},
+	}
 	// TypeConfigsColumns holds the columns for the "type_configs" table.
 	TypeConfigsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
@@ -65,6 +85,7 @@ var (
 	Tables = []*schema.Table{
 		PermissionsTable,
 		RelationsTable,
+		SubjectsTable,
 		TypeConfigsTable,
 	}
 )
@@ -72,4 +93,5 @@ var (
 func init() {
 	PermissionsTable.ForeignKeys[0].RefTable = TypeConfigsTable
 	RelationsTable.ForeignKeys[0].RefTable = TypeConfigsTable
+	SubjectsTable.ForeignKeys[0].RefTable = TypeConfigsTable
 }

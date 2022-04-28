@@ -11,6 +11,7 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/DeluxeOwl/kala-go/ent/permission"
 	"github.com/DeluxeOwl/kala-go/ent/relation"
+	"github.com/DeluxeOwl/kala-go/ent/subject"
 	"github.com/DeluxeOwl/kala-go/ent/typeconfig"
 )
 
@@ -55,6 +56,21 @@ func (tcc *TypeConfigCreate) AddPermissions(p ...*Permission) *TypeConfigCreate 
 		ids[i] = p[i].ID
 	}
 	return tcc.AddPermissionIDs(ids...)
+}
+
+// AddSubjectIDs adds the "subjects" edge to the Subject entity by IDs.
+func (tcc *TypeConfigCreate) AddSubjectIDs(ids ...int) *TypeConfigCreate {
+	tcc.mutation.AddSubjectIDs(ids...)
+	return tcc
+}
+
+// AddSubjects adds the "subjects" edges to the Subject entity.
+func (tcc *TypeConfigCreate) AddSubjects(s ...*Subject) *TypeConfigCreate {
+	ids := make([]int, len(s))
+	for i := range s {
+		ids[i] = s[i].ID
+	}
+	return tcc.AddSubjectIDs(ids...)
 }
 
 // Mutation returns the TypeConfigMutation object of the builder.
@@ -195,6 +211,25 @@ func (tcc *TypeConfigCreate) createSpec() (*TypeConfig, *sqlgraph.CreateSpec) {
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
 					Column: permission.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := tcc.mutation.SubjectsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   typeconfig.SubjectsTable,
+			Columns: []string{typeconfig.SubjectsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: subject.FieldID,
 				},
 			},
 		}

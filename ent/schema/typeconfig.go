@@ -24,5 +24,6 @@ func (TypeConfig) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.To("relations", Relation.Type),
 		edge.To("permissions", Permission.Type),
+		edge.To("subjects", Subject.Type),
 	}
 }

@@ -12,5 +12,8 @@ type Permission func(*sql.Selector)
 // Relation is the predicate function for relation builders.
 type Relation func(*sql.Selector)
 
+// Subject is the predicate function for subject builders.
+type Subject func(*sql.Selector)
+
 // TypeConfig is the predicate function for typeconfig builders.
 type TypeConfig func(*sql.Selector)

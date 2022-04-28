@@ -35,6 +35,19 @@ func (f RelationFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, er
 	return f(ctx, mv)
 }
 
+// The SubjectFunc type is an adapter to allow the use of ordinary
+// function as Subject mutator.
+type SubjectFunc func(context.Context, *ent.SubjectMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f SubjectFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	mv, ok := m.(*ent.SubjectMutation)
+	if !ok {
+		return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.SubjectMutation", m)
+	}
+	return f(ctx, mv)
+}
+
 // The TypeConfigFunc type is an adapter to allow the use of ordinary
 // function as TypeConfig mutator.
 type TypeConfigFunc func(context.Context, *ent.TypeConfigMutation) (ent.Value, error)

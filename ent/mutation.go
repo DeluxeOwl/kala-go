@@ -11,6 +11,7 @@ import (
 	"github.com/DeluxeOwl/kala-go/ent/permission"
 	"github.com/DeluxeOwl/kala-go/ent/predicate"
 	"github.com/DeluxeOwl/kala-go/ent/relation"
+	"github.com/DeluxeOwl/kala-go/ent/subject"
 	"github.com/DeluxeOwl/kala-go/ent/typeconfig"
 
 	"entgo.io/ent"
@@ -27,6 +28,7 @@ const (
 	// Node types.
 	TypePermission = "Permission"
 	TypeRelation   = "Relation"
+	TypeSubject    = "Subject"
 	TypeTypeConfig = "TypeConfig"
 )
 
@@ -898,6 +900,386 @@ func (m *RelationMutation) ResetEdge(name string) error {
 	return fmt.Errorf("unknown Relation edge %s", name)
 }
 
+// SubjectMutation represents an operation that mutates the Subject nodes in the graph.
+type SubjectMutation struct {
+	config
+	op            Op
+	typ           string
+	id            *int
+	name          *string
+	clearedFields map[string]struct{}
+	_type         *int
+	cleared_type  bool
+	done          bool
+	oldValue      func(context.Context) (*Subject, error)
+	predicates    []predicate.Subject
+}
+
+var _ ent.Mutation = (*SubjectMutation)(nil)
+
+// subjectOption allows management of the mutation configuration using functional options.
+type subjectOption func(*SubjectMutation)
+
+// newSubjectMutation creates new mutation for the Subject entity.
+func newSubjectMutation(c config, op Op, opts ...subjectOption) *SubjectMutation {
+	m := &SubjectMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeSubject,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withSubjectID sets the ID field of the mutation.
+func withSubjectID(id int) subjectOption {
+	return func(m *SubjectMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *Subject
+		)
+		m.oldValue = func(ctx context.Context) (*Subject, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().Subject.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withSubject sets the old Subject of the mutation.
+func withSubject(node *Subject) subjectOption {
+	return func(m *SubjectMutation) {
+		m.oldValue = func(context.Context) (*Subject, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m SubjectMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m SubjectMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *SubjectMutation) ID() (id int, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *SubjectMutation) IDs(ctx context.Context) ([]int, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []int{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().Subject.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetName sets the "name" field.
+func (m *SubjectMutation) SetName(s string) {
+	m.name = &s
+}
+
+// Name returns the value of the "name" field in the mutation.
+func (m *SubjectMutation) Name() (r string, exists bool) {
+	v := m.name
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldName returns the old "name" field's value of the Subject entity.
+// If the Subject object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SubjectMutation) OldName(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldName is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldName requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldName: %w", err)
+	}
+	return oldValue.Name, nil
+}
+
+// ResetName resets all changes to the "name" field.
+func (m *SubjectMutation) ResetName() {
+	m.name = nil
+}
+
+// SetTypeID sets the "type" edge to the TypeConfig entity by id.
+func (m *SubjectMutation) SetTypeID(id int) {
+	m._type = &id
+}
+
+// ClearType clears the "type" edge to the TypeConfig entity.
+func (m *SubjectMutation) ClearType() {
+	m.cleared_type = true
+}
+
+// TypeCleared reports if the "type" edge to the TypeConfig entity was cleared.
+func (m *SubjectMutation) TypeCleared() bool {
+	return m.cleared_type
+}
+
+// TypeID returns the "type" edge ID in the mutation.
+func (m *SubjectMutation) TypeID() (id int, exists bool) {
+	if m._type != nil {
+		return *m._type, true
+	}
+	return
+}
+
+// TypeIDs returns the "type" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// TypeID instead. It exists only for internal usage by the builders.
+func (m *SubjectMutation) TypeIDs() (ids []int) {
+	if id := m._type; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetType resets all changes to the "type" edge.
+func (m *SubjectMutation) ResetType() {
+	m._type = nil
+	m.cleared_type = false
+}
+
+// Where appends a list predicates to the SubjectMutation builder.
+func (m *SubjectMutation) Where(ps ...predicate.Subject) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// Op returns the operation name.
+func (m *SubjectMutation) Op() Op {
+	return m.op
+}
+
+// Type returns the node type of this mutation (Subject).
+func (m *SubjectMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *SubjectMutation) Fields() []string {
+	fields := make([]string, 0, 1)
+	if m.name != nil {
+		fields = append(fields, subject.FieldName)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *SubjectMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case subject.FieldName:
+		return m.Name()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *SubjectMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case subject.FieldName:
+		return m.OldName(ctx)
+	}
+	return nil, fmt.Errorf("unknown Subject field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *SubjectMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case subject.FieldName:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetName(v)
+		return nil
+	}
+	return fmt.Errorf("unknown Subject field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *SubjectMutation) AddedFields() []string {
+	return nil
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *SubjectMutation) AddedField(name string) (ent.Value, bool) {
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *SubjectMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown Subject numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *SubjectMutation) ClearedFields() []string {
+	return nil
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *SubjectMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *SubjectMutation) ClearField(name string) error {
+	return fmt.Errorf("unknown Subject nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *SubjectMutation) ResetField(name string) error {
+	switch name {
+	case subject.FieldName:
+		m.ResetName()
+		return nil
+	}
+	return fmt.Errorf("unknown Subject field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *SubjectMutation) AddedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m._type != nil {
+		edges = append(edges, subject.EdgeType)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *SubjectMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case subject.EdgeType:
+		if id := m._type; id != nil {
+			return []ent.Value{*id}
+		}
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *SubjectMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 1)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *SubjectMutation) RemovedIDs(name string) []ent.Value {
+	switch name {
+	}
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *SubjectMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.cleared_type {
+		edges = append(edges, subject.EdgeType)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *SubjectMutation) EdgeCleared(name string) bool {
+	switch name {
+	case subject.EdgeType:
+		return m.cleared_type
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *SubjectMutation) ClearEdge(name string) error {
+	switch name {
+	case subject.EdgeType:
+		m.ClearType()
+		return nil
+	}
+	return fmt.Errorf("unknown Subject unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *SubjectMutation) ResetEdge(name string) error {
+	switch name {
+	case subject.EdgeType:
+		m.ResetType()
+		return nil
+	}
+	return fmt.Errorf("unknown Subject edge %s", name)
+}
+
 // TypeConfigMutation represents an operation that mutates the TypeConfig nodes in the graph.
 type TypeConfigMutation struct {
 	config
@@ -912,6 +1294,9 @@ type TypeConfigMutation struct {
 	permissions        map[int]struct{}
 	removedpermissions map[int]struct{}
 	clearedpermissions bool
+	subjects           map[int]struct{}
+	removedsubjects    map[int]struct{}
+	clearedsubjects    bool
 	done               bool
 	oldValue           func(context.Context) (*TypeConfig, error)
 	predicates         []predicate.TypeConfig
@@ -1159,6 +1544,60 @@ func (m *TypeConfigMutation) ResetPermissions() {
 	m.removedpermissions = nil
 }
 
+// AddSubjectIDs adds the "subjects" edge to the Subject entity by ids.
+func (m *TypeConfigMutation) AddSubjectIDs(ids ...int) {
+	if m.subjects == nil {
+		m.subjects = make(map[int]struct{})
+	}
+	for i := range ids {
+		m.subjects[ids[i]] = struct{}{}
+	}
+}
+
+// ClearSubjects clears the "subjects" edge to the Subject entity.
+func (m *TypeConfigMutation) ClearSubjects() {
+	m.clearedsubjects = true
+}
+
+// SubjectsCleared reports if the "subjects" edge to the Subject entity was cleared.
+func (m *TypeConfigMutation) SubjectsCleared() bool {
+	return m.clearedsubjects
+}
+
+// RemoveSubjectIDs removes the "subjects" edge to the Subject entity by IDs.
+func (m *TypeConfigMutation) RemoveSubjectIDs(ids ...int) {
+	if m.removedsubjects == nil {
+		m.removedsubjects = make(map[int]struct{})
+	}
+	for i := range ids {
+		delete(m.subjects, ids[i])
+		m.removedsubjects[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedSubjects returns the removed IDs of the "subjects" edge to the Subject entity.
+func (m *TypeConfigMutation) RemovedSubjectsIDs() (ids []int) {
+	for id := range m.removedsubjects {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// SubjectsIDs returns the "subjects" edge IDs in the mutation.
+func (m *TypeConfigMutation) SubjectsIDs() (ids []int) {
+	for id := range m.subjects {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetSubjects resets all changes to the "subjects" edge.
+func (m *TypeConfigMutation) ResetSubjects() {
+	m.subjects = nil
+	m.clearedsubjects = false
+	m.removedsubjects = nil
+}
+
 // Where appends a list predicates to the TypeConfigMutation builder.
 func (m *TypeConfigMutation) Where(ps ...predicate.TypeConfig) {
 	m.predicates = append(m.predicates, ps...)
@@ -1277,12 +1716,15 @@ func (m *TypeConfigMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *TypeConfigMutation) AddedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 3)
 	if m.relations != nil {
 		edges = append(edges, typeconfig.EdgeRelations)
 	}
 	if m.permissions != nil {
 		edges = append(edges, typeconfig.EdgePermissions)
+	}
+	if m.subjects != nil {
+		edges = append(edges, typeconfig.EdgeSubjects)
 	}
 	return edges
 }
@@ -1303,18 +1745,27 @@ func (m *TypeConfigMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case typeconfig.EdgeSubjects:
+		ids := make([]ent.Value, 0, len(m.subjects))
+		for id := range m.subjects {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *TypeConfigMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 3)
 	if m.removedrelations != nil {
 		edges = append(edges, typeconfig.EdgeRelations)
 	}
 	if m.removedpermissions != nil {
 		edges = append(edges, typeconfig.EdgePermissions)
+	}
+	if m.removedsubjects != nil {
+		edges = append(edges, typeconfig.EdgeSubjects)
 	}
 	return edges
 }
@@ -1335,18 +1786,27 @@ func (m *TypeConfigMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case typeconfig.EdgeSubjects:
+		ids := make([]ent.Value, 0, len(m.removedsubjects))
+		for id := range m.removedsubjects {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *TypeConfigMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 3)
 	if m.clearedrelations {
 		edges = append(edges, typeconfig.EdgeRelations)
 	}
 	if m.clearedpermissions {
 		edges = append(edges, typeconfig.EdgePermissions)
+	}
+	if m.clearedsubjects {
+		edges = append(edges, typeconfig.EdgeSubjects)
 	}
 	return edges
 }
@@ -1359,6 +1819,8 @@ func (m *TypeConfigMutation) EdgeCleared(name string) bool {
 		return m.clearedrelations
 	case typeconfig.EdgePermissions:
 		return m.clearedpermissions
+	case typeconfig.EdgeSubjects:
+		return m.clearedsubjects
 	}
 	return false
 }
@@ -1380,6 +1842,9 @@ func (m *TypeConfigMutation) ResetEdge(name string) error {
 		return nil
 	case typeconfig.EdgePermissions:
 		m.ResetPermissions()
+		return nil
+	case typeconfig.EdgeSubjects:
+		m.ResetSubjects()
 		return nil
 	}
 	return fmt.Errorf("unknown TypeConfig edge %s", name)

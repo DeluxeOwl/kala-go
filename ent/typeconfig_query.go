@@ -15,6 +15,7 @@ import (
 	"github.com/DeluxeOwl/kala-go/ent/permission"
 	"github.com/DeluxeOwl/kala-go/ent/predicate"
 	"github.com/DeluxeOwl/kala-go/ent/relation"
+	"github.com/DeluxeOwl/kala-go/ent/subject"
 	"github.com/DeluxeOwl/kala-go/ent/typeconfig"
 )
 
@@ -30,6 +31,7 @@ type TypeConfigQuery struct {
 	// eager-loading edges.
 	withRelations   *RelationQuery
 	withPermissions *PermissionQuery
+	withSubjects    *SubjectQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -103,6 +105,28 @@ func (tcq *TypeConfigQuery) QueryPermissions() *PermissionQuery {
 			sqlgraph.From(typeconfig.Table, typeconfig.FieldID, selector),
 			sqlgraph.To(permission.Table, permission.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, typeconfig.PermissionsTable, typeconfig.PermissionsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(tcq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QuerySubjects chains the current query on the "subjects" edge.
+func (tcq *TypeConfigQuery) QuerySubjects() *SubjectQuery {
+	query := &SubjectQuery{config: tcq.config}
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := tcq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := tcq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(typeconfig.Table, typeconfig.FieldID, selector),
+			sqlgraph.To(subject.Table, subject.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, typeconfig.SubjectsTable, typeconfig.SubjectsColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(tcq.driver.Dialect(), step)
 		return fromU, nil
@@ -293,6 +317,7 @@ func (tcq *TypeConfigQuery) Clone() *TypeConfigQuery {
 		predicates:      append([]predicate.TypeConfig{}, tcq.predicates...),
 		withRelations:   tcq.withRelations.Clone(),
 		withPermissions: tcq.withPermissions.Clone(),
+		withSubjects:    tcq.withSubjects.Clone(),
 		// clone intermediate query.
 		sql:    tcq.sql.Clone(),
 		path:   tcq.path,
@@ -319,6 +344,17 @@ func (tcq *TypeConfigQuery) WithPermissions(opts ...func(*PermissionQuery)) *Typ
 		opt(query)
 	}
 	tcq.withPermissions = query
+	return tcq
+}
+
+// WithSubjects tells the query-builder to eager-load the nodes that are connected to
+// the "subjects" edge. The optional arguments are used to configure the query builder of the edge.
+func (tcq *TypeConfigQuery) WithSubjects(opts ...func(*SubjectQuery)) *TypeConfigQuery {
+	query := &SubjectQuery{config: tcq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	tcq.withSubjects = query
 	return tcq
 }
 
@@ -387,9 +423,10 @@ func (tcq *TypeConfigQuery) sqlAll(ctx context.Context) ([]*TypeConfig, error) {
 	var (
 		nodes       = []*TypeConfig{}
 		_spec       = tcq.querySpec()
-		loadedTypes = [2]bool{
+		loadedTypes = [3]bool{
 			tcq.withRelations != nil,
 			tcq.withPermissions != nil,
+			tcq.withSubjects != nil,
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]interface{}, error) {
@@ -467,6 +504,35 @@ func (tcq *TypeConfigQuery) sqlAll(ctx context.Context) ([]*TypeConfig, error) {
 				return nil, fmt.Errorf(`unexpected foreign-key "type_config_permissions" returned %v for node %v`, *fk, n.ID)
 			}
 			node.Edges.Permissions = append(node.Edges.Permissions, n)
+		}
+	}
+
+	if query := tcq.withSubjects; query != nil {
+		fks := make([]driver.Value, 0, len(nodes))
+		nodeids := make(map[int]*TypeConfig)
+		for i := range nodes {
+			fks = append(fks, nodes[i].ID)
+			nodeids[nodes[i].ID] = nodes[i]
+			nodes[i].Edges.Subjects = []*Subject{}
+		}
+		query.withFKs = true
+		query.Where(predicate.Subject(func(s *sql.Selector) {
+			s.Where(sql.InValues(typeconfig.SubjectsColumn, fks...))
+		}))
+		neighbors, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, n := range neighbors {
+			fk := n.type_config_subjects
+			if fk == nil {
+				return nil, fmt.Errorf(`foreign-key "type_config_subjects" is nil for node %v`, n.ID)
+			}
+			node, ok := nodeids[*fk]
+			if !ok {
+				return nil, fmt.Errorf(`unexpected foreign-key "type_config_subjects" returned %v for node %v`, *fk, n.ID)
+			}
+			node.Edges.Subjects = append(node.Edges.Subjects, n)
 		}
 	}
 

@@ -13,6 +13,8 @@ const (
 	EdgeRelations = "relations"
 	// EdgePermissions holds the string denoting the permissions edge name in mutations.
 	EdgePermissions = "permissions"
+	// EdgeSubjects holds the string denoting the subjects edge name in mutations.
+	EdgeSubjects = "subjects"
 	// Table holds the table name of the typeconfig in the database.
 	Table = "type_configs"
 	// RelationsTable is the table that holds the relations relation/edge.
@@ -29,6 +31,13 @@ const (
 	PermissionsInverseTable = "permissions"
 	// PermissionsColumn is the table column denoting the permissions relation/edge.
 	PermissionsColumn = "type_config_permissions"
+	// SubjectsTable is the table that holds the subjects relation/edge.
+	SubjectsTable = "subjects"
+	// SubjectsInverseTable is the table name for the Subject entity.
+	// It exists in this package in order to avoid circular dependency with the "subject" package.
+	SubjectsInverseTable = "subjects"
+	// SubjectsColumn is the table column denoting the subjects relation/edge.
+	SubjectsColumn = "type_config_subjects"
 )
 
 // Columns holds all SQL columns for typeconfig fields.

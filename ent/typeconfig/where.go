@@ -265,6 +265,34 @@ func HasPermissionsWith(preds ...predicate.Permission) predicate.TypeConfig {
 	})
 }
 
+// HasSubjects applies the HasEdge predicate on the "subjects" edge.
+func HasSubjects() predicate.TypeConfig {
+	return predicate.TypeConfig(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(SubjectsTable, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, SubjectsTable, SubjectsColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasSubjectsWith applies the HasEdge predicate on the "subjects" edge with a given conditions (other predicates).
+func HasSubjectsWith(preds ...predicate.Subject) predicate.TypeConfig {
+	return predicate.TypeConfig(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(SubjectsInverseTable, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, SubjectsTable, SubjectsColumn),
+		)
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // And groups predicates with the AND operator between them.
 func And(predicates ...predicate.TypeConfig) predicate.TypeConfig {
 	return predicate.TypeConfig(func(s *sql.Selector) {
