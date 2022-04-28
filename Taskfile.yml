@@ -14,3 +14,6 @@ tasks:
   reflex:
     cmds:
       - reflex -d none -g 'ent/schema/*.go' -s task gen
+  describe:
+    cmds: 
+      - ent describe ./ent/schema > schema_desc.txt && code schema_desc.txt

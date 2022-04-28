@@ -12,6 +12,14 @@ import (
 
 func (h *Handler) CreateTypeConfig(ctx context.Context) (*ent.TypeConfig, error) {
 
+	subj, err := h.client.Subject.Create().
+		SetName("anna").
+		Save(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed creating subject: %w", err)
+	}
+	fmt.Println("subject was created: ", subj)
+
 	relations := map[string]string{
 		"parent_folder": "folder",
 		"writer":        "user",
@@ -24,14 +32,18 @@ func (h *Handler) CreateTypeConfig(ctx context.Context) (*ent.TypeConfig, error)
 		"read_only":      "reader & !writer",
 	}
 
+	// TODO: look up bulk create
+	// add anna, add the rest of the edges
 	relSlice := make([]*ent.Relation, len(relations))
 	cnt := 0
 	for i, r := range relations {
+
 		rel, err := h.client.Relation.
 			Create().
 			SetName(i).
 			SetValue(r).
 			Save(ctx)
+
 		if err != nil {
 			return nil, fmt.Errorf("failed creating relation: %w", err)
 		}
@@ -61,6 +73,7 @@ func (h *Handler) CreateTypeConfig(ctx context.Context) (*ent.TypeConfig, error)
 		SetName("document").
 		AddRelations(relSlice...).
 		AddPermissions(permSlice...).
+		AddSubjects(subj).
 		Save(ctx)
 
 	if err != nil {
