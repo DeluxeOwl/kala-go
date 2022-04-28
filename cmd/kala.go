@@ -32,54 +32,60 @@ func (h *Handler) CreateTypeConfig(ctx context.Context) (*ent.TypeConfig, error)
 		"read_only":      "reader & !writer",
 	}
 
-	// TODO: look up bulk create
-	// add anna, add the rest of the edges
-	relSlice := make([]*ent.Relation, len(relations))
+	// TODO: add anna, add the rest of the edges
+	relSlice := make([]*ent.RelationCreate, len(relations))
 	cnt := 0
 	for i, r := range relations {
-
-		rel, err := h.client.Relation.
+		relSlice[cnt] = h.client.Relation.
 			Create().
 			SetName(i).
-			SetValue(r).
-			Save(ctx)
+			SetValue(r)
 
-		if err != nil {
-			return nil, fmt.Errorf("failed creating relation: %w", err)
-		}
-		relSlice[cnt] = rel
 		cnt++
-		log.Println("relation was created: ", rel)
 	}
 
-	permSlice := make([]*ent.Permission, len(permissions))
+	permSlice := make([]*ent.PermissionCreate, len(permissions))
 	cnt = 0
 	for i, r := range permissions {
-		rel, err := h.client.Permission.
+		permSlice[cnt] = h.client.Permission.
 			Create().
 			SetName(i).
-			SetValue(r).
-			Save(ctx)
-		if err != nil {
-			return nil, fmt.Errorf("failed creating permission: %w", err)
-		}
-		permSlice[cnt] = rel
+			SetValue(r)
+
 		cnt++
-		log.Println("permission was created: ", rel)
+	}
+
+	// Save relations and permissions in db
+	relBulk, err := h.client.Relation.CreateBulk(relSlice...).Save(ctx)
+
+	if err != nil {
+		return nil, fmt.Errorf("failed creating relations: %w", err)
+	} else {
+		fmt.Println("created relations: ", relBulk)
+	}
+
+	permBulk, err := h.client.Permission.CreateBulk(permSlice...).Save(ctx)
+
+	if err != nil {
+		return nil, fmt.Errorf("failed creating relations: %w", err)
+	} else {
+		fmt.Println("created permissions: ", permBulk)
 	}
 
 	tc, err := h.client.TypeConfig.
 		Create().
 		SetName("document").
-		AddRelations(relSlice...).
-		AddPermissions(permSlice...).
+		AddRelations(relBulk...).
+		AddPermissions(permBulk...).
 		AddSubjects(subj).
 		Save(ctx)
 
 	if err != nil {
 		return nil, fmt.Errorf("failed creating type config: %w", err)
 	}
+
 	log.Println("type config was created: ", tc)
+
 	return tc, nil
 }
 func (h *Handler) QueryTypeConfig(ctx context.Context) (*ent.TypeConfig, error) {
@@ -87,6 +93,7 @@ func (h *Handler) QueryTypeConfig(ctx context.Context) (*ent.TypeConfig, error) 
 		Query().
 		Where(typeconfig.Name("document")).
 		Only(ctx)
+
 	if err != nil {
 		return nil, fmt.Errorf("failed querying type config: %w", err)
 	}
@@ -130,5 +137,4 @@ func main() {
 	tc, _ := h.CreateTypeConfig(ctx)
 	h.QueryTypeConfig(ctx)
 	QueryRelations(ctx, tc)
-
 }
