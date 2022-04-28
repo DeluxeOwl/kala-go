@@ -11,6 +11,8 @@ const (
 	FieldName = "name"
 	// EdgeType holds the string denoting the type edge name in mutations.
 	EdgeType = "type"
+	// EdgeRelations holds the string denoting the relations edge name in mutations.
+	EdgeRelations = "relations"
 	// Table holds the table name of the subject in the database.
 	Table = "subjects"
 	// TypeTable is the table that holds the type relation/edge.
@@ -20,6 +22,11 @@ const (
 	TypeInverseTable = "type_configs"
 	// TypeColumn is the table column denoting the type relation/edge.
 	TypeColumn = "type_config_subjects"
+	// RelationsTable is the table that holds the relations relation/edge. The primary key declared below.
+	RelationsTable = "relation_subjects"
+	// RelationsInverseTable is the table name for the Relation entity.
+	// It exists in this package in order to avoid circular dependency with the "relation" package.
+	RelationsInverseTable = "relations"
 )
 
 // Columns holds all SQL columns for subject fields.
@@ -33,6 +40,12 @@ var Columns = []string{
 var ForeignKeys = []string{
 	"type_config_subjects",
 }
+
+var (
+	// RelationsPrimaryKey and RelationsColumn2 are the table columns denoting the
+	// primary key for the relations relation (M2M).
+	RelationsPrimaryKey = []string{"relation_id", "subject_id"}
+)
 
 // ValidColumn reports if the column name is valid (part of the table columns).
 func ValidColumn(column string) bool {

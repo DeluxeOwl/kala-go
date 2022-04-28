@@ -22,6 +22,9 @@ func (Relation) Fields() []ent.Field {
 // Edges of the Relation.
 func (Relation) Edges() []ent.Edge {
 	return []ent.Edge{
+		edge.To("subjects", Subject.Type),
+		edge.From("permissions", Permission.Type).
+			Ref("relations"),
 		edge.From("typeconfig", TypeConfig.Type).
 			Ref("relations").
 			Unique(),

@@ -28,9 +28,11 @@ type Subject struct {
 type SubjectEdges struct {
 	// Type holds the value of the type edge.
 	Type *TypeConfig `json:"type,omitempty"`
+	// Relations holds the value of the relations edge.
+	Relations []*Relation `json:"relations,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [1]bool
+	loadedTypes [2]bool
 }
 
 // TypeOrErr returns the Type value or an error if the edge
@@ -45,6 +47,15 @@ func (e SubjectEdges) TypeOrErr() (*TypeConfig, error) {
 		return e.Type, nil
 	}
 	return nil, &NotLoadedError{edge: "type"}
+}
+
+// RelationsOrErr returns the Relations value or an error if the edge
+// was not loaded in eager-loading.
+func (e SubjectEdges) RelationsOrErr() ([]*Relation, error) {
+	if e.loadedTypes[1] {
+		return e.Relations, nil
+	}
+	return nil, &NotLoadedError{edge: "relations"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -100,6 +111,11 @@ func (s *Subject) assignValues(columns []string, values []interface{}) error {
 // QueryType queries the "type" edge of the Subject entity.
 func (s *Subject) QueryType() *TypeConfigQuery {
 	return (&SubjectClient{config: s.config}).QueryType(s)
+}
+
+// QueryRelations queries the "relations" edge of the Subject entity.
+func (s *Subject) QueryRelations() *RelationQuery {
+	return (&SubjectClient{config: s.config}).QueryRelations(s)
 }
 
 // Update returns a builder for updating this Subject.

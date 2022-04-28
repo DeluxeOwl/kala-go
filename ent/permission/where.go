@@ -327,6 +327,34 @@ func ValueContainsFold(v string) predicate.Permission {
 	})
 }
 
+// HasRelations applies the HasEdge predicate on the "relations" edge.
+func HasRelations() predicate.Permission {
+	return predicate.Permission(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(RelationsTable, FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, false, RelationsTable, RelationsPrimaryKey...),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasRelationsWith applies the HasEdge predicate on the "relations" edge with a given conditions (other predicates).
+func HasRelationsWith(preds ...predicate.Relation) predicate.Permission {
+	return predicate.Permission(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(RelationsInverseTable, FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, false, RelationsTable, RelationsPrimaryKey...),
+		)
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // HasTypeconfig applies the HasEdge predicate on the "typeconfig" edge.
 func HasTypeconfig() predicate.Permission {
 	return predicate.Permission(func(s *sql.Selector) {

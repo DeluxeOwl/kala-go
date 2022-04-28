@@ -25,5 +25,7 @@ func (Subject) Edges() []ent.Edge {
 		edge.From("type", TypeConfig.Type).
 			Ref("subjects").
 			Unique(),
+		edge.From("relations", Relation.Type).
+			Ref("subjects"),
 	}
 }

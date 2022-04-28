@@ -28,17 +28,39 @@ type Relation struct {
 
 // RelationEdges holds the relations/edges for other nodes in the graph.
 type RelationEdges struct {
+	// Subjects holds the value of the subjects edge.
+	Subjects []*Subject `json:"subjects,omitempty"`
+	// Permissions holds the value of the permissions edge.
+	Permissions []*Permission `json:"permissions,omitempty"`
 	// Typeconfig holds the value of the typeconfig edge.
 	Typeconfig *TypeConfig `json:"typeconfig,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [1]bool
+	loadedTypes [3]bool
+}
+
+// SubjectsOrErr returns the Subjects value or an error if the edge
+// was not loaded in eager-loading.
+func (e RelationEdges) SubjectsOrErr() ([]*Subject, error) {
+	if e.loadedTypes[0] {
+		return e.Subjects, nil
+	}
+	return nil, &NotLoadedError{edge: "subjects"}
+}
+
+// PermissionsOrErr returns the Permissions value or an error if the edge
+// was not loaded in eager-loading.
+func (e RelationEdges) PermissionsOrErr() ([]*Permission, error) {
+	if e.loadedTypes[1] {
+		return e.Permissions, nil
+	}
+	return nil, &NotLoadedError{edge: "permissions"}
 }
 
 // TypeconfigOrErr returns the Typeconfig value or an error if the edge
 // was not loaded in eager-loading, or loaded but was not found.
 func (e RelationEdges) TypeconfigOrErr() (*TypeConfig, error) {
-	if e.loadedTypes[0] {
+	if e.loadedTypes[2] {
 		if e.Typeconfig == nil {
 			// The edge typeconfig was loaded in eager-loading,
 			// but was not found.
@@ -103,6 +125,16 @@ func (r *Relation) assignValues(columns []string, values []interface{}) error {
 		}
 	}
 	return nil
+}
+
+// QuerySubjects queries the "subjects" edge of the Relation entity.
+func (r *Relation) QuerySubjects() *SubjectQuery {
+	return (&RelationClient{config: r.config}).QuerySubjects(r)
+}
+
+// QueryPermissions queries the "permissions" edge of the Relation entity.
+func (r *Relation) QueryPermissions() *PermissionQuery {
+	return (&RelationClient{config: r.config}).QueryPermissions(r)
 }
 
 // QueryTypeconfig queries the "typeconfig" edge of the Relation entity.

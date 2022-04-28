@@ -11,10 +11,24 @@ const (
 	FieldName = "name"
 	// FieldValue holds the string denoting the value field in the database.
 	FieldValue = "value"
+	// EdgeSubjects holds the string denoting the subjects edge name in mutations.
+	EdgeSubjects = "subjects"
+	// EdgePermissions holds the string denoting the permissions edge name in mutations.
+	EdgePermissions = "permissions"
 	// EdgeTypeconfig holds the string denoting the typeconfig edge name in mutations.
 	EdgeTypeconfig = "typeconfig"
 	// Table holds the table name of the relation in the database.
 	Table = "relations"
+	// SubjectsTable is the table that holds the subjects relation/edge. The primary key declared below.
+	SubjectsTable = "relation_subjects"
+	// SubjectsInverseTable is the table name for the Subject entity.
+	// It exists in this package in order to avoid circular dependency with the "subject" package.
+	SubjectsInverseTable = "subjects"
+	// PermissionsTable is the table that holds the permissions relation/edge. The primary key declared below.
+	PermissionsTable = "permission_relations"
+	// PermissionsInverseTable is the table name for the Permission entity.
+	// It exists in this package in order to avoid circular dependency with the "permission" package.
+	PermissionsInverseTable = "permissions"
 	// TypeconfigTable is the table that holds the typeconfig relation/edge.
 	TypeconfigTable = "relations"
 	// TypeconfigInverseTable is the table name for the TypeConfig entity.
@@ -36,6 +50,15 @@ var Columns = []string{
 var ForeignKeys = []string{
 	"type_config_relations",
 }
+
+var (
+	// SubjectsPrimaryKey and SubjectsColumn2 are the table columns denoting the
+	// primary key for the subjects relation (M2M).
+	SubjectsPrimaryKey = []string{"relation_id", "subject_id"}
+	// PermissionsPrimaryKey and PermissionsColumn2 are the table columns denoting the
+	// primary key for the permissions relation (M2M).
+	PermissionsPrimaryKey = []string{"permission_id", "relation_id"}
+)
 
 // ValidColumn reports if the column name is valid (part of the table columns).
 func ValidColumn(column string) bool {

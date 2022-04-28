@@ -11,6 +11,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/DeluxeOwl/kala-go/ent/predicate"
+	"github.com/DeluxeOwl/kala-go/ent/relation"
 	"github.com/DeluxeOwl/kala-go/ent/subject"
 	"github.com/DeluxeOwl/kala-go/ent/typeconfig"
 )
@@ -53,6 +54,21 @@ func (su *SubjectUpdate) SetType(t *TypeConfig) *SubjectUpdate {
 	return su.SetTypeID(t.ID)
 }
 
+// AddRelationIDs adds the "relations" edge to the Relation entity by IDs.
+func (su *SubjectUpdate) AddRelationIDs(ids ...int) *SubjectUpdate {
+	su.mutation.AddRelationIDs(ids...)
+	return su
+}
+
+// AddRelations adds the "relations" edges to the Relation entity.
+func (su *SubjectUpdate) AddRelations(r ...*Relation) *SubjectUpdate {
+	ids := make([]int, len(r))
+	for i := range r {
+		ids[i] = r[i].ID
+	}
+	return su.AddRelationIDs(ids...)
+}
+
 // Mutation returns the SubjectMutation object of the builder.
 func (su *SubjectUpdate) Mutation() *SubjectMutation {
 	return su.mutation
@@ -62,6 +78,27 @@ func (su *SubjectUpdate) Mutation() *SubjectMutation {
 func (su *SubjectUpdate) ClearType() *SubjectUpdate {
 	su.mutation.ClearType()
 	return su
+}
+
+// ClearRelations clears all "relations" edges to the Relation entity.
+func (su *SubjectUpdate) ClearRelations() *SubjectUpdate {
+	su.mutation.ClearRelations()
+	return su
+}
+
+// RemoveRelationIDs removes the "relations" edge to Relation entities by IDs.
+func (su *SubjectUpdate) RemoveRelationIDs(ids ...int) *SubjectUpdate {
+	su.mutation.RemoveRelationIDs(ids...)
+	return su
+}
+
+// RemoveRelations removes "relations" edges to Relation entities.
+func (su *SubjectUpdate) RemoveRelations(r ...*Relation) *SubjectUpdate {
+	ids := make([]int, len(r))
+	for i := range r {
+		ids[i] = r[i].ID
+	}
+	return su.RemoveRelationIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -178,6 +215,60 @@ func (su *SubjectUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if su.mutation.RelationsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   subject.RelationsTable,
+			Columns: subject.RelationsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: relation.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := su.mutation.RemovedRelationsIDs(); len(nodes) > 0 && !su.mutation.RelationsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   subject.RelationsTable,
+			Columns: subject.RelationsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: relation.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := su.mutation.RelationsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   subject.RelationsTable,
+			Columns: subject.RelationsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: relation.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if n, err = sqlgraph.UpdateNodes(ctx, su.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{subject.Label}
@@ -222,6 +313,21 @@ func (suo *SubjectUpdateOne) SetType(t *TypeConfig) *SubjectUpdateOne {
 	return suo.SetTypeID(t.ID)
 }
 
+// AddRelationIDs adds the "relations" edge to the Relation entity by IDs.
+func (suo *SubjectUpdateOne) AddRelationIDs(ids ...int) *SubjectUpdateOne {
+	suo.mutation.AddRelationIDs(ids...)
+	return suo
+}
+
+// AddRelations adds the "relations" edges to the Relation entity.
+func (suo *SubjectUpdateOne) AddRelations(r ...*Relation) *SubjectUpdateOne {
+	ids := make([]int, len(r))
+	for i := range r {
+		ids[i] = r[i].ID
+	}
+	return suo.AddRelationIDs(ids...)
+}
+
 // Mutation returns the SubjectMutation object of the builder.
 func (suo *SubjectUpdateOne) Mutation() *SubjectMutation {
 	return suo.mutation
@@ -231,6 +337,27 @@ func (suo *SubjectUpdateOne) Mutation() *SubjectMutation {
 func (suo *SubjectUpdateOne) ClearType() *SubjectUpdateOne {
 	suo.mutation.ClearType()
 	return suo
+}
+
+// ClearRelations clears all "relations" edges to the Relation entity.
+func (suo *SubjectUpdateOne) ClearRelations() *SubjectUpdateOne {
+	suo.mutation.ClearRelations()
+	return suo
+}
+
+// RemoveRelationIDs removes the "relations" edge to Relation entities by IDs.
+func (suo *SubjectUpdateOne) RemoveRelationIDs(ids ...int) *SubjectUpdateOne {
+	suo.mutation.RemoveRelationIDs(ids...)
+	return suo
+}
+
+// RemoveRelations removes "relations" edges to Relation entities.
+func (suo *SubjectUpdateOne) RemoveRelations(r ...*Relation) *SubjectUpdateOne {
+	ids := make([]int, len(r))
+	for i := range r {
+		ids[i] = r[i].ID
+	}
+	return suo.RemoveRelationIDs(ids...)
 }
 
 // Select allows selecting one or more fields (columns) of the returned entity.
@@ -363,6 +490,60 @@ func (suo *SubjectUpdateOne) sqlSave(ctx context.Context) (_node *Subject, err e
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
 					Column: typeconfig.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if suo.mutation.RelationsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   subject.RelationsTable,
+			Columns: subject.RelationsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: relation.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := suo.mutation.RemovedRelationsIDs(); len(nodes) > 0 && !suo.mutation.RelationsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   subject.RelationsTable,
+			Columns: subject.RelationsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: relation.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := suo.mutation.RelationsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   subject.RelationsTable,
+			Columns: subject.RelationsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: relation.FieldID,
 				},
 			},
 		}

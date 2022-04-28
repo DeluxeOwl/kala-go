@@ -22,6 +22,7 @@ func (Permission) Fields() []ent.Field {
 // Edges of the Permission.
 func (Permission) Edges() []ent.Edge {
 	return []ent.Edge{
+		edge.To("relations", Relation.Type),
 		edge.From("typeconfig", TypeConfig.Type).
 			Ref("permissions").
 			Unique(),

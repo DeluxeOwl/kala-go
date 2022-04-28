@@ -11,10 +11,17 @@ const (
 	FieldName = "name"
 	// FieldValue holds the string denoting the value field in the database.
 	FieldValue = "value"
+	// EdgeRelations holds the string denoting the relations edge name in mutations.
+	EdgeRelations = "relations"
 	// EdgeTypeconfig holds the string denoting the typeconfig edge name in mutations.
 	EdgeTypeconfig = "typeconfig"
 	// Table holds the table name of the permission in the database.
 	Table = "permissions"
+	// RelationsTable is the table that holds the relations relation/edge. The primary key declared below.
+	RelationsTable = "permission_relations"
+	// RelationsInverseTable is the table name for the Relation entity.
+	// It exists in this package in order to avoid circular dependency with the "relation" package.
+	RelationsInverseTable = "relations"
 	// TypeconfigTable is the table that holds the typeconfig relation/edge.
 	TypeconfigTable = "permissions"
 	// TypeconfigInverseTable is the table name for the TypeConfig entity.
@@ -36,6 +43,12 @@ var Columns = []string{
 var ForeignKeys = []string{
 	"type_config_permissions",
 }
+
+var (
+	// RelationsPrimaryKey and RelationsColumn2 are the table columns denoting the
+	// primary key for the relations relation (M2M).
+	RelationsPrimaryKey = []string{"permission_id", "relation_id"}
+)
 
 // ValidColumn reports if the column name is valid (part of the table columns).
 func ValidColumn(column string) bool {

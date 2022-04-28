@@ -4,6 +4,7 @@ package ent
 
 import (
 	"context"
+	"database/sql/driver"
 	"errors"
 	"fmt"
 	"math"
@@ -12,6 +13,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/DeluxeOwl/kala-go/ent/predicate"
+	"github.com/DeluxeOwl/kala-go/ent/relation"
 	"github.com/DeluxeOwl/kala-go/ent/subject"
 	"github.com/DeluxeOwl/kala-go/ent/typeconfig"
 )
@@ -26,8 +28,9 @@ type SubjectQuery struct {
 	fields     []string
 	predicates []predicate.Subject
 	// eager-loading edges.
-	withType *TypeConfigQuery
-	withFKs  bool
+	withType      *TypeConfigQuery
+	withRelations *RelationQuery
+	withFKs       bool
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -79,6 +82,28 @@ func (sq *SubjectQuery) QueryType() *TypeConfigQuery {
 			sqlgraph.From(subject.Table, subject.FieldID, selector),
 			sqlgraph.To(typeconfig.Table, typeconfig.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, true, subject.TypeTable, subject.TypeColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(sq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryRelations chains the current query on the "relations" edge.
+func (sq *SubjectQuery) QueryRelations() *RelationQuery {
+	query := &RelationQuery{config: sq.config}
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := sq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := sq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(subject.Table, subject.FieldID, selector),
+			sqlgraph.To(relation.Table, relation.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, true, subject.RelationsTable, subject.RelationsPrimaryKey...),
 		)
 		fromU = sqlgraph.SetNeighbors(sq.driver.Dialect(), step)
 		return fromU, nil
@@ -262,12 +287,13 @@ func (sq *SubjectQuery) Clone() *SubjectQuery {
 		return nil
 	}
 	return &SubjectQuery{
-		config:     sq.config,
-		limit:      sq.limit,
-		offset:     sq.offset,
-		order:      append([]OrderFunc{}, sq.order...),
-		predicates: append([]predicate.Subject{}, sq.predicates...),
-		withType:   sq.withType.Clone(),
+		config:        sq.config,
+		limit:         sq.limit,
+		offset:        sq.offset,
+		order:         append([]OrderFunc{}, sq.order...),
+		predicates:    append([]predicate.Subject{}, sq.predicates...),
+		withType:      sq.withType.Clone(),
+		withRelations: sq.withRelations.Clone(),
 		// clone intermediate query.
 		sql:    sq.sql.Clone(),
 		path:   sq.path,
@@ -283,6 +309,17 @@ func (sq *SubjectQuery) WithType(opts ...func(*TypeConfigQuery)) *SubjectQuery {
 		opt(query)
 	}
 	sq.withType = query
+	return sq
+}
+
+// WithRelations tells the query-builder to eager-load the nodes that are connected to
+// the "relations" edge. The optional arguments are used to configure the query builder of the edge.
+func (sq *SubjectQuery) WithRelations(opts ...func(*RelationQuery)) *SubjectQuery {
+	query := &RelationQuery{config: sq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	sq.withRelations = query
 	return sq
 }
 
@@ -352,8 +389,9 @@ func (sq *SubjectQuery) sqlAll(ctx context.Context) ([]*Subject, error) {
 		nodes       = []*Subject{}
 		withFKs     = sq.withFKs
 		_spec       = sq.querySpec()
-		loadedTypes = [1]bool{
+		loadedTypes = [2]bool{
 			sq.withType != nil,
+			sq.withRelations != nil,
 		}
 	)
 	if sq.withType != nil {
@@ -407,6 +445,71 @@ func (sq *SubjectQuery) sqlAll(ctx context.Context) ([]*Subject, error) {
 			}
 			for i := range nodes {
 				nodes[i].Edges.Type = n
+			}
+		}
+	}
+
+	if query := sq.withRelations; query != nil {
+		fks := make([]driver.Value, 0, len(nodes))
+		ids := make(map[int]*Subject, len(nodes))
+		for _, node := range nodes {
+			ids[node.ID] = node
+			fks = append(fks, node.ID)
+			node.Edges.Relations = []*Relation{}
+		}
+		var (
+			edgeids []int
+			edges   = make(map[int][]*Subject)
+		)
+		_spec := &sqlgraph.EdgeQuerySpec{
+			Edge: &sqlgraph.EdgeSpec{
+				Inverse: true,
+				Table:   subject.RelationsTable,
+				Columns: subject.RelationsPrimaryKey,
+			},
+			Predicate: func(s *sql.Selector) {
+				s.Where(sql.InValues(subject.RelationsPrimaryKey[1], fks...))
+			},
+			ScanValues: func() [2]interface{} {
+				return [2]interface{}{new(sql.NullInt64), new(sql.NullInt64)}
+			},
+			Assign: func(out, in interface{}) error {
+				eout, ok := out.(*sql.NullInt64)
+				if !ok || eout == nil {
+					return fmt.Errorf("unexpected id value for edge-out")
+				}
+				ein, ok := in.(*sql.NullInt64)
+				if !ok || ein == nil {
+					return fmt.Errorf("unexpected id value for edge-in")
+				}
+				outValue := int(eout.Int64)
+				inValue := int(ein.Int64)
+				node, ok := ids[outValue]
+				if !ok {
+					return fmt.Errorf("unexpected node id in edges: %v", outValue)
+				}
+				if _, ok := edges[inValue]; !ok {
+					edgeids = append(edgeids, inValue)
+				}
+				edges[inValue] = append(edges[inValue], node)
+				return nil
+			},
+		}
+		if err := sqlgraph.QueryEdges(ctx, sq.driver, _spec); err != nil {
+			return nil, fmt.Errorf(`query edges "relations": %w`, err)
+		}
+		query.Where(relation.IDIn(edgeids...))
+		neighbors, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, n := range neighbors {
+			nodes, ok := edges[n.ID]
+			if !ok {
+				return nil, fmt.Errorf(`unexpected "relations" node returned %v`, n.ID)
+			}
+			for i := range nodes {
+				nodes[i].Edges.Relations = append(nodes[i].Edges.Relations, n)
 			}
 		}
 	}

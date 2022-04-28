@@ -9,7 +9,9 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/DeluxeOwl/kala-go/ent/permission"
 	"github.com/DeluxeOwl/kala-go/ent/relation"
+	"github.com/DeluxeOwl/kala-go/ent/subject"
 	"github.com/DeluxeOwl/kala-go/ent/typeconfig"
 )
 
@@ -30,6 +32,36 @@ func (rc *RelationCreate) SetName(s string) *RelationCreate {
 func (rc *RelationCreate) SetValue(s string) *RelationCreate {
 	rc.mutation.SetValue(s)
 	return rc
+}
+
+// AddSubjectIDs adds the "subjects" edge to the Subject entity by IDs.
+func (rc *RelationCreate) AddSubjectIDs(ids ...int) *RelationCreate {
+	rc.mutation.AddSubjectIDs(ids...)
+	return rc
+}
+
+// AddSubjects adds the "subjects" edges to the Subject entity.
+func (rc *RelationCreate) AddSubjects(s ...*Subject) *RelationCreate {
+	ids := make([]int, len(s))
+	for i := range s {
+		ids[i] = s[i].ID
+	}
+	return rc.AddSubjectIDs(ids...)
+}
+
+// AddPermissionIDs adds the "permissions" edge to the Permission entity by IDs.
+func (rc *RelationCreate) AddPermissionIDs(ids ...int) *RelationCreate {
+	rc.mutation.AddPermissionIDs(ids...)
+	return rc
+}
+
+// AddPermissions adds the "permissions" edges to the Permission entity.
+func (rc *RelationCreate) AddPermissions(p ...*Permission) *RelationCreate {
+	ids := make([]int, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return rc.AddPermissionIDs(ids...)
 }
 
 // SetTypeconfigID sets the "typeconfig" edge to the TypeConfig entity by ID.
@@ -169,6 +201,44 @@ func (rc *RelationCreate) createSpec() (*Relation, *sqlgraph.CreateSpec) {
 			Column: relation.FieldValue,
 		})
 		_node.Value = value
+	}
+	if nodes := rc.mutation.SubjectsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   relation.SubjectsTable,
+			Columns: relation.SubjectsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: subject.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := rc.mutation.PermissionsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   relation.PermissionsTable,
+			Columns: relation.PermissionsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: permission.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := rc.mutation.TypeconfigIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

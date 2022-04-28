@@ -10,8 +10,10 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/DeluxeOwl/kala-go/ent/permission"
 	"github.com/DeluxeOwl/kala-go/ent/predicate"
 	"github.com/DeluxeOwl/kala-go/ent/relation"
+	"github.com/DeluxeOwl/kala-go/ent/subject"
 	"github.com/DeluxeOwl/kala-go/ent/typeconfig"
 )
 
@@ -40,6 +42,36 @@ func (ru *RelationUpdate) SetValue(s string) *RelationUpdate {
 	return ru
 }
 
+// AddSubjectIDs adds the "subjects" edge to the Subject entity by IDs.
+func (ru *RelationUpdate) AddSubjectIDs(ids ...int) *RelationUpdate {
+	ru.mutation.AddSubjectIDs(ids...)
+	return ru
+}
+
+// AddSubjects adds the "subjects" edges to the Subject entity.
+func (ru *RelationUpdate) AddSubjects(s ...*Subject) *RelationUpdate {
+	ids := make([]int, len(s))
+	for i := range s {
+		ids[i] = s[i].ID
+	}
+	return ru.AddSubjectIDs(ids...)
+}
+
+// AddPermissionIDs adds the "permissions" edge to the Permission entity by IDs.
+func (ru *RelationUpdate) AddPermissionIDs(ids ...int) *RelationUpdate {
+	ru.mutation.AddPermissionIDs(ids...)
+	return ru
+}
+
+// AddPermissions adds the "permissions" edges to the Permission entity.
+func (ru *RelationUpdate) AddPermissions(p ...*Permission) *RelationUpdate {
+	ids := make([]int, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return ru.AddPermissionIDs(ids...)
+}
+
 // SetTypeconfigID sets the "typeconfig" edge to the TypeConfig entity by ID.
 func (ru *RelationUpdate) SetTypeconfigID(id int) *RelationUpdate {
 	ru.mutation.SetTypeconfigID(id)
@@ -62,6 +94,48 @@ func (ru *RelationUpdate) SetTypeconfig(t *TypeConfig) *RelationUpdate {
 // Mutation returns the RelationMutation object of the builder.
 func (ru *RelationUpdate) Mutation() *RelationMutation {
 	return ru.mutation
+}
+
+// ClearSubjects clears all "subjects" edges to the Subject entity.
+func (ru *RelationUpdate) ClearSubjects() *RelationUpdate {
+	ru.mutation.ClearSubjects()
+	return ru
+}
+
+// RemoveSubjectIDs removes the "subjects" edge to Subject entities by IDs.
+func (ru *RelationUpdate) RemoveSubjectIDs(ids ...int) *RelationUpdate {
+	ru.mutation.RemoveSubjectIDs(ids...)
+	return ru
+}
+
+// RemoveSubjects removes "subjects" edges to Subject entities.
+func (ru *RelationUpdate) RemoveSubjects(s ...*Subject) *RelationUpdate {
+	ids := make([]int, len(s))
+	for i := range s {
+		ids[i] = s[i].ID
+	}
+	return ru.RemoveSubjectIDs(ids...)
+}
+
+// ClearPermissions clears all "permissions" edges to the Permission entity.
+func (ru *RelationUpdate) ClearPermissions() *RelationUpdate {
+	ru.mutation.ClearPermissions()
+	return ru
+}
+
+// RemovePermissionIDs removes the "permissions" edge to Permission entities by IDs.
+func (ru *RelationUpdate) RemovePermissionIDs(ids ...int) *RelationUpdate {
+	ru.mutation.RemovePermissionIDs(ids...)
+	return ru
+}
+
+// RemovePermissions removes "permissions" edges to Permission entities.
+func (ru *RelationUpdate) RemovePermissions(p ...*Permission) *RelationUpdate {
+	ids := make([]int, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return ru.RemovePermissionIDs(ids...)
 }
 
 // ClearTypeconfig clears the "typeconfig" edge to the TypeConfig entity.
@@ -156,6 +230,114 @@ func (ru *RelationUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Column: relation.FieldValue,
 		})
 	}
+	if ru.mutation.SubjectsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   relation.SubjectsTable,
+			Columns: relation.SubjectsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: subject.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := ru.mutation.RemovedSubjectsIDs(); len(nodes) > 0 && !ru.mutation.SubjectsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   relation.SubjectsTable,
+			Columns: relation.SubjectsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: subject.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := ru.mutation.SubjectsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   relation.SubjectsTable,
+			Columns: relation.SubjectsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: subject.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if ru.mutation.PermissionsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   relation.PermissionsTable,
+			Columns: relation.PermissionsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: permission.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := ru.mutation.RemovedPermissionsIDs(); len(nodes) > 0 && !ru.mutation.PermissionsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   relation.PermissionsTable,
+			Columns: relation.PermissionsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: permission.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := ru.mutation.PermissionsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   relation.PermissionsTable,
+			Columns: relation.PermissionsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: permission.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if ru.mutation.TypeconfigCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
@@ -222,6 +404,36 @@ func (ruo *RelationUpdateOne) SetValue(s string) *RelationUpdateOne {
 	return ruo
 }
 
+// AddSubjectIDs adds the "subjects" edge to the Subject entity by IDs.
+func (ruo *RelationUpdateOne) AddSubjectIDs(ids ...int) *RelationUpdateOne {
+	ruo.mutation.AddSubjectIDs(ids...)
+	return ruo
+}
+
+// AddSubjects adds the "subjects" edges to the Subject entity.
+func (ruo *RelationUpdateOne) AddSubjects(s ...*Subject) *RelationUpdateOne {
+	ids := make([]int, len(s))
+	for i := range s {
+		ids[i] = s[i].ID
+	}
+	return ruo.AddSubjectIDs(ids...)
+}
+
+// AddPermissionIDs adds the "permissions" edge to the Permission entity by IDs.
+func (ruo *RelationUpdateOne) AddPermissionIDs(ids ...int) *RelationUpdateOne {
+	ruo.mutation.AddPermissionIDs(ids...)
+	return ruo
+}
+
+// AddPermissions adds the "permissions" edges to the Permission entity.
+func (ruo *RelationUpdateOne) AddPermissions(p ...*Permission) *RelationUpdateOne {
+	ids := make([]int, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return ruo.AddPermissionIDs(ids...)
+}
+
 // SetTypeconfigID sets the "typeconfig" edge to the TypeConfig entity by ID.
 func (ruo *RelationUpdateOne) SetTypeconfigID(id int) *RelationUpdateOne {
 	ruo.mutation.SetTypeconfigID(id)
@@ -244,6 +456,48 @@ func (ruo *RelationUpdateOne) SetTypeconfig(t *TypeConfig) *RelationUpdateOne {
 // Mutation returns the RelationMutation object of the builder.
 func (ruo *RelationUpdateOne) Mutation() *RelationMutation {
 	return ruo.mutation
+}
+
+// ClearSubjects clears all "subjects" edges to the Subject entity.
+func (ruo *RelationUpdateOne) ClearSubjects() *RelationUpdateOne {
+	ruo.mutation.ClearSubjects()
+	return ruo
+}
+
+// RemoveSubjectIDs removes the "subjects" edge to Subject entities by IDs.
+func (ruo *RelationUpdateOne) RemoveSubjectIDs(ids ...int) *RelationUpdateOne {
+	ruo.mutation.RemoveSubjectIDs(ids...)
+	return ruo
+}
+
+// RemoveSubjects removes "subjects" edges to Subject entities.
+func (ruo *RelationUpdateOne) RemoveSubjects(s ...*Subject) *RelationUpdateOne {
+	ids := make([]int, len(s))
+	for i := range s {
+		ids[i] = s[i].ID
+	}
+	return ruo.RemoveSubjectIDs(ids...)
+}
+
+// ClearPermissions clears all "permissions" edges to the Permission entity.
+func (ruo *RelationUpdateOne) ClearPermissions() *RelationUpdateOne {
+	ruo.mutation.ClearPermissions()
+	return ruo
+}
+
+// RemovePermissionIDs removes the "permissions" edge to Permission entities by IDs.
+func (ruo *RelationUpdateOne) RemovePermissionIDs(ids ...int) *RelationUpdateOne {
+	ruo.mutation.RemovePermissionIDs(ids...)
+	return ruo
+}
+
+// RemovePermissions removes "permissions" edges to Permission entities.
+func (ruo *RelationUpdateOne) RemovePermissions(p ...*Permission) *RelationUpdateOne {
+	ids := make([]int, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return ruo.RemovePermissionIDs(ids...)
 }
 
 // ClearTypeconfig clears the "typeconfig" edge to the TypeConfig entity.
@@ -361,6 +615,114 @@ func (ruo *RelationUpdateOne) sqlSave(ctx context.Context) (_node *Relation, err
 			Value:  value,
 			Column: relation.FieldValue,
 		})
+	}
+	if ruo.mutation.SubjectsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   relation.SubjectsTable,
+			Columns: relation.SubjectsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: subject.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := ruo.mutation.RemovedSubjectsIDs(); len(nodes) > 0 && !ruo.mutation.SubjectsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   relation.SubjectsTable,
+			Columns: relation.SubjectsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: subject.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := ruo.mutation.SubjectsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   relation.SubjectsTable,
+			Columns: relation.SubjectsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: subject.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if ruo.mutation.PermissionsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   relation.PermissionsTable,
+			Columns: relation.PermissionsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: permission.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := ruo.mutation.RemovedPermissionsIDs(); len(nodes) > 0 && !ruo.mutation.PermissionsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   relation.PermissionsTable,
+			Columns: relation.PermissionsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: permission.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := ruo.mutation.PermissionsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   relation.PermissionsTable,
+			Columns: relation.PermissionsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: permission.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	if ruo.mutation.TypeconfigCleared() {
 		edge := &sqlgraph.EdgeSpec{

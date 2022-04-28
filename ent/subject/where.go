@@ -237,6 +237,34 @@ func HasTypeWith(preds ...predicate.TypeConfig) predicate.Subject {
 	})
 }
 
+// HasRelations applies the HasEdge predicate on the "relations" edge.
+func HasRelations() predicate.Subject {
+	return predicate.Subject(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(RelationsTable, FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, true, RelationsTable, RelationsPrimaryKey...),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasRelationsWith applies the HasEdge predicate on the "relations" edge with a given conditions (other predicates).
+func HasRelationsWith(preds ...predicate.Relation) predicate.Subject {
+	return predicate.Subject(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(RelationsInverseTable, FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, true, RelationsTable, RelationsPrimaryKey...),
+		)
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // And groups predicates with the AND operator between them.
 func And(predicates ...predicate.Subject) predicate.Subject {
 	return predicate.Subject(func(s *sql.Selector) {

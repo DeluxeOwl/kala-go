@@ -4,6 +4,7 @@ package ent
 
 import (
 	"context"
+	"database/sql/driver"
 	"errors"
 	"fmt"
 	"math"
@@ -13,6 +14,7 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/DeluxeOwl/kala-go/ent/permission"
 	"github.com/DeluxeOwl/kala-go/ent/predicate"
+	"github.com/DeluxeOwl/kala-go/ent/relation"
 	"github.com/DeluxeOwl/kala-go/ent/typeconfig"
 )
 
@@ -26,6 +28,7 @@ type PermissionQuery struct {
 	fields     []string
 	predicates []predicate.Permission
 	// eager-loading edges.
+	withRelations  *RelationQuery
 	withTypeconfig *TypeConfigQuery
 	withFKs        bool
 	// intermediate query (i.e. traversal path).
@@ -62,6 +65,28 @@ func (pq *PermissionQuery) Unique(unique bool) *PermissionQuery {
 func (pq *PermissionQuery) Order(o ...OrderFunc) *PermissionQuery {
 	pq.order = append(pq.order, o...)
 	return pq
+}
+
+// QueryRelations chains the current query on the "relations" edge.
+func (pq *PermissionQuery) QueryRelations() *RelationQuery {
+	query := &RelationQuery{config: pq.config}
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := pq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := pq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(permission.Table, permission.FieldID, selector),
+			sqlgraph.To(relation.Table, relation.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, false, permission.RelationsTable, permission.RelationsPrimaryKey...),
+		)
+		fromU = sqlgraph.SetNeighbors(pq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
 }
 
 // QueryTypeconfig chains the current query on the "typeconfig" edge.
@@ -267,12 +292,24 @@ func (pq *PermissionQuery) Clone() *PermissionQuery {
 		offset:         pq.offset,
 		order:          append([]OrderFunc{}, pq.order...),
 		predicates:     append([]predicate.Permission{}, pq.predicates...),
+		withRelations:  pq.withRelations.Clone(),
 		withTypeconfig: pq.withTypeconfig.Clone(),
 		// clone intermediate query.
 		sql:    pq.sql.Clone(),
 		path:   pq.path,
 		unique: pq.unique,
 	}
+}
+
+// WithRelations tells the query-builder to eager-load the nodes that are connected to
+// the "relations" edge. The optional arguments are used to configure the query builder of the edge.
+func (pq *PermissionQuery) WithRelations(opts ...func(*RelationQuery)) *PermissionQuery {
+	query := &RelationQuery{config: pq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	pq.withRelations = query
+	return pq
 }
 
 // WithTypeconfig tells the query-builder to eager-load the nodes that are connected to
@@ -352,7 +389,8 @@ func (pq *PermissionQuery) sqlAll(ctx context.Context) ([]*Permission, error) {
 		nodes       = []*Permission{}
 		withFKs     = pq.withFKs
 		_spec       = pq.querySpec()
-		loadedTypes = [1]bool{
+		loadedTypes = [2]bool{
+			pq.withRelations != nil,
 			pq.withTypeconfig != nil,
 		}
 	)
@@ -380,6 +418,71 @@ func (pq *PermissionQuery) sqlAll(ctx context.Context) ([]*Permission, error) {
 	}
 	if len(nodes) == 0 {
 		return nodes, nil
+	}
+
+	if query := pq.withRelations; query != nil {
+		fks := make([]driver.Value, 0, len(nodes))
+		ids := make(map[int]*Permission, len(nodes))
+		for _, node := range nodes {
+			ids[node.ID] = node
+			fks = append(fks, node.ID)
+			node.Edges.Relations = []*Relation{}
+		}
+		var (
+			edgeids []int
+			edges   = make(map[int][]*Permission)
+		)
+		_spec := &sqlgraph.EdgeQuerySpec{
+			Edge: &sqlgraph.EdgeSpec{
+				Inverse: false,
+				Table:   permission.RelationsTable,
+				Columns: permission.RelationsPrimaryKey,
+			},
+			Predicate: func(s *sql.Selector) {
+				s.Where(sql.InValues(permission.RelationsPrimaryKey[0], fks...))
+			},
+			ScanValues: func() [2]interface{} {
+				return [2]interface{}{new(sql.NullInt64), new(sql.NullInt64)}
+			},
+			Assign: func(out, in interface{}) error {
+				eout, ok := out.(*sql.NullInt64)
+				if !ok || eout == nil {
+					return fmt.Errorf("unexpected id value for edge-out")
+				}
+				ein, ok := in.(*sql.NullInt64)
+				if !ok || ein == nil {
+					return fmt.Errorf("unexpected id value for edge-in")
+				}
+				outValue := int(eout.Int64)
+				inValue := int(ein.Int64)
+				node, ok := ids[outValue]
+				if !ok {
+					return fmt.Errorf("unexpected node id in edges: %v", outValue)
+				}
+				if _, ok := edges[inValue]; !ok {
+					edgeids = append(edgeids, inValue)
+				}
+				edges[inValue] = append(edges[inValue], node)
+				return nil
+			},
+		}
+		if err := sqlgraph.QueryEdges(ctx, pq.driver, _spec); err != nil {
+			return nil, fmt.Errorf(`query edges "relations": %w`, err)
+		}
+		query.Where(relation.IDIn(edgeids...))
+		neighbors, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, n := range neighbors {
+			nodes, ok := edges[n.ID]
+			if !ok {
+				return nil, fmt.Errorf(`unexpected "relations" node returned %v`, n.ID)
+			}
+			for i := range nodes {
+				nodes[i].Edges.Relations = append(nodes[i].Edges.Relations, n)
+			}
+		}
 	}
 
 	if query := pq.withTypeconfig; query != nil {
