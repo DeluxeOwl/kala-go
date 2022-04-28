@@ -10,7 +10,7 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
-func CreateTypeConfig(ctx context.Context, client *ent.Client) (*ent.TypeConfig, error) {
+func (h *Handler) CreateTypeConfig(ctx context.Context) (*ent.TypeConfig, error) {
 
 	relations := map[string]string{
 		"parent_folder": "folder",
@@ -27,7 +27,7 @@ func CreateTypeConfig(ctx context.Context, client *ent.Client) (*ent.TypeConfig,
 	relSlice := make([]*ent.Relation, len(relations))
 	cnt := 0
 	for i, r := range relations {
-		rel, err := client.Relation.
+		rel, err := h.client.Relation.
 			Create().
 			SetName(i).
 			SetValue(r).
@@ -43,7 +43,7 @@ func CreateTypeConfig(ctx context.Context, client *ent.Client) (*ent.TypeConfig,
 	permSlice := make([]*ent.Permission, len(permissions))
 	cnt = 0
 	for i, r := range permissions {
-		rel, err := client.Permission.
+		rel, err := h.client.Permission.
 			Create().
 			SetName(i).
 			SetValue(r).
@@ -56,7 +56,7 @@ func CreateTypeConfig(ctx context.Context, client *ent.Client) (*ent.TypeConfig,
 		log.Println("permission was created: ", rel)
 	}
 
-	tc, err := client.TypeConfig.
+	tc, err := h.client.TypeConfig.
 		Create().
 		SetName("document").
 		AddRelations(relSlice...).
@@ -69,8 +69,8 @@ func CreateTypeConfig(ctx context.Context, client *ent.Client) (*ent.TypeConfig,
 	log.Println("type config was created: ", tc)
 	return tc, nil
 }
-func QueryTypeConfig(ctx context.Context, client *ent.Client) (*ent.TypeConfig, error) {
-	tc, err := client.TypeConfig.
+func (h *Handler) QueryTypeConfig(ctx context.Context) (*ent.TypeConfig, error) {
+	tc, err := h.client.TypeConfig.
 		Query().
 		Where(typeconfig.Name("document")).
 		Only(ctx)
@@ -91,6 +91,12 @@ func QueryRelations(ctx context.Context, tc *ent.TypeConfig) error {
 
 	return nil
 }
+
+type Handler struct {
+	// the ent client
+	client *ent.Client
+}
+
 func main() {
 	// TODO: handler struct
 	client, err := ent.Open("sqlite3", "file:ent?mode=memory&cache=shared&_fk=1")
@@ -104,8 +110,12 @@ func main() {
 	}
 	ctx := context.Background()
 
-	tc, _ := CreateTypeConfig(ctx, client)
-	QueryTypeConfig(ctx, client)
+	h := Handler{
+		client: client,
+	}
+
+	tc, _ := h.CreateTypeConfig(ctx)
+	h.QueryTypeConfig(ctx)
 	QueryRelations(ctx, tc)
 
 }
