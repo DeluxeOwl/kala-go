@@ -18,6 +18,8 @@ type Tx struct {
 	Relation *RelationClient
 	// Subject is the client for interacting with the Subject builders.
 	Subject *SubjectClient
+	// Tuple is the client for interacting with the Tuple builders.
+	Tuple *TupleClient
 	// TypeConfig is the client for interacting with the TypeConfig builders.
 	TypeConfig *TypeConfigClient
 
@@ -158,6 +160,7 @@ func (tx *Tx) init() {
 	tx.Permission = NewPermissionClient(tx.config)
 	tx.Relation = NewRelationClient(tx.config)
 	tx.Subject = NewSubjectClient(tx.config)
+	tx.Tuple = NewTupleClient(tx.config)
 	tx.TypeConfig = NewTypeConfigClient(tx.config)
 }
 

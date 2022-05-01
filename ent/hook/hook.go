@@ -48,6 +48,19 @@ func (f SubjectFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, err
 	return f(ctx, mv)
 }
 
+// The TupleFunc type is an adapter to allow the use of ordinary
+// function as Tuple mutator.
+type TupleFunc func(context.Context, *ent.TupleMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f TupleFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	mv, ok := m.(*ent.TupleMutation)
+	if !ok {
+		return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.TupleMutation", m)
+	}
+	return f(ctx, mv)
+}
+
 // The TypeConfigFunc type is an adapter to allow the use of ordinary
 // function as TypeConfig mutator.
 type TypeConfigFunc func(context.Context, *ent.TypeConfigMutation) (ent.Value, error)

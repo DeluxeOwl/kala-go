@@ -15,5 +15,8 @@ type Relation func(*sql.Selector)
 // Subject is the predicate function for subject builders.
 type Subject func(*sql.Selector)
 
+// Tuple is the predicate function for tuple builders.
+type Tuple func(*sql.Selector)
+
 // TypeConfig is the predicate function for typeconfig builders.
 type TypeConfig func(*sql.Selector)

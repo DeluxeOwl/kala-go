@@ -27,6 +27,7 @@ type hooks struct {
 	Permission []ent.Hook
 	Relation   []ent.Hook
 	Subject    []ent.Hook
+	Tuple      []ent.Hook
 	TypeConfig []ent.Hook
 }
 

@@ -11,6 +11,7 @@ import (
 	"github.com/DeluxeOwl/kala-go/ent/permission"
 	"github.com/DeluxeOwl/kala-go/ent/relation"
 	"github.com/DeluxeOwl/kala-go/ent/subject"
+	"github.com/DeluxeOwl/kala-go/ent/tuple"
 	"github.com/DeluxeOwl/kala-go/ent/typeconfig"
 )
 
@@ -35,6 +36,7 @@ func columnChecker(table string) func(string) error {
 		permission.Table: permission.ValidColumn,
 		relation.Table:   relation.ValidColumn,
 		subject.Table:    subject.ValidColumn,
+		tuple.Table:      tuple.ValidColumn,
 		typeconfig.Table: typeconfig.ValidColumn,
 	}
 	check, ok := checks[table]

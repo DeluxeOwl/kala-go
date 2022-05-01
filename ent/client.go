@@ -12,6 +12,7 @@ import (
 	"github.com/DeluxeOwl/kala-go/ent/permission"
 	"github.com/DeluxeOwl/kala-go/ent/relation"
 	"github.com/DeluxeOwl/kala-go/ent/subject"
+	"github.com/DeluxeOwl/kala-go/ent/tuple"
 	"github.com/DeluxeOwl/kala-go/ent/typeconfig"
 
 	"entgo.io/ent/dialect"
@@ -30,6 +31,8 @@ type Client struct {
 	Relation *RelationClient
 	// Subject is the client for interacting with the Subject builders.
 	Subject *SubjectClient
+	// Tuple is the client for interacting with the Tuple builders.
+	Tuple *TupleClient
 	// TypeConfig is the client for interacting with the TypeConfig builders.
 	TypeConfig *TypeConfigClient
 }
@@ -48,6 +51,7 @@ func (c *Client) init() {
 	c.Permission = NewPermissionClient(c.config)
 	c.Relation = NewRelationClient(c.config)
 	c.Subject = NewSubjectClient(c.config)
+	c.Tuple = NewTupleClient(c.config)
 	c.TypeConfig = NewTypeConfigClient(c.config)
 }
 
@@ -85,6 +89,7 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		Permission: NewPermissionClient(cfg),
 		Relation:   NewRelationClient(cfg),
 		Subject:    NewSubjectClient(cfg),
+		Tuple:      NewTupleClient(cfg),
 		TypeConfig: NewTypeConfigClient(cfg),
 	}, nil
 }
@@ -108,6 +113,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		Permission: NewPermissionClient(cfg),
 		Relation:   NewRelationClient(cfg),
 		Subject:    NewSubjectClient(cfg),
+		Tuple:      NewTupleClient(cfg),
 		TypeConfig: NewTypeConfigClient(cfg),
 	}, nil
 }
@@ -141,6 +147,7 @@ func (c *Client) Use(hooks ...Hook) {
 	c.Permission.Use(hooks...)
 	c.Relation.Use(hooks...)
 	c.Subject.Use(hooks...)
+	c.Tuple.Use(hooks...)
 	c.TypeConfig.Use(hooks...)
 }
 
@@ -540,6 +547,144 @@ func (c *SubjectClient) QueryRelations(s *Subject) *RelationQuery {
 // Hooks returns the client hooks.
 func (c *SubjectClient) Hooks() []Hook {
 	return c.hooks.Subject
+}
+
+// TupleClient is a client for the Tuple schema.
+type TupleClient struct {
+	config
+}
+
+// NewTupleClient returns a client for the Tuple from the given config.
+func NewTupleClient(c config) *TupleClient {
+	return &TupleClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `tuple.Hooks(f(g(h())))`.
+func (c *TupleClient) Use(hooks ...Hook) {
+	c.hooks.Tuple = append(c.hooks.Tuple, hooks...)
+}
+
+// Create returns a create builder for Tuple.
+func (c *TupleClient) Create() *TupleCreate {
+	mutation := newTupleMutation(c.config, OpCreate)
+	return &TupleCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of Tuple entities.
+func (c *TupleClient) CreateBulk(builders ...*TupleCreate) *TupleCreateBulk {
+	return &TupleCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for Tuple.
+func (c *TupleClient) Update() *TupleUpdate {
+	mutation := newTupleMutation(c.config, OpUpdate)
+	return &TupleUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *TupleClient) UpdateOne(t *Tuple) *TupleUpdateOne {
+	mutation := newTupleMutation(c.config, OpUpdateOne, withTuple(t))
+	return &TupleUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *TupleClient) UpdateOneID(id int) *TupleUpdateOne {
+	mutation := newTupleMutation(c.config, OpUpdateOne, withTupleID(id))
+	return &TupleUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for Tuple.
+func (c *TupleClient) Delete() *TupleDelete {
+	mutation := newTupleMutation(c.config, OpDelete)
+	return &TupleDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a delete builder for the given entity.
+func (c *TupleClient) DeleteOne(t *Tuple) *TupleDeleteOne {
+	return c.DeleteOneID(t.ID)
+}
+
+// DeleteOneID returns a delete builder for the given id.
+func (c *TupleClient) DeleteOneID(id int) *TupleDeleteOne {
+	builder := c.Delete().Where(tuple.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &TupleDeleteOne{builder}
+}
+
+// Query returns a query builder for Tuple.
+func (c *TupleClient) Query() *TupleQuery {
+	return &TupleQuery{
+		config: c.config,
+	}
+}
+
+// Get returns a Tuple entity by its id.
+func (c *TupleClient) Get(ctx context.Context, id int) (*Tuple, error) {
+	return c.Query().Where(tuple.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *TupleClient) GetX(ctx context.Context, id int) *Tuple {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QuerySubject queries the subject edge of a Tuple.
+func (c *TupleClient) QuerySubject(t *Tuple) *SubjectQuery {
+	query := &SubjectQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := t.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(tuple.Table, tuple.FieldID, id),
+			sqlgraph.To(subject.Table, subject.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, tuple.SubjectTable, tuple.SubjectColumn),
+		)
+		fromV = sqlgraph.Neighbors(t.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryRelation queries the relation edge of a Tuple.
+func (c *TupleClient) QueryRelation(t *Tuple) *RelationQuery {
+	query := &RelationQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := t.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(tuple.Table, tuple.FieldID, id),
+			sqlgraph.To(relation.Table, relation.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, tuple.RelationTable, tuple.RelationColumn),
+		)
+		fromV = sqlgraph.Neighbors(t.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryResource queries the resource edge of a Tuple.
+func (c *TupleClient) QueryResource(t *Tuple) *SubjectQuery {
+	query := &SubjectQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := t.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(tuple.Table, tuple.FieldID, id),
+			sqlgraph.To(subject.Table, subject.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, tuple.ResourceTable, tuple.ResourceColumn),
+		)
+		fromV = sqlgraph.Neighbors(t.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *TupleClient) Hooks() []Hook {
+	return c.hooks.Tuple
 }
 
 // TypeConfigClient is a client for the TypeConfig schema.

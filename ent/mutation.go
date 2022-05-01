@@ -12,6 +12,7 @@ import (
 	"github.com/DeluxeOwl/kala-go/ent/predicate"
 	"github.com/DeluxeOwl/kala-go/ent/relation"
 	"github.com/DeluxeOwl/kala-go/ent/subject"
+	"github.com/DeluxeOwl/kala-go/ent/tuple"
 	"github.com/DeluxeOwl/kala-go/ent/typeconfig"
 
 	"entgo.io/ent"
@@ -29,6 +30,7 @@ const (
 	TypePermission = "Permission"
 	TypeRelation   = "Relation"
 	TypeSubject    = "Subject"
+	TypeTuple      = "Tuple"
 	TypeTypeConfig = "TypeConfig"
 )
 
@@ -1693,6 +1695,573 @@ func (m *SubjectMutation) ResetEdge(name string) error {
 		return nil
 	}
 	return fmt.Errorf("unknown Subject edge %s", name)
+}
+
+// TupleMutation represents an operation that mutates the Tuple nodes in the graph.
+type TupleMutation struct {
+	config
+	op              Op
+	typ             string
+	id              *int
+	clearedFields   map[string]struct{}
+	subject         *int
+	clearedsubject  bool
+	relation        *int
+	clearedrelation bool
+	resource        *int
+	clearedresource bool
+	done            bool
+	oldValue        func(context.Context) (*Tuple, error)
+	predicates      []predicate.Tuple
+}
+
+var _ ent.Mutation = (*TupleMutation)(nil)
+
+// tupleOption allows management of the mutation configuration using functional options.
+type tupleOption func(*TupleMutation)
+
+// newTupleMutation creates new mutation for the Tuple entity.
+func newTupleMutation(c config, op Op, opts ...tupleOption) *TupleMutation {
+	m := &TupleMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeTuple,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withTupleID sets the ID field of the mutation.
+func withTupleID(id int) tupleOption {
+	return func(m *TupleMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *Tuple
+		)
+		m.oldValue = func(ctx context.Context) (*Tuple, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().Tuple.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withTuple sets the old Tuple of the mutation.
+func withTuple(node *Tuple) tupleOption {
+	return func(m *TupleMutation) {
+		m.oldValue = func(context.Context) (*Tuple, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m TupleMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m TupleMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *TupleMutation) ID() (id int, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *TupleMutation) IDs(ctx context.Context) ([]int, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []int{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().Tuple.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetSubjectID sets the "subject_id" field.
+func (m *TupleMutation) SetSubjectID(i int) {
+	m.subject = &i
+}
+
+// SubjectID returns the value of the "subject_id" field in the mutation.
+func (m *TupleMutation) SubjectID() (r int, exists bool) {
+	v := m.subject
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSubjectID returns the old "subject_id" field's value of the Tuple entity.
+// If the Tuple object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *TupleMutation) OldSubjectID(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSubjectID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSubjectID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSubjectID: %w", err)
+	}
+	return oldValue.SubjectID, nil
+}
+
+// ResetSubjectID resets all changes to the "subject_id" field.
+func (m *TupleMutation) ResetSubjectID() {
+	m.subject = nil
+}
+
+// SetRelationID sets the "relation_id" field.
+func (m *TupleMutation) SetRelationID(i int) {
+	m.relation = &i
+}
+
+// RelationID returns the value of the "relation_id" field in the mutation.
+func (m *TupleMutation) RelationID() (r int, exists bool) {
+	v := m.relation
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRelationID returns the old "relation_id" field's value of the Tuple entity.
+// If the Tuple object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *TupleMutation) OldRelationID(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRelationID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRelationID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRelationID: %w", err)
+	}
+	return oldValue.RelationID, nil
+}
+
+// ResetRelationID resets all changes to the "relation_id" field.
+func (m *TupleMutation) ResetRelationID() {
+	m.relation = nil
+}
+
+// SetResourceID sets the "resource_id" field.
+func (m *TupleMutation) SetResourceID(i int) {
+	m.resource = &i
+}
+
+// ResourceID returns the value of the "resource_id" field in the mutation.
+func (m *TupleMutation) ResourceID() (r int, exists bool) {
+	v := m.resource
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldResourceID returns the old "resource_id" field's value of the Tuple entity.
+// If the Tuple object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *TupleMutation) OldResourceID(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldResourceID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldResourceID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldResourceID: %w", err)
+	}
+	return oldValue.ResourceID, nil
+}
+
+// ResetResourceID resets all changes to the "resource_id" field.
+func (m *TupleMutation) ResetResourceID() {
+	m.resource = nil
+}
+
+// ClearSubject clears the "subject" edge to the Subject entity.
+func (m *TupleMutation) ClearSubject() {
+	m.clearedsubject = true
+}
+
+// SubjectCleared reports if the "subject" edge to the Subject entity was cleared.
+func (m *TupleMutation) SubjectCleared() bool {
+	return m.clearedsubject
+}
+
+// SubjectIDs returns the "subject" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// SubjectID instead. It exists only for internal usage by the builders.
+func (m *TupleMutation) SubjectIDs() (ids []int) {
+	if id := m.subject; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetSubject resets all changes to the "subject" edge.
+func (m *TupleMutation) ResetSubject() {
+	m.subject = nil
+	m.clearedsubject = false
+}
+
+// ClearRelation clears the "relation" edge to the Relation entity.
+func (m *TupleMutation) ClearRelation() {
+	m.clearedrelation = true
+}
+
+// RelationCleared reports if the "relation" edge to the Relation entity was cleared.
+func (m *TupleMutation) RelationCleared() bool {
+	return m.clearedrelation
+}
+
+// RelationIDs returns the "relation" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// RelationID instead. It exists only for internal usage by the builders.
+func (m *TupleMutation) RelationIDs() (ids []int) {
+	if id := m.relation; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetRelation resets all changes to the "relation" edge.
+func (m *TupleMutation) ResetRelation() {
+	m.relation = nil
+	m.clearedrelation = false
+}
+
+// ClearResource clears the "resource" edge to the Subject entity.
+func (m *TupleMutation) ClearResource() {
+	m.clearedresource = true
+}
+
+// ResourceCleared reports if the "resource" edge to the Subject entity was cleared.
+func (m *TupleMutation) ResourceCleared() bool {
+	return m.clearedresource
+}
+
+// ResourceIDs returns the "resource" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// ResourceID instead. It exists only for internal usage by the builders.
+func (m *TupleMutation) ResourceIDs() (ids []int) {
+	if id := m.resource; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetResource resets all changes to the "resource" edge.
+func (m *TupleMutation) ResetResource() {
+	m.resource = nil
+	m.clearedresource = false
+}
+
+// Where appends a list predicates to the TupleMutation builder.
+func (m *TupleMutation) Where(ps ...predicate.Tuple) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// Op returns the operation name.
+func (m *TupleMutation) Op() Op {
+	return m.op
+}
+
+// Type returns the node type of this mutation (Tuple).
+func (m *TupleMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *TupleMutation) Fields() []string {
+	fields := make([]string, 0, 3)
+	if m.subject != nil {
+		fields = append(fields, tuple.FieldSubjectID)
+	}
+	if m.relation != nil {
+		fields = append(fields, tuple.FieldRelationID)
+	}
+	if m.resource != nil {
+		fields = append(fields, tuple.FieldResourceID)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *TupleMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case tuple.FieldSubjectID:
+		return m.SubjectID()
+	case tuple.FieldRelationID:
+		return m.RelationID()
+	case tuple.FieldResourceID:
+		return m.ResourceID()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *TupleMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case tuple.FieldSubjectID:
+		return m.OldSubjectID(ctx)
+	case tuple.FieldRelationID:
+		return m.OldRelationID(ctx)
+	case tuple.FieldResourceID:
+		return m.OldResourceID(ctx)
+	}
+	return nil, fmt.Errorf("unknown Tuple field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *TupleMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case tuple.FieldSubjectID:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSubjectID(v)
+		return nil
+	case tuple.FieldRelationID:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRelationID(v)
+		return nil
+	case tuple.FieldResourceID:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetResourceID(v)
+		return nil
+	}
+	return fmt.Errorf("unknown Tuple field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *TupleMutation) AddedFields() []string {
+	var fields []string
+	return fields
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *TupleMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	}
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *TupleMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown Tuple numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *TupleMutation) ClearedFields() []string {
+	return nil
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *TupleMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *TupleMutation) ClearField(name string) error {
+	return fmt.Errorf("unknown Tuple nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *TupleMutation) ResetField(name string) error {
+	switch name {
+	case tuple.FieldSubjectID:
+		m.ResetSubjectID()
+		return nil
+	case tuple.FieldRelationID:
+		m.ResetRelationID()
+		return nil
+	case tuple.FieldResourceID:
+		m.ResetResourceID()
+		return nil
+	}
+	return fmt.Errorf("unknown Tuple field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *TupleMutation) AddedEdges() []string {
+	edges := make([]string, 0, 3)
+	if m.subject != nil {
+		edges = append(edges, tuple.EdgeSubject)
+	}
+	if m.relation != nil {
+		edges = append(edges, tuple.EdgeRelation)
+	}
+	if m.resource != nil {
+		edges = append(edges, tuple.EdgeResource)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *TupleMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case tuple.EdgeSubject:
+		if id := m.subject; id != nil {
+			return []ent.Value{*id}
+		}
+	case tuple.EdgeRelation:
+		if id := m.relation; id != nil {
+			return []ent.Value{*id}
+		}
+	case tuple.EdgeResource:
+		if id := m.resource; id != nil {
+			return []ent.Value{*id}
+		}
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *TupleMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 3)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *TupleMutation) RemovedIDs(name string) []ent.Value {
+	switch name {
+	}
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *TupleMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 3)
+	if m.clearedsubject {
+		edges = append(edges, tuple.EdgeSubject)
+	}
+	if m.clearedrelation {
+		edges = append(edges, tuple.EdgeRelation)
+	}
+	if m.clearedresource {
+		edges = append(edges, tuple.EdgeResource)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *TupleMutation) EdgeCleared(name string) bool {
+	switch name {
+	case tuple.EdgeSubject:
+		return m.clearedsubject
+	case tuple.EdgeRelation:
+		return m.clearedrelation
+	case tuple.EdgeResource:
+		return m.clearedresource
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *TupleMutation) ClearEdge(name string) error {
+	switch name {
+	case tuple.EdgeSubject:
+		m.ClearSubject()
+		return nil
+	case tuple.EdgeRelation:
+		m.ClearRelation()
+		return nil
+	case tuple.EdgeResource:
+		m.ClearResource()
+		return nil
+	}
+	return fmt.Errorf("unknown Tuple unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *TupleMutation) ResetEdge(name string) error {
+	switch name {
+	case tuple.EdgeSubject:
+		m.ResetSubject()
+		return nil
+	case tuple.EdgeRelation:
+		m.ResetRelation()
+		return nil
+	case tuple.EdgeResource:
+		m.ResetResource()
+		return nil
+	}
+	return fmt.Errorf("unknown Tuple edge %s", name)
 }
 
 // TypeConfigMutation represents an operation that mutates the TypeConfig nodes in the graph.

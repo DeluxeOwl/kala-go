@@ -70,6 +70,39 @@ var (
 			},
 		},
 	}
+	// TuplesColumns holds the columns for the "tuples" table.
+	TuplesColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "subject_id", Type: field.TypeInt},
+		{Name: "relation_id", Type: field.TypeInt},
+		{Name: "resource_id", Type: field.TypeInt},
+	}
+	// TuplesTable holds the schema information for the "tuples" table.
+	TuplesTable = &schema.Table{
+		Name:       "tuples",
+		Columns:    TuplesColumns,
+		PrimaryKey: []*schema.Column{TuplesColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "tuples_subjects_subject",
+				Columns:    []*schema.Column{TuplesColumns[1]},
+				RefColumns: []*schema.Column{SubjectsColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "tuples_relations_relation",
+				Columns:    []*schema.Column{TuplesColumns[2]},
+				RefColumns: []*schema.Column{RelationsColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "tuples_subjects_resource",
+				Columns:    []*schema.Column{TuplesColumns[3]},
+				RefColumns: []*schema.Column{SubjectsColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+	}
 	// TypeConfigsColumns holds the columns for the "type_configs" table.
 	TypeConfigsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
@@ -145,6 +178,7 @@ var (
 		PermissionsTable,
 		RelationsTable,
 		SubjectsTable,
+		TuplesTable,
 		TypeConfigsTable,
 		PermissionRelationsTable,
 		RelationSubjectsTable,
@@ -155,6 +189,9 @@ func init() {
 	PermissionsTable.ForeignKeys[0].RefTable = TypeConfigsTable
 	RelationsTable.ForeignKeys[0].RefTable = TypeConfigsTable
 	SubjectsTable.ForeignKeys[0].RefTable = TypeConfigsTable
+	TuplesTable.ForeignKeys[0].RefTable = SubjectsTable
+	TuplesTable.ForeignKeys[1].RefTable = RelationsTable
+	TuplesTable.ForeignKeys[2].RefTable = SubjectsTable
 	TypeConfigsTable.ForeignKeys[0].RefTable = RelationsTable
 	PermissionRelationsTable.ForeignKeys[0].RefTable = PermissionsTable
 	PermissionRelationsTable.ForeignKeys[1].RefTable = RelationsTable
