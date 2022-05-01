@@ -14,7 +14,7 @@ type Subject struct {
 // Fields of the Subject.
 func (Subject) Fields() []ent.Field {
 	return []ent.Field{
-		// Has a unique name
+		// Has a unique name, TODO: should it be unique?
 		field.String("name").
 			Unique(),
 	}

@@ -10,10 +10,10 @@ tasks:
   run:
     cmds:
       - go mod tidy
-      - reflex -d fancy -g 'cmd/kala.go' -s go run ./cmd/kala.go
+      - reflex -g 'cmd/kala.go' -s go run ./cmd/kala.go
   reflex:
     cmds:
       - reflex -d none -g 'ent/schema/*.go' -s task gen
   describe:
-    cmds: 
+    cmds:
       - ent describe ./ent/schema > schema_desc.txt && code schema_desc.txt
