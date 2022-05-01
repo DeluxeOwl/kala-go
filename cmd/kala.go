@@ -8,14 +8,55 @@ import (
 	"github.com/DeluxeOwl/kala-go/ent"
 	"github.com/DeluxeOwl/kala-go/ent/typeconfig"
 	_ "github.com/mattn/go-sqlite3"
+	"github.com/pkg/errors"
 )
 
-// TODO: add functionality for connecting edges between relations and permissions
-func (h *Handler) CreateTypeConfig(ctx context.Context) (*ent.TypeConfig, error) {
+func WithTx(ctx context.Context, client *ent.Client, fn func(tx *ent.Tx) error) error {
+	tx, err := client.Tx(ctx)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if v := recover(); v != nil {
+			tx.Rollback()
+			panic(v)
+		}
+	}()
+	if err := fn(tx); err != nil {
+		if rerr := tx.Rollback(); rerr != nil {
+			err = errors.Wrapf(err, "rolling back transaction: %v", rerr)
+		}
+		return err
+	}
+	if err := tx.Commit(); err != nil {
+		return errors.Wrapf(err, "committing transaction: %v", err)
+	}
+	return nil
+}
+
+type TypeConfig struct {
+	Name        string
+	Relations   map[string]string
+	Permissions map[string]string
+}
+
+// TODO: order the list of events https://entgo.io/docs/transactions/#transactional-client
+// You also have to add refs, so be careful https://entgo.io/docs/schema-edges#o2o-two-types
+// check the dependencies
+// if they depend, use the id after
+func (h *Handler) CreateTypeConfig(ctx context.Context, tc *TypeConfig) error {
+	// if tc.Relations == nil {
+	// 	fmt.Println("nil map")
+	// }
+	return nil
+}
+
+func (h *Handler) CreateTypeConfigOld(ctx context.Context) (*ent.TypeConfig, error) {
 
 	subj, err := h.client.Subject.Create().
 		SetName("anna").
 		Save(ctx)
+
 	if err != nil {
 		return nil, fmt.Errorf("failed creating subject: %w", err)
 	}
@@ -134,7 +175,14 @@ func main() {
 		client: client,
 	}
 
-	tc, _ := h.CreateTypeConfig(ctx)
+	tc, _ := h.CreateTypeConfigOld(ctx)
 	h.QueryTypeConfig(ctx)
 	QueryRelations(ctx, tc)
+	_ = h.CreateTypeConfig(ctx, &TypeConfig{Name: "docs"})
+
+	// visualize
+	// err := entc.Generate("./ent/schema", &gen.Config{}, entc.Extensions(entviz.Extension{}))
+	// if err != nil {
+	// 	log.Fatalf("running ent codegen: %v", err)
+	// }
 }
