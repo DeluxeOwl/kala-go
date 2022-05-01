@@ -16,6 +16,7 @@ import (
 	"github.com/DeluxeOwl/kala-go/ent/predicate"
 	"github.com/DeluxeOwl/kala-go/ent/relation"
 	"github.com/DeluxeOwl/kala-go/ent/subject"
+	"github.com/DeluxeOwl/kala-go/ent/tuple"
 	"github.com/DeluxeOwl/kala-go/ent/typeconfig"
 )
 
@@ -33,6 +34,7 @@ type RelationQuery struct {
 	withRelTypeconfigs *TypeConfigQuery
 	withPermissions    *PermissionQuery
 	withTypeconfig     *TypeConfigQuery
+	withTuples         *TupleQuery
 	withFKs            bool
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
@@ -151,6 +153,28 @@ func (rq *RelationQuery) QueryTypeconfig() *TypeConfigQuery {
 			sqlgraph.From(relation.Table, relation.FieldID, selector),
 			sqlgraph.To(typeconfig.Table, typeconfig.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, true, relation.TypeconfigTable, relation.TypeconfigColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(rq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryTuples chains the current query on the "tuples" edge.
+func (rq *RelationQuery) QueryTuples() *TupleQuery {
+	query := &TupleQuery{config: rq.config}
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := rq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := rq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(relation.Table, relation.FieldID, selector),
+			sqlgraph.To(tuple.Table, tuple.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, relation.TuplesTable, relation.TuplesColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(rq.driver.Dialect(), step)
 		return fromU, nil
@@ -343,6 +367,7 @@ func (rq *RelationQuery) Clone() *RelationQuery {
 		withRelTypeconfigs: rq.withRelTypeconfigs.Clone(),
 		withPermissions:    rq.withPermissions.Clone(),
 		withTypeconfig:     rq.withTypeconfig.Clone(),
+		withTuples:         rq.withTuples.Clone(),
 		// clone intermediate query.
 		sql:    rq.sql.Clone(),
 		path:   rq.path,
@@ -391,6 +416,17 @@ func (rq *RelationQuery) WithTypeconfig(opts ...func(*TypeConfigQuery)) *Relatio
 		opt(query)
 	}
 	rq.withTypeconfig = query
+	return rq
+}
+
+// WithTuples tells the query-builder to eager-load the nodes that are connected to
+// the "tuples" edge. The optional arguments are used to configure the query builder of the edge.
+func (rq *RelationQuery) WithTuples(opts ...func(*TupleQuery)) *RelationQuery {
+	query := &TupleQuery{config: rq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	rq.withTuples = query
 	return rq
 }
 
@@ -460,11 +496,12 @@ func (rq *RelationQuery) sqlAll(ctx context.Context) ([]*Relation, error) {
 		nodes       = []*Relation{}
 		withFKs     = rq.withFKs
 		_spec       = rq.querySpec()
-		loadedTypes = [4]bool{
+		loadedTypes = [5]bool{
 			rq.withSubjects != nil,
 			rq.withRelTypeconfigs != nil,
 			rq.withPermissions != nil,
 			rq.withTypeconfig != nil,
+			rq.withTuples != nil,
 		}
 	)
 	if rq.withTypeconfig != nil {
@@ -678,6 +715,31 @@ func (rq *RelationQuery) sqlAll(ctx context.Context) ([]*Relation, error) {
 			for i := range nodes {
 				nodes[i].Edges.Typeconfig = n
 			}
+		}
+	}
+
+	if query := rq.withTuples; query != nil {
+		fks := make([]driver.Value, 0, len(nodes))
+		nodeids := make(map[int]*Relation)
+		for i := range nodes {
+			fks = append(fks, nodes[i].ID)
+			nodeids[nodes[i].ID] = nodes[i]
+			nodes[i].Edges.Tuples = []*Tuple{}
+		}
+		query.Where(predicate.Tuple(func(s *sql.Selector) {
+			s.Where(sql.InValues(relation.TuplesColumn, fks...))
+		}))
+		neighbors, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, n := range neighbors {
+			fk := n.RelationID
+			node, ok := nodeids[fk]
+			if !ok {
+				return nil, fmt.Errorf(`unexpected foreign-key "relation_id" returned %v for node %v`, fk, n.ID)
+			}
+			node.Edges.Tuples = append(node.Edges.Tuples, n)
 		}
 	}
 

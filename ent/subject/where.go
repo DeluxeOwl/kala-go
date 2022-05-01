@@ -265,6 +265,62 @@ func HasRelationsWith(preds ...predicate.Relation) predicate.Subject {
 	})
 }
 
+// HasAsDirectOwnerTuples applies the HasEdge predicate on the "as_direct_owner_tuples" edge.
+func HasAsDirectOwnerTuples() predicate.Subject {
+	return predicate.Subject(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(AsDirectOwnerTuplesTable, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, AsDirectOwnerTuplesTable, AsDirectOwnerTuplesColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasAsDirectOwnerTuplesWith applies the HasEdge predicate on the "as_direct_owner_tuples" edge with a given conditions (other predicates).
+func HasAsDirectOwnerTuplesWith(preds ...predicate.Tuple) predicate.Subject {
+	return predicate.Subject(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(AsDirectOwnerTuplesInverseTable, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, AsDirectOwnerTuplesTable, AsDirectOwnerTuplesColumn),
+		)
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasAsResourceTuples applies the HasEdge predicate on the "as_resource_tuples" edge.
+func HasAsResourceTuples() predicate.Subject {
+	return predicate.Subject(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(AsResourceTuplesTable, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, AsResourceTuplesTable, AsResourceTuplesColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasAsResourceTuplesWith applies the HasEdge predicate on the "as_resource_tuples" edge with a given conditions (other predicates).
+func HasAsResourceTuplesWith(preds ...predicate.Tuple) predicate.Subject {
+	return predicate.Subject(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(AsResourceTuplesInverseTable, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, AsResourceTuplesTable, AsResourceTuplesColumn),
+		)
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // And groups predicates with the AND operator between them.
 func And(predicates ...predicate.Subject) predicate.Subject {
 	return predicate.Subject(func(s *sql.Selector) {

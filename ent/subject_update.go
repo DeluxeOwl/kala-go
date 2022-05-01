@@ -13,6 +13,7 @@ import (
 	"github.com/DeluxeOwl/kala-go/ent/predicate"
 	"github.com/DeluxeOwl/kala-go/ent/relation"
 	"github.com/DeluxeOwl/kala-go/ent/subject"
+	"github.com/DeluxeOwl/kala-go/ent/tuple"
 	"github.com/DeluxeOwl/kala-go/ent/typeconfig"
 )
 
@@ -69,6 +70,36 @@ func (su *SubjectUpdate) AddRelations(r ...*Relation) *SubjectUpdate {
 	return su.AddRelationIDs(ids...)
 }
 
+// AddAsDirectOwnerTupleIDs adds the "as_direct_owner_tuples" edge to the Tuple entity by IDs.
+func (su *SubjectUpdate) AddAsDirectOwnerTupleIDs(ids ...int) *SubjectUpdate {
+	su.mutation.AddAsDirectOwnerTupleIDs(ids...)
+	return su
+}
+
+// AddAsDirectOwnerTuples adds the "as_direct_owner_tuples" edges to the Tuple entity.
+func (su *SubjectUpdate) AddAsDirectOwnerTuples(t ...*Tuple) *SubjectUpdate {
+	ids := make([]int, len(t))
+	for i := range t {
+		ids[i] = t[i].ID
+	}
+	return su.AddAsDirectOwnerTupleIDs(ids...)
+}
+
+// AddAsResourceTupleIDs adds the "as_resource_tuples" edge to the Tuple entity by IDs.
+func (su *SubjectUpdate) AddAsResourceTupleIDs(ids ...int) *SubjectUpdate {
+	su.mutation.AddAsResourceTupleIDs(ids...)
+	return su
+}
+
+// AddAsResourceTuples adds the "as_resource_tuples" edges to the Tuple entity.
+func (su *SubjectUpdate) AddAsResourceTuples(t ...*Tuple) *SubjectUpdate {
+	ids := make([]int, len(t))
+	for i := range t {
+		ids[i] = t[i].ID
+	}
+	return su.AddAsResourceTupleIDs(ids...)
+}
+
 // Mutation returns the SubjectMutation object of the builder.
 func (su *SubjectUpdate) Mutation() *SubjectMutation {
 	return su.mutation
@@ -99,6 +130,48 @@ func (su *SubjectUpdate) RemoveRelations(r ...*Relation) *SubjectUpdate {
 		ids[i] = r[i].ID
 	}
 	return su.RemoveRelationIDs(ids...)
+}
+
+// ClearAsDirectOwnerTuples clears all "as_direct_owner_tuples" edges to the Tuple entity.
+func (su *SubjectUpdate) ClearAsDirectOwnerTuples() *SubjectUpdate {
+	su.mutation.ClearAsDirectOwnerTuples()
+	return su
+}
+
+// RemoveAsDirectOwnerTupleIDs removes the "as_direct_owner_tuples" edge to Tuple entities by IDs.
+func (su *SubjectUpdate) RemoveAsDirectOwnerTupleIDs(ids ...int) *SubjectUpdate {
+	su.mutation.RemoveAsDirectOwnerTupleIDs(ids...)
+	return su
+}
+
+// RemoveAsDirectOwnerTuples removes "as_direct_owner_tuples" edges to Tuple entities.
+func (su *SubjectUpdate) RemoveAsDirectOwnerTuples(t ...*Tuple) *SubjectUpdate {
+	ids := make([]int, len(t))
+	for i := range t {
+		ids[i] = t[i].ID
+	}
+	return su.RemoveAsDirectOwnerTupleIDs(ids...)
+}
+
+// ClearAsResourceTuples clears all "as_resource_tuples" edges to the Tuple entity.
+func (su *SubjectUpdate) ClearAsResourceTuples() *SubjectUpdate {
+	su.mutation.ClearAsResourceTuples()
+	return su
+}
+
+// RemoveAsResourceTupleIDs removes the "as_resource_tuples" edge to Tuple entities by IDs.
+func (su *SubjectUpdate) RemoveAsResourceTupleIDs(ids ...int) *SubjectUpdate {
+	su.mutation.RemoveAsResourceTupleIDs(ids...)
+	return su
+}
+
+// RemoveAsResourceTuples removes "as_resource_tuples" edges to Tuple entities.
+func (su *SubjectUpdate) RemoveAsResourceTuples(t ...*Tuple) *SubjectUpdate {
+	ids := make([]int, len(t))
+	for i := range t {
+		ids[i] = t[i].ID
+	}
+	return su.RemoveAsResourceTupleIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -269,6 +342,114 @@ func (su *SubjectUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if su.mutation.AsDirectOwnerTuplesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   subject.AsDirectOwnerTuplesTable,
+			Columns: []string{subject.AsDirectOwnerTuplesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: tuple.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := su.mutation.RemovedAsDirectOwnerTuplesIDs(); len(nodes) > 0 && !su.mutation.AsDirectOwnerTuplesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   subject.AsDirectOwnerTuplesTable,
+			Columns: []string{subject.AsDirectOwnerTuplesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: tuple.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := su.mutation.AsDirectOwnerTuplesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   subject.AsDirectOwnerTuplesTable,
+			Columns: []string{subject.AsDirectOwnerTuplesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: tuple.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if su.mutation.AsResourceTuplesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   subject.AsResourceTuplesTable,
+			Columns: []string{subject.AsResourceTuplesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: tuple.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := su.mutation.RemovedAsResourceTuplesIDs(); len(nodes) > 0 && !su.mutation.AsResourceTuplesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   subject.AsResourceTuplesTable,
+			Columns: []string{subject.AsResourceTuplesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: tuple.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := su.mutation.AsResourceTuplesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   subject.AsResourceTuplesTable,
+			Columns: []string{subject.AsResourceTuplesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: tuple.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if n, err = sqlgraph.UpdateNodes(ctx, su.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{subject.Label}
@@ -328,6 +509,36 @@ func (suo *SubjectUpdateOne) AddRelations(r ...*Relation) *SubjectUpdateOne {
 	return suo.AddRelationIDs(ids...)
 }
 
+// AddAsDirectOwnerTupleIDs adds the "as_direct_owner_tuples" edge to the Tuple entity by IDs.
+func (suo *SubjectUpdateOne) AddAsDirectOwnerTupleIDs(ids ...int) *SubjectUpdateOne {
+	suo.mutation.AddAsDirectOwnerTupleIDs(ids...)
+	return suo
+}
+
+// AddAsDirectOwnerTuples adds the "as_direct_owner_tuples" edges to the Tuple entity.
+func (suo *SubjectUpdateOne) AddAsDirectOwnerTuples(t ...*Tuple) *SubjectUpdateOne {
+	ids := make([]int, len(t))
+	for i := range t {
+		ids[i] = t[i].ID
+	}
+	return suo.AddAsDirectOwnerTupleIDs(ids...)
+}
+
+// AddAsResourceTupleIDs adds the "as_resource_tuples" edge to the Tuple entity by IDs.
+func (suo *SubjectUpdateOne) AddAsResourceTupleIDs(ids ...int) *SubjectUpdateOne {
+	suo.mutation.AddAsResourceTupleIDs(ids...)
+	return suo
+}
+
+// AddAsResourceTuples adds the "as_resource_tuples" edges to the Tuple entity.
+func (suo *SubjectUpdateOne) AddAsResourceTuples(t ...*Tuple) *SubjectUpdateOne {
+	ids := make([]int, len(t))
+	for i := range t {
+		ids[i] = t[i].ID
+	}
+	return suo.AddAsResourceTupleIDs(ids...)
+}
+
 // Mutation returns the SubjectMutation object of the builder.
 func (suo *SubjectUpdateOne) Mutation() *SubjectMutation {
 	return suo.mutation
@@ -358,6 +569,48 @@ func (suo *SubjectUpdateOne) RemoveRelations(r ...*Relation) *SubjectUpdateOne {
 		ids[i] = r[i].ID
 	}
 	return suo.RemoveRelationIDs(ids...)
+}
+
+// ClearAsDirectOwnerTuples clears all "as_direct_owner_tuples" edges to the Tuple entity.
+func (suo *SubjectUpdateOne) ClearAsDirectOwnerTuples() *SubjectUpdateOne {
+	suo.mutation.ClearAsDirectOwnerTuples()
+	return suo
+}
+
+// RemoveAsDirectOwnerTupleIDs removes the "as_direct_owner_tuples" edge to Tuple entities by IDs.
+func (suo *SubjectUpdateOne) RemoveAsDirectOwnerTupleIDs(ids ...int) *SubjectUpdateOne {
+	suo.mutation.RemoveAsDirectOwnerTupleIDs(ids...)
+	return suo
+}
+
+// RemoveAsDirectOwnerTuples removes "as_direct_owner_tuples" edges to Tuple entities.
+func (suo *SubjectUpdateOne) RemoveAsDirectOwnerTuples(t ...*Tuple) *SubjectUpdateOne {
+	ids := make([]int, len(t))
+	for i := range t {
+		ids[i] = t[i].ID
+	}
+	return suo.RemoveAsDirectOwnerTupleIDs(ids...)
+}
+
+// ClearAsResourceTuples clears all "as_resource_tuples" edges to the Tuple entity.
+func (suo *SubjectUpdateOne) ClearAsResourceTuples() *SubjectUpdateOne {
+	suo.mutation.ClearAsResourceTuples()
+	return suo
+}
+
+// RemoveAsResourceTupleIDs removes the "as_resource_tuples" edge to Tuple entities by IDs.
+func (suo *SubjectUpdateOne) RemoveAsResourceTupleIDs(ids ...int) *SubjectUpdateOne {
+	suo.mutation.RemoveAsResourceTupleIDs(ids...)
+	return suo
+}
+
+// RemoveAsResourceTuples removes "as_resource_tuples" edges to Tuple entities.
+func (suo *SubjectUpdateOne) RemoveAsResourceTuples(t ...*Tuple) *SubjectUpdateOne {
+	ids := make([]int, len(t))
+	for i := range t {
+		ids[i] = t[i].ID
+	}
+	return suo.RemoveAsResourceTupleIDs(ids...)
 }
 
 // Select allows selecting one or more fields (columns) of the returned entity.
@@ -544,6 +797,114 @@ func (suo *SubjectUpdateOne) sqlSave(ctx context.Context) (_node *Subject, err e
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
 					Column: relation.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if suo.mutation.AsDirectOwnerTuplesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   subject.AsDirectOwnerTuplesTable,
+			Columns: []string{subject.AsDirectOwnerTuplesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: tuple.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := suo.mutation.RemovedAsDirectOwnerTuplesIDs(); len(nodes) > 0 && !suo.mutation.AsDirectOwnerTuplesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   subject.AsDirectOwnerTuplesTable,
+			Columns: []string{subject.AsDirectOwnerTuplesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: tuple.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := suo.mutation.AsDirectOwnerTuplesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   subject.AsDirectOwnerTuplesTable,
+			Columns: []string{subject.AsDirectOwnerTuplesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: tuple.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if suo.mutation.AsResourceTuplesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   subject.AsResourceTuplesTable,
+			Columns: []string{subject.AsResourceTuplesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: tuple.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := suo.mutation.RemovedAsResourceTuplesIDs(); len(nodes) > 0 && !suo.mutation.AsResourceTuplesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   subject.AsResourceTuplesTable,
+			Columns: []string{subject.AsResourceTuplesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: tuple.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := suo.mutation.AsResourceTuplesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   subject.AsResourceTuplesTable,
+			Columns: []string{subject.AsResourceTuplesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: tuple.FieldID,
 				},
 			},
 		}

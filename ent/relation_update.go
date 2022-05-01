@@ -14,6 +14,7 @@ import (
 	"github.com/DeluxeOwl/kala-go/ent/predicate"
 	"github.com/DeluxeOwl/kala-go/ent/relation"
 	"github.com/DeluxeOwl/kala-go/ent/subject"
+	"github.com/DeluxeOwl/kala-go/ent/tuple"
 	"github.com/DeluxeOwl/kala-go/ent/typeconfig"
 )
 
@@ -106,6 +107,21 @@ func (ru *RelationUpdate) SetTypeconfig(t *TypeConfig) *RelationUpdate {
 	return ru.SetTypeconfigID(t.ID)
 }
 
+// AddTupleIDs adds the "tuples" edge to the Tuple entity by IDs.
+func (ru *RelationUpdate) AddTupleIDs(ids ...int) *RelationUpdate {
+	ru.mutation.AddTupleIDs(ids...)
+	return ru
+}
+
+// AddTuples adds the "tuples" edges to the Tuple entity.
+func (ru *RelationUpdate) AddTuples(t ...*Tuple) *RelationUpdate {
+	ids := make([]int, len(t))
+	for i := range t {
+		ids[i] = t[i].ID
+	}
+	return ru.AddTupleIDs(ids...)
+}
+
 // Mutation returns the RelationMutation object of the builder.
 func (ru *RelationUpdate) Mutation() *RelationMutation {
 	return ru.mutation
@@ -178,6 +194,27 @@ func (ru *RelationUpdate) RemovePermissions(p ...*Permission) *RelationUpdate {
 func (ru *RelationUpdate) ClearTypeconfig() *RelationUpdate {
 	ru.mutation.ClearTypeconfig()
 	return ru
+}
+
+// ClearTuples clears all "tuples" edges to the Tuple entity.
+func (ru *RelationUpdate) ClearTuples() *RelationUpdate {
+	ru.mutation.ClearTuples()
+	return ru
+}
+
+// RemoveTupleIDs removes the "tuples" edge to Tuple entities by IDs.
+func (ru *RelationUpdate) RemoveTupleIDs(ids ...int) *RelationUpdate {
+	ru.mutation.RemoveTupleIDs(ids...)
+	return ru
+}
+
+// RemoveTuples removes "tuples" edges to Tuple entities.
+func (ru *RelationUpdate) RemoveTuples(t ...*Tuple) *RelationUpdate {
+	ids := make([]int, len(t))
+	for i := range t {
+		ids[i] = t[i].ID
+	}
+	return ru.RemoveTupleIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -463,6 +500,60 @@ func (ru *RelationUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if ru.mutation.TuplesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   relation.TuplesTable,
+			Columns: []string{relation.TuplesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: tuple.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := ru.mutation.RemovedTuplesIDs(); len(nodes) > 0 && !ru.mutation.TuplesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   relation.TuplesTable,
+			Columns: []string{relation.TuplesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: tuple.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := ru.mutation.TuplesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   relation.TuplesTable,
+			Columns: []string{relation.TuplesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: tuple.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if n, err = sqlgraph.UpdateNodes(ctx, ru.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{relation.Label}
@@ -558,6 +649,21 @@ func (ruo *RelationUpdateOne) SetTypeconfig(t *TypeConfig) *RelationUpdateOne {
 	return ruo.SetTypeconfigID(t.ID)
 }
 
+// AddTupleIDs adds the "tuples" edge to the Tuple entity by IDs.
+func (ruo *RelationUpdateOne) AddTupleIDs(ids ...int) *RelationUpdateOne {
+	ruo.mutation.AddTupleIDs(ids...)
+	return ruo
+}
+
+// AddTuples adds the "tuples" edges to the Tuple entity.
+func (ruo *RelationUpdateOne) AddTuples(t ...*Tuple) *RelationUpdateOne {
+	ids := make([]int, len(t))
+	for i := range t {
+		ids[i] = t[i].ID
+	}
+	return ruo.AddTupleIDs(ids...)
+}
+
 // Mutation returns the RelationMutation object of the builder.
 func (ruo *RelationUpdateOne) Mutation() *RelationMutation {
 	return ruo.mutation
@@ -630,6 +736,27 @@ func (ruo *RelationUpdateOne) RemovePermissions(p ...*Permission) *RelationUpdat
 func (ruo *RelationUpdateOne) ClearTypeconfig() *RelationUpdateOne {
 	ruo.mutation.ClearTypeconfig()
 	return ruo
+}
+
+// ClearTuples clears all "tuples" edges to the Tuple entity.
+func (ruo *RelationUpdateOne) ClearTuples() *RelationUpdateOne {
+	ruo.mutation.ClearTuples()
+	return ruo
+}
+
+// RemoveTupleIDs removes the "tuples" edge to Tuple entities by IDs.
+func (ruo *RelationUpdateOne) RemoveTupleIDs(ids ...int) *RelationUpdateOne {
+	ruo.mutation.RemoveTupleIDs(ids...)
+	return ruo
+}
+
+// RemoveTuples removes "tuples" edges to Tuple entities.
+func (ruo *RelationUpdateOne) RemoveTuples(t ...*Tuple) *RelationUpdateOne {
+	ids := make([]int, len(t))
+	for i := range t {
+		ids[i] = t[i].ID
+	}
+	return ruo.RemoveTupleIDs(ids...)
 }
 
 // Select allows selecting one or more fields (columns) of the returned entity.
@@ -931,6 +1058,60 @@ func (ruo *RelationUpdateOne) sqlSave(ctx context.Context) (_node *Relation, err
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
 					Column: typeconfig.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if ruo.mutation.TuplesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   relation.TuplesTable,
+			Columns: []string{relation.TuplesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: tuple.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := ruo.mutation.RemovedTuplesIDs(); len(nodes) > 0 && !ruo.mutation.TuplesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   relation.TuplesTable,
+			Columns: []string{relation.TuplesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: tuple.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := ruo.mutation.TuplesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   relation.TuplesTable,
+			Columns: []string{relation.TuplesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: tuple.FieldID,
 				},
 			},
 		}

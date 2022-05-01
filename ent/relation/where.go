@@ -439,6 +439,34 @@ func HasTypeconfigWith(preds ...predicate.TypeConfig) predicate.Relation {
 	})
 }
 
+// HasTuples applies the HasEdge predicate on the "tuples" edge.
+func HasTuples() predicate.Relation {
+	return predicate.Relation(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(TuplesTable, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, TuplesTable, TuplesColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasTuplesWith applies the HasEdge predicate on the "tuples" edge with a given conditions (other predicates).
+func HasTuplesWith(preds ...predicate.Tuple) predicate.Relation {
+	return predicate.Relation(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(TuplesInverseTable, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, TuplesTable, TuplesColumn),
+		)
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // And groups predicates with the AND operator between them.
 func And(predicates ...predicate.Relation) predicate.Relation {
 	return predicate.Relation(func(s *sql.Selector) {

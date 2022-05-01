@@ -19,6 +19,8 @@ const (
 	EdgePermissions = "permissions"
 	// EdgeTypeconfig holds the string denoting the typeconfig edge name in mutations.
 	EdgeTypeconfig = "typeconfig"
+	// EdgeTuples holds the string denoting the tuples edge name in mutations.
+	EdgeTuples = "tuples"
 	// Table holds the table name of the relation in the database.
 	Table = "relations"
 	// SubjectsTable is the table that holds the subjects relation/edge. The primary key declared below.
@@ -45,6 +47,13 @@ const (
 	TypeconfigInverseTable = "type_configs"
 	// TypeconfigColumn is the table column denoting the typeconfig relation/edge.
 	TypeconfigColumn = "type_config_relations"
+	// TuplesTable is the table that holds the tuples relation/edge.
+	TuplesTable = "tuples"
+	// TuplesInverseTable is the table name for the Tuple entity.
+	// It exists in this package in order to avoid circular dependency with the "tuple" package.
+	TuplesInverseTable = "tuples"
+	// TuplesColumn is the table column denoting the tuples relation/edge.
+	TuplesColumn = "relation_id"
 )
 
 // Columns holds all SQL columns for relation fields.

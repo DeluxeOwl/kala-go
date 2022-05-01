@@ -30,9 +30,13 @@ type SubjectEdges struct {
 	Type *TypeConfig `json:"type,omitempty"`
 	// Relations holds the value of the relations edge.
 	Relations []*Relation `json:"relations,omitempty"`
+	// AsDirectOwnerTuples holds the value of the as_direct_owner_tuples edge.
+	AsDirectOwnerTuples []*Tuple `json:"as_direct_owner_tuples,omitempty"`
+	// AsResourceTuples holds the value of the as_resource_tuples edge.
+	AsResourceTuples []*Tuple `json:"as_resource_tuples,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [2]bool
+	loadedTypes [4]bool
 }
 
 // TypeOrErr returns the Type value or an error if the edge
@@ -56,6 +60,24 @@ func (e SubjectEdges) RelationsOrErr() ([]*Relation, error) {
 		return e.Relations, nil
 	}
 	return nil, &NotLoadedError{edge: "relations"}
+}
+
+// AsDirectOwnerTuplesOrErr returns the AsDirectOwnerTuples value or an error if the edge
+// was not loaded in eager-loading.
+func (e SubjectEdges) AsDirectOwnerTuplesOrErr() ([]*Tuple, error) {
+	if e.loadedTypes[2] {
+		return e.AsDirectOwnerTuples, nil
+	}
+	return nil, &NotLoadedError{edge: "as_direct_owner_tuples"}
+}
+
+// AsResourceTuplesOrErr returns the AsResourceTuples value or an error if the edge
+// was not loaded in eager-loading.
+func (e SubjectEdges) AsResourceTuplesOrErr() ([]*Tuple, error) {
+	if e.loadedTypes[3] {
+		return e.AsResourceTuples, nil
+	}
+	return nil, &NotLoadedError{edge: "as_resource_tuples"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -116,6 +138,16 @@ func (s *Subject) QueryType() *TypeConfigQuery {
 // QueryRelations queries the "relations" edge of the Subject entity.
 func (s *Subject) QueryRelations() *RelationQuery {
 	return (&SubjectClient{config: s.config}).QueryRelations(s)
+}
+
+// QueryAsDirectOwnerTuples queries the "as_direct_owner_tuples" edge of the Subject entity.
+func (s *Subject) QueryAsDirectOwnerTuples() *TupleQuery {
+	return (&SubjectClient{config: s.config}).QueryAsDirectOwnerTuples(s)
+}
+
+// QueryAsResourceTuples queries the "as_resource_tuples" edge of the Subject entity.
+func (s *Subject) QueryAsResourceTuples() *TupleQuery {
+	return (&SubjectClient{config: s.config}).QueryAsResourceTuples(s)
 }
 
 // Update returns a builder for updating this Subject.

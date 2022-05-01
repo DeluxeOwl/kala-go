@@ -11,6 +11,7 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/DeluxeOwl/kala-go/ent/relation"
 	"github.com/DeluxeOwl/kala-go/ent/subject"
+	"github.com/DeluxeOwl/kala-go/ent/tuple"
 	"github.com/DeluxeOwl/kala-go/ent/typeconfig"
 )
 
@@ -59,6 +60,36 @@ func (sc *SubjectCreate) AddRelations(r ...*Relation) *SubjectCreate {
 		ids[i] = r[i].ID
 	}
 	return sc.AddRelationIDs(ids...)
+}
+
+// AddAsDirectOwnerTupleIDs adds the "as_direct_owner_tuples" edge to the Tuple entity by IDs.
+func (sc *SubjectCreate) AddAsDirectOwnerTupleIDs(ids ...int) *SubjectCreate {
+	sc.mutation.AddAsDirectOwnerTupleIDs(ids...)
+	return sc
+}
+
+// AddAsDirectOwnerTuples adds the "as_direct_owner_tuples" edges to the Tuple entity.
+func (sc *SubjectCreate) AddAsDirectOwnerTuples(t ...*Tuple) *SubjectCreate {
+	ids := make([]int, len(t))
+	for i := range t {
+		ids[i] = t[i].ID
+	}
+	return sc.AddAsDirectOwnerTupleIDs(ids...)
+}
+
+// AddAsResourceTupleIDs adds the "as_resource_tuples" edge to the Tuple entity by IDs.
+func (sc *SubjectCreate) AddAsResourceTupleIDs(ids ...int) *SubjectCreate {
+	sc.mutation.AddAsResourceTupleIDs(ids...)
+	return sc
+}
+
+// AddAsResourceTuples adds the "as_resource_tuples" edges to the Tuple entity.
+func (sc *SubjectCreate) AddAsResourceTuples(t ...*Tuple) *SubjectCreate {
+	ids := make([]int, len(t))
+	for i := range t {
+		ids[i] = t[i].ID
+	}
+	return sc.AddAsResourceTupleIDs(ids...)
 }
 
 // Mutation returns the SubjectMutation object of the builder.
@@ -200,6 +231,44 @@ func (sc *SubjectCreate) createSpec() (*Subject, *sqlgraph.CreateSpec) {
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
 					Column: relation.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := sc.mutation.AsDirectOwnerTuplesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   subject.AsDirectOwnerTuplesTable,
+			Columns: []string{subject.AsDirectOwnerTuplesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: tuple.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := sc.mutation.AsResourceTuplesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   subject.AsResourceTuplesTable,
+			Columns: []string{subject.AsResourceTuplesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: tuple.FieldID,
 				},
 			},
 		}

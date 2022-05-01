@@ -12,6 +12,7 @@ import (
 	"github.com/DeluxeOwl/kala-go/ent/permission"
 	"github.com/DeluxeOwl/kala-go/ent/relation"
 	"github.com/DeluxeOwl/kala-go/ent/subject"
+	"github.com/DeluxeOwl/kala-go/ent/tuple"
 	"github.com/DeluxeOwl/kala-go/ent/typeconfig"
 )
 
@@ -96,6 +97,21 @@ func (rc *RelationCreate) SetNillableTypeconfigID(id *int) *RelationCreate {
 // SetTypeconfig sets the "typeconfig" edge to the TypeConfig entity.
 func (rc *RelationCreate) SetTypeconfig(t *TypeConfig) *RelationCreate {
 	return rc.SetTypeconfigID(t.ID)
+}
+
+// AddTupleIDs adds the "tuples" edge to the Tuple entity by IDs.
+func (rc *RelationCreate) AddTupleIDs(ids ...int) *RelationCreate {
+	rc.mutation.AddTupleIDs(ids...)
+	return rc
+}
+
+// AddTuples adds the "tuples" edges to the Tuple entity.
+func (rc *RelationCreate) AddTuples(t ...*Tuple) *RelationCreate {
+	ids := make([]int, len(t))
+	for i := range t {
+		ids[i] = t[i].ID
+	}
+	return rc.AddTupleIDs(ids...)
 }
 
 // Mutation returns the RelationMutation object of the builder.
@@ -292,6 +308,25 @@ func (rc *RelationCreate) createSpec() (*Relation, *sqlgraph.CreateSpec) {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
 		_node.type_config_relations = &nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := rc.mutation.TuplesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   relation.TuplesTable,
+			Columns: []string{relation.TuplesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: tuple.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec

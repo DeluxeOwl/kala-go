@@ -30,5 +30,11 @@ func (Subject) Edges() []ent.Edge {
 		// The subject has the following relations
 		edge.From("relations", Relation.Type).
 			Ref("subjects"),
+		// Tuples that the subject is a direct owner to
+		edge.From("as_direct_owner_tuples", Tuple.Type).
+			Ref("subject"),
+		// Tuples that the subject is a resource in
+		edge.From("as_resource_tuples", Tuple.Type).
+			Ref("resource"),
 	}
 }

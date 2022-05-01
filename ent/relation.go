@@ -36,9 +36,11 @@ type RelationEdges struct {
 	Permissions []*Permission `json:"permissions,omitempty"`
 	// Typeconfig holds the value of the typeconfig edge.
 	Typeconfig *TypeConfig `json:"typeconfig,omitempty"`
+	// Tuples holds the value of the tuples edge.
+	Tuples []*Tuple `json:"tuples,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [4]bool
+	loadedTypes [5]bool
 }
 
 // SubjectsOrErr returns the Subjects value or an error if the edge
@@ -80,6 +82,15 @@ func (e RelationEdges) TypeconfigOrErr() (*TypeConfig, error) {
 		return e.Typeconfig, nil
 	}
 	return nil, &NotLoadedError{edge: "typeconfig"}
+}
+
+// TuplesOrErr returns the Tuples value or an error if the edge
+// was not loaded in eager-loading.
+func (e RelationEdges) TuplesOrErr() ([]*Tuple, error) {
+	if e.loadedTypes[4] {
+		return e.Tuples, nil
+	}
+	return nil, &NotLoadedError{edge: "tuples"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -156,6 +167,11 @@ func (r *Relation) QueryPermissions() *PermissionQuery {
 // QueryTypeconfig queries the "typeconfig" edge of the Relation entity.
 func (r *Relation) QueryTypeconfig() *TypeConfigQuery {
 	return (&RelationClient{config: r.config}).QueryTypeconfig(r)
+}
+
+// QueryTuples queries the "tuples" edge of the Relation entity.
+func (r *Relation) QueryTuples() *TupleQuery {
+	return (&RelationClient{config: r.config}).QueryTuples(r)
 }
 
 // Update returns a builder for updating this Relation.

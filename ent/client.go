@@ -422,6 +422,22 @@ func (c *RelationClient) QueryTypeconfig(r *Relation) *TypeConfigQuery {
 	return query
 }
 
+// QueryTuples queries the tuples edge of a Relation.
+func (c *RelationClient) QueryTuples(r *Relation) *TupleQuery {
+	query := &TupleQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := r.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(relation.Table, relation.FieldID, id),
+			sqlgraph.To(tuple.Table, tuple.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, relation.TuplesTable, relation.TuplesColumn),
+		)
+		fromV = sqlgraph.Neighbors(r.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // Hooks returns the client hooks.
 func (c *RelationClient) Hooks() []Hook {
 	return c.hooks.Relation
@@ -537,6 +553,38 @@ func (c *SubjectClient) QueryRelations(s *Subject) *RelationQuery {
 			sqlgraph.From(subject.Table, subject.FieldID, id),
 			sqlgraph.To(relation.Table, relation.FieldID),
 			sqlgraph.Edge(sqlgraph.M2M, true, subject.RelationsTable, subject.RelationsPrimaryKey...),
+		)
+		fromV = sqlgraph.Neighbors(s.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryAsDirectOwnerTuples queries the as_direct_owner_tuples edge of a Subject.
+func (c *SubjectClient) QueryAsDirectOwnerTuples(s *Subject) *TupleQuery {
+	query := &TupleQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := s.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(subject.Table, subject.FieldID, id),
+			sqlgraph.To(tuple.Table, tuple.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, subject.AsDirectOwnerTuplesTable, subject.AsDirectOwnerTuplesColumn),
+		)
+		fromV = sqlgraph.Neighbors(s.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryAsResourceTuples queries the as_resource_tuples edge of a Subject.
+func (c *SubjectClient) QueryAsResourceTuples(s *Subject) *TupleQuery {
+	query := &TupleQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := s.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(subject.Table, subject.FieldID, id),
+			sqlgraph.To(tuple.Table, tuple.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, subject.AsResourceTuplesTable, subject.AsResourceTuplesColumn),
 		)
 		fromV = sqlgraph.Neighbors(s.driver.Dialect(), step)
 		return fromV, nil

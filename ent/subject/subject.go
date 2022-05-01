@@ -13,6 +13,10 @@ const (
 	EdgeType = "type"
 	// EdgeRelations holds the string denoting the relations edge name in mutations.
 	EdgeRelations = "relations"
+	// EdgeAsDirectOwnerTuples holds the string denoting the as_direct_owner_tuples edge name in mutations.
+	EdgeAsDirectOwnerTuples = "as_direct_owner_tuples"
+	// EdgeAsResourceTuples holds the string denoting the as_resource_tuples edge name in mutations.
+	EdgeAsResourceTuples = "as_resource_tuples"
 	// Table holds the table name of the subject in the database.
 	Table = "subjects"
 	// TypeTable is the table that holds the type relation/edge.
@@ -27,6 +31,20 @@ const (
 	// RelationsInverseTable is the table name for the Relation entity.
 	// It exists in this package in order to avoid circular dependency with the "relation" package.
 	RelationsInverseTable = "relations"
+	// AsDirectOwnerTuplesTable is the table that holds the as_direct_owner_tuples relation/edge.
+	AsDirectOwnerTuplesTable = "tuples"
+	// AsDirectOwnerTuplesInverseTable is the table name for the Tuple entity.
+	// It exists in this package in order to avoid circular dependency with the "tuple" package.
+	AsDirectOwnerTuplesInverseTable = "tuples"
+	// AsDirectOwnerTuplesColumn is the table column denoting the as_direct_owner_tuples relation/edge.
+	AsDirectOwnerTuplesColumn = "subject_id"
+	// AsResourceTuplesTable is the table that holds the as_resource_tuples relation/edge.
+	AsResourceTuplesTable = "tuples"
+	// AsResourceTuplesInverseTable is the table name for the Tuple entity.
+	// It exists in this package in order to avoid circular dependency with the "tuple" package.
+	AsResourceTuplesInverseTable = "tuples"
+	// AsResourceTuplesColumn is the table column denoting the as_resource_tuples relation/edge.
+	AsResourceTuplesColumn = "resource_id"
 )
 
 // Columns holds all SQL columns for subject fields.

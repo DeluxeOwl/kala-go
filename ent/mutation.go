@@ -571,6 +571,9 @@ type RelationMutation struct {
 	clearedpermissions     bool
 	typeconfig             *int
 	clearedtypeconfig      bool
+	tuples                 map[int]struct{}
+	removedtuples          map[int]struct{}
+	clearedtuples          bool
 	done                   bool
 	oldValue               func(context.Context) (*Relation, error)
 	predicates             []predicate.Relation
@@ -947,6 +950,60 @@ func (m *RelationMutation) ResetTypeconfig() {
 	m.clearedtypeconfig = false
 }
 
+// AddTupleIDs adds the "tuples" edge to the Tuple entity by ids.
+func (m *RelationMutation) AddTupleIDs(ids ...int) {
+	if m.tuples == nil {
+		m.tuples = make(map[int]struct{})
+	}
+	for i := range ids {
+		m.tuples[ids[i]] = struct{}{}
+	}
+}
+
+// ClearTuples clears the "tuples" edge to the Tuple entity.
+func (m *RelationMutation) ClearTuples() {
+	m.clearedtuples = true
+}
+
+// TuplesCleared reports if the "tuples" edge to the Tuple entity was cleared.
+func (m *RelationMutation) TuplesCleared() bool {
+	return m.clearedtuples
+}
+
+// RemoveTupleIDs removes the "tuples" edge to the Tuple entity by IDs.
+func (m *RelationMutation) RemoveTupleIDs(ids ...int) {
+	if m.removedtuples == nil {
+		m.removedtuples = make(map[int]struct{})
+	}
+	for i := range ids {
+		delete(m.tuples, ids[i])
+		m.removedtuples[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedTuples returns the removed IDs of the "tuples" edge to the Tuple entity.
+func (m *RelationMutation) RemovedTuplesIDs() (ids []int) {
+	for id := range m.removedtuples {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// TuplesIDs returns the "tuples" edge IDs in the mutation.
+func (m *RelationMutation) TuplesIDs() (ids []int) {
+	for id := range m.tuples {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetTuples resets all changes to the "tuples" edge.
+func (m *RelationMutation) ResetTuples() {
+	m.tuples = nil
+	m.clearedtuples = false
+	m.removedtuples = nil
+}
+
 // Where appends a list predicates to the RelationMutation builder.
 func (m *RelationMutation) Where(ps ...predicate.Relation) {
 	m.predicates = append(m.predicates, ps...)
@@ -1082,7 +1139,7 @@ func (m *RelationMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *RelationMutation) AddedEdges() []string {
-	edges := make([]string, 0, 4)
+	edges := make([]string, 0, 5)
 	if m.subjects != nil {
 		edges = append(edges, relation.EdgeSubjects)
 	}
@@ -1094,6 +1151,9 @@ func (m *RelationMutation) AddedEdges() []string {
 	}
 	if m.typeconfig != nil {
 		edges = append(edges, relation.EdgeTypeconfig)
+	}
+	if m.tuples != nil {
+		edges = append(edges, relation.EdgeTuples)
 	}
 	return edges
 }
@@ -1124,13 +1184,19 @@ func (m *RelationMutation) AddedIDs(name string) []ent.Value {
 		if id := m.typeconfig; id != nil {
 			return []ent.Value{*id}
 		}
+	case relation.EdgeTuples:
+		ids := make([]ent.Value, 0, len(m.tuples))
+		for id := range m.tuples {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *RelationMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 4)
+	edges := make([]string, 0, 5)
 	if m.removedsubjects != nil {
 		edges = append(edges, relation.EdgeSubjects)
 	}
@@ -1139,6 +1205,9 @@ func (m *RelationMutation) RemovedEdges() []string {
 	}
 	if m.removedpermissions != nil {
 		edges = append(edges, relation.EdgePermissions)
+	}
+	if m.removedtuples != nil {
+		edges = append(edges, relation.EdgeTuples)
 	}
 	return edges
 }
@@ -1165,13 +1234,19 @@ func (m *RelationMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case relation.EdgeTuples:
+		ids := make([]ent.Value, 0, len(m.removedtuples))
+		for id := range m.removedtuples {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *RelationMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 4)
+	edges := make([]string, 0, 5)
 	if m.clearedsubjects {
 		edges = append(edges, relation.EdgeSubjects)
 	}
@@ -1183,6 +1258,9 @@ func (m *RelationMutation) ClearedEdges() []string {
 	}
 	if m.clearedtypeconfig {
 		edges = append(edges, relation.EdgeTypeconfig)
+	}
+	if m.clearedtuples {
+		edges = append(edges, relation.EdgeTuples)
 	}
 	return edges
 }
@@ -1199,6 +1277,8 @@ func (m *RelationMutation) EdgeCleared(name string) bool {
 		return m.clearedpermissions
 	case relation.EdgeTypeconfig:
 		return m.clearedtypeconfig
+	case relation.EdgeTuples:
+		return m.clearedtuples
 	}
 	return false
 }
@@ -1230,6 +1310,9 @@ func (m *RelationMutation) ResetEdge(name string) error {
 	case relation.EdgeTypeconfig:
 		m.ResetTypeconfig()
 		return nil
+	case relation.EdgeTuples:
+		m.ResetTuples()
+		return nil
 	}
 	return fmt.Errorf("unknown Relation edge %s", name)
 }
@@ -1237,19 +1320,25 @@ func (m *RelationMutation) ResetEdge(name string) error {
 // SubjectMutation represents an operation that mutates the Subject nodes in the graph.
 type SubjectMutation struct {
 	config
-	op               Op
-	typ              string
-	id               *int
-	name             *string
-	clearedFields    map[string]struct{}
-	_type            *int
-	cleared_type     bool
-	relations        map[int]struct{}
-	removedrelations map[int]struct{}
-	clearedrelations bool
-	done             bool
-	oldValue         func(context.Context) (*Subject, error)
-	predicates       []predicate.Subject
+	op                            Op
+	typ                           string
+	id                            *int
+	name                          *string
+	clearedFields                 map[string]struct{}
+	_type                         *int
+	cleared_type                  bool
+	relations                     map[int]struct{}
+	removedrelations              map[int]struct{}
+	clearedrelations              bool
+	as_direct_owner_tuples        map[int]struct{}
+	removedas_direct_owner_tuples map[int]struct{}
+	clearedas_direct_owner_tuples bool
+	as_resource_tuples            map[int]struct{}
+	removedas_resource_tuples     map[int]struct{}
+	clearedas_resource_tuples     bool
+	done                          bool
+	oldValue                      func(context.Context) (*Subject, error)
+	predicates                    []predicate.Subject
 }
 
 var _ ent.Mutation = (*SubjectMutation)(nil)
@@ -1479,6 +1568,114 @@ func (m *SubjectMutation) ResetRelations() {
 	m.removedrelations = nil
 }
 
+// AddAsDirectOwnerTupleIDs adds the "as_direct_owner_tuples" edge to the Tuple entity by ids.
+func (m *SubjectMutation) AddAsDirectOwnerTupleIDs(ids ...int) {
+	if m.as_direct_owner_tuples == nil {
+		m.as_direct_owner_tuples = make(map[int]struct{})
+	}
+	for i := range ids {
+		m.as_direct_owner_tuples[ids[i]] = struct{}{}
+	}
+}
+
+// ClearAsDirectOwnerTuples clears the "as_direct_owner_tuples" edge to the Tuple entity.
+func (m *SubjectMutation) ClearAsDirectOwnerTuples() {
+	m.clearedas_direct_owner_tuples = true
+}
+
+// AsDirectOwnerTuplesCleared reports if the "as_direct_owner_tuples" edge to the Tuple entity was cleared.
+func (m *SubjectMutation) AsDirectOwnerTuplesCleared() bool {
+	return m.clearedas_direct_owner_tuples
+}
+
+// RemoveAsDirectOwnerTupleIDs removes the "as_direct_owner_tuples" edge to the Tuple entity by IDs.
+func (m *SubjectMutation) RemoveAsDirectOwnerTupleIDs(ids ...int) {
+	if m.removedas_direct_owner_tuples == nil {
+		m.removedas_direct_owner_tuples = make(map[int]struct{})
+	}
+	for i := range ids {
+		delete(m.as_direct_owner_tuples, ids[i])
+		m.removedas_direct_owner_tuples[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedAsDirectOwnerTuples returns the removed IDs of the "as_direct_owner_tuples" edge to the Tuple entity.
+func (m *SubjectMutation) RemovedAsDirectOwnerTuplesIDs() (ids []int) {
+	for id := range m.removedas_direct_owner_tuples {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// AsDirectOwnerTuplesIDs returns the "as_direct_owner_tuples" edge IDs in the mutation.
+func (m *SubjectMutation) AsDirectOwnerTuplesIDs() (ids []int) {
+	for id := range m.as_direct_owner_tuples {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetAsDirectOwnerTuples resets all changes to the "as_direct_owner_tuples" edge.
+func (m *SubjectMutation) ResetAsDirectOwnerTuples() {
+	m.as_direct_owner_tuples = nil
+	m.clearedas_direct_owner_tuples = false
+	m.removedas_direct_owner_tuples = nil
+}
+
+// AddAsResourceTupleIDs adds the "as_resource_tuples" edge to the Tuple entity by ids.
+func (m *SubjectMutation) AddAsResourceTupleIDs(ids ...int) {
+	if m.as_resource_tuples == nil {
+		m.as_resource_tuples = make(map[int]struct{})
+	}
+	for i := range ids {
+		m.as_resource_tuples[ids[i]] = struct{}{}
+	}
+}
+
+// ClearAsResourceTuples clears the "as_resource_tuples" edge to the Tuple entity.
+func (m *SubjectMutation) ClearAsResourceTuples() {
+	m.clearedas_resource_tuples = true
+}
+
+// AsResourceTuplesCleared reports if the "as_resource_tuples" edge to the Tuple entity was cleared.
+func (m *SubjectMutation) AsResourceTuplesCleared() bool {
+	return m.clearedas_resource_tuples
+}
+
+// RemoveAsResourceTupleIDs removes the "as_resource_tuples" edge to the Tuple entity by IDs.
+func (m *SubjectMutation) RemoveAsResourceTupleIDs(ids ...int) {
+	if m.removedas_resource_tuples == nil {
+		m.removedas_resource_tuples = make(map[int]struct{})
+	}
+	for i := range ids {
+		delete(m.as_resource_tuples, ids[i])
+		m.removedas_resource_tuples[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedAsResourceTuples returns the removed IDs of the "as_resource_tuples" edge to the Tuple entity.
+func (m *SubjectMutation) RemovedAsResourceTuplesIDs() (ids []int) {
+	for id := range m.removedas_resource_tuples {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// AsResourceTuplesIDs returns the "as_resource_tuples" edge IDs in the mutation.
+func (m *SubjectMutation) AsResourceTuplesIDs() (ids []int) {
+	for id := range m.as_resource_tuples {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetAsResourceTuples resets all changes to the "as_resource_tuples" edge.
+func (m *SubjectMutation) ResetAsResourceTuples() {
+	m.as_resource_tuples = nil
+	m.clearedas_resource_tuples = false
+	m.removedas_resource_tuples = nil
+}
+
 // Where appends a list predicates to the SubjectMutation builder.
 func (m *SubjectMutation) Where(ps ...predicate.Subject) {
 	m.predicates = append(m.predicates, ps...)
@@ -1597,12 +1794,18 @@ func (m *SubjectMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *SubjectMutation) AddedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 4)
 	if m._type != nil {
 		edges = append(edges, subject.EdgeType)
 	}
 	if m.relations != nil {
 		edges = append(edges, subject.EdgeRelations)
+	}
+	if m.as_direct_owner_tuples != nil {
+		edges = append(edges, subject.EdgeAsDirectOwnerTuples)
+	}
+	if m.as_resource_tuples != nil {
+		edges = append(edges, subject.EdgeAsResourceTuples)
 	}
 	return edges
 }
@@ -1621,15 +1824,33 @@ func (m *SubjectMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case subject.EdgeAsDirectOwnerTuples:
+		ids := make([]ent.Value, 0, len(m.as_direct_owner_tuples))
+		for id := range m.as_direct_owner_tuples {
+			ids = append(ids, id)
+		}
+		return ids
+	case subject.EdgeAsResourceTuples:
+		ids := make([]ent.Value, 0, len(m.as_resource_tuples))
+		for id := range m.as_resource_tuples {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *SubjectMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 4)
 	if m.removedrelations != nil {
 		edges = append(edges, subject.EdgeRelations)
+	}
+	if m.removedas_direct_owner_tuples != nil {
+		edges = append(edges, subject.EdgeAsDirectOwnerTuples)
+	}
+	if m.removedas_resource_tuples != nil {
+		edges = append(edges, subject.EdgeAsResourceTuples)
 	}
 	return edges
 }
@@ -1644,18 +1865,36 @@ func (m *SubjectMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case subject.EdgeAsDirectOwnerTuples:
+		ids := make([]ent.Value, 0, len(m.removedas_direct_owner_tuples))
+		for id := range m.removedas_direct_owner_tuples {
+			ids = append(ids, id)
+		}
+		return ids
+	case subject.EdgeAsResourceTuples:
+		ids := make([]ent.Value, 0, len(m.removedas_resource_tuples))
+		for id := range m.removedas_resource_tuples {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *SubjectMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 4)
 	if m.cleared_type {
 		edges = append(edges, subject.EdgeType)
 	}
 	if m.clearedrelations {
 		edges = append(edges, subject.EdgeRelations)
+	}
+	if m.clearedas_direct_owner_tuples {
+		edges = append(edges, subject.EdgeAsDirectOwnerTuples)
+	}
+	if m.clearedas_resource_tuples {
+		edges = append(edges, subject.EdgeAsResourceTuples)
 	}
 	return edges
 }
@@ -1668,6 +1907,10 @@ func (m *SubjectMutation) EdgeCleared(name string) bool {
 		return m.cleared_type
 	case subject.EdgeRelations:
 		return m.clearedrelations
+	case subject.EdgeAsDirectOwnerTuples:
+		return m.clearedas_direct_owner_tuples
+	case subject.EdgeAsResourceTuples:
+		return m.clearedas_resource_tuples
 	}
 	return false
 }
@@ -1692,6 +1935,12 @@ func (m *SubjectMutation) ResetEdge(name string) error {
 		return nil
 	case subject.EdgeRelations:
 		m.ResetRelations()
+		return nil
+	case subject.EdgeAsDirectOwnerTuples:
+		m.ResetAsDirectOwnerTuples()
+		return nil
+	case subject.EdgeAsResourceTuples:
+		m.ResetAsResourceTuples()
 		return nil
 	}
 	return fmt.Errorf("unknown Subject edge %s", name)

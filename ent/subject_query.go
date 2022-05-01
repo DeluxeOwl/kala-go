@@ -15,6 +15,7 @@ import (
 	"github.com/DeluxeOwl/kala-go/ent/predicate"
 	"github.com/DeluxeOwl/kala-go/ent/relation"
 	"github.com/DeluxeOwl/kala-go/ent/subject"
+	"github.com/DeluxeOwl/kala-go/ent/tuple"
 	"github.com/DeluxeOwl/kala-go/ent/typeconfig"
 )
 
@@ -28,9 +29,11 @@ type SubjectQuery struct {
 	fields     []string
 	predicates []predicate.Subject
 	// eager-loading edges.
-	withType      *TypeConfigQuery
-	withRelations *RelationQuery
-	withFKs       bool
+	withType                *TypeConfigQuery
+	withRelations           *RelationQuery
+	withAsDirectOwnerTuples *TupleQuery
+	withAsResourceTuples    *TupleQuery
+	withFKs                 bool
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -104,6 +107,50 @@ func (sq *SubjectQuery) QueryRelations() *RelationQuery {
 			sqlgraph.From(subject.Table, subject.FieldID, selector),
 			sqlgraph.To(relation.Table, relation.FieldID),
 			sqlgraph.Edge(sqlgraph.M2M, true, subject.RelationsTable, subject.RelationsPrimaryKey...),
+		)
+		fromU = sqlgraph.SetNeighbors(sq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryAsDirectOwnerTuples chains the current query on the "as_direct_owner_tuples" edge.
+func (sq *SubjectQuery) QueryAsDirectOwnerTuples() *TupleQuery {
+	query := &TupleQuery{config: sq.config}
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := sq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := sq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(subject.Table, subject.FieldID, selector),
+			sqlgraph.To(tuple.Table, tuple.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, subject.AsDirectOwnerTuplesTable, subject.AsDirectOwnerTuplesColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(sq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryAsResourceTuples chains the current query on the "as_resource_tuples" edge.
+func (sq *SubjectQuery) QueryAsResourceTuples() *TupleQuery {
+	query := &TupleQuery{config: sq.config}
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := sq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := sq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(subject.Table, subject.FieldID, selector),
+			sqlgraph.To(tuple.Table, tuple.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, subject.AsResourceTuplesTable, subject.AsResourceTuplesColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(sq.driver.Dialect(), step)
 		return fromU, nil
@@ -287,13 +334,15 @@ func (sq *SubjectQuery) Clone() *SubjectQuery {
 		return nil
 	}
 	return &SubjectQuery{
-		config:        sq.config,
-		limit:         sq.limit,
-		offset:        sq.offset,
-		order:         append([]OrderFunc{}, sq.order...),
-		predicates:    append([]predicate.Subject{}, sq.predicates...),
-		withType:      sq.withType.Clone(),
-		withRelations: sq.withRelations.Clone(),
+		config:                  sq.config,
+		limit:                   sq.limit,
+		offset:                  sq.offset,
+		order:                   append([]OrderFunc{}, sq.order...),
+		predicates:              append([]predicate.Subject{}, sq.predicates...),
+		withType:                sq.withType.Clone(),
+		withRelations:           sq.withRelations.Clone(),
+		withAsDirectOwnerTuples: sq.withAsDirectOwnerTuples.Clone(),
+		withAsResourceTuples:    sq.withAsResourceTuples.Clone(),
 		// clone intermediate query.
 		sql:    sq.sql.Clone(),
 		path:   sq.path,
@@ -320,6 +369,28 @@ func (sq *SubjectQuery) WithRelations(opts ...func(*RelationQuery)) *SubjectQuer
 		opt(query)
 	}
 	sq.withRelations = query
+	return sq
+}
+
+// WithAsDirectOwnerTuples tells the query-builder to eager-load the nodes that are connected to
+// the "as_direct_owner_tuples" edge. The optional arguments are used to configure the query builder of the edge.
+func (sq *SubjectQuery) WithAsDirectOwnerTuples(opts ...func(*TupleQuery)) *SubjectQuery {
+	query := &TupleQuery{config: sq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	sq.withAsDirectOwnerTuples = query
+	return sq
+}
+
+// WithAsResourceTuples tells the query-builder to eager-load the nodes that are connected to
+// the "as_resource_tuples" edge. The optional arguments are used to configure the query builder of the edge.
+func (sq *SubjectQuery) WithAsResourceTuples(opts ...func(*TupleQuery)) *SubjectQuery {
+	query := &TupleQuery{config: sq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	sq.withAsResourceTuples = query
 	return sq
 }
 
@@ -389,9 +460,11 @@ func (sq *SubjectQuery) sqlAll(ctx context.Context) ([]*Subject, error) {
 		nodes       = []*Subject{}
 		withFKs     = sq.withFKs
 		_spec       = sq.querySpec()
-		loadedTypes = [2]bool{
+		loadedTypes = [4]bool{
 			sq.withType != nil,
 			sq.withRelations != nil,
+			sq.withAsDirectOwnerTuples != nil,
+			sq.withAsResourceTuples != nil,
 		}
 	)
 	if sq.withType != nil {
@@ -511,6 +584,56 @@ func (sq *SubjectQuery) sqlAll(ctx context.Context) ([]*Subject, error) {
 			for i := range nodes {
 				nodes[i].Edges.Relations = append(nodes[i].Edges.Relations, n)
 			}
+		}
+	}
+
+	if query := sq.withAsDirectOwnerTuples; query != nil {
+		fks := make([]driver.Value, 0, len(nodes))
+		nodeids := make(map[int]*Subject)
+		for i := range nodes {
+			fks = append(fks, nodes[i].ID)
+			nodeids[nodes[i].ID] = nodes[i]
+			nodes[i].Edges.AsDirectOwnerTuples = []*Tuple{}
+		}
+		query.Where(predicate.Tuple(func(s *sql.Selector) {
+			s.Where(sql.InValues(subject.AsDirectOwnerTuplesColumn, fks...))
+		}))
+		neighbors, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, n := range neighbors {
+			fk := n.SubjectID
+			node, ok := nodeids[fk]
+			if !ok {
+				return nil, fmt.Errorf(`unexpected foreign-key "subject_id" returned %v for node %v`, fk, n.ID)
+			}
+			node.Edges.AsDirectOwnerTuples = append(node.Edges.AsDirectOwnerTuples, n)
+		}
+	}
+
+	if query := sq.withAsResourceTuples; query != nil {
+		fks := make([]driver.Value, 0, len(nodes))
+		nodeids := make(map[int]*Subject)
+		for i := range nodes {
+			fks = append(fks, nodes[i].ID)
+			nodeids[nodes[i].ID] = nodes[i]
+			nodes[i].Edges.AsResourceTuples = []*Tuple{}
+		}
+		query.Where(predicate.Tuple(func(s *sql.Selector) {
+			s.Where(sql.InValues(subject.AsResourceTuplesColumn, fks...))
+		}))
+		neighbors, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, n := range neighbors {
+			fk := n.ResourceID
+			node, ok := nodeids[fk]
+			if !ok {
+				return nil, fmt.Errorf(`unexpected foreign-key "resource_id" returned %v for node %v`, fk, n.ID)
+			}
+			node.Edges.AsResourceTuples = append(node.Edges.AsResourceTuples, n)
 		}
 	}
 

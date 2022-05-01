@@ -33,5 +33,8 @@ func (Relation) Edges() []ent.Edge {
 		edge.From("typeconfig", TypeConfig.Type).
 			Ref("relations").
 			Unique(),
+		// Tuples where this relation is referenced
+		edge.From("tuples", Tuple.Type).
+			Ref("relation"),
 	}
 }
