@@ -124,6 +124,7 @@ func (h *Handler) CreateTypeConfig(ctx context.Context, tcInput *TypeConfig) (*e
 			}
 		}
 
+		// TODO: add rest of edges
 		relSlice[cnt] = h.client.Relation.
 			Create().
 			SetName(relName).
