@@ -303,10 +303,10 @@ func (ru *RelationUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if ru.mutation.RelTypeconfigsCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: false,
 			Table:   relation.RelTypeconfigsTable,
-			Columns: []string{relation.RelTypeconfigsColumn},
+			Columns: relation.RelTypeconfigsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
@@ -319,10 +319,10 @@ func (ru *RelationUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if nodes := ru.mutation.RemovedRelTypeconfigsIDs(); len(nodes) > 0 && !ru.mutation.RelTypeconfigsCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: false,
 			Table:   relation.RelTypeconfigsTable,
-			Columns: []string{relation.RelTypeconfigsColumn},
+			Columns: relation.RelTypeconfigsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
@@ -338,10 +338,10 @@ func (ru *RelationUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if nodes := ru.mutation.RelTypeconfigsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: false,
 			Table:   relation.RelTypeconfigsTable,
-			Columns: []string{relation.RelTypeconfigsColumn},
+			Columns: relation.RelTypeconfigsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
@@ -779,10 +779,10 @@ func (ruo *RelationUpdateOne) sqlSave(ctx context.Context) (_node *Relation, err
 	}
 	if ruo.mutation.RelTypeconfigsCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: false,
 			Table:   relation.RelTypeconfigsTable,
-			Columns: []string{relation.RelTypeconfigsColumn},
+			Columns: relation.RelTypeconfigsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
@@ -795,10 +795,10 @@ func (ruo *RelationUpdateOne) sqlSave(ctx context.Context) (_node *Relation, err
 	}
 	if nodes := ruo.mutation.RemovedRelTypeconfigsIDs(); len(nodes) > 0 && !ruo.mutation.RelTypeconfigsCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: false,
 			Table:   relation.RelTypeconfigsTable,
-			Columns: []string{relation.RelTypeconfigsColumn},
+			Columns: relation.RelTypeconfigsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
@@ -814,10 +814,10 @@ func (ruo *RelationUpdateOne) sqlSave(ctx context.Context) (_node *Relation, err
 	}
 	if nodes := ruo.mutation.RelTypeconfigsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: false,
 			Table:   relation.RelTypeconfigsTable,
-			Columns: []string{relation.RelTypeconfigsColumn},
+			Columns: relation.RelTypeconfigsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{

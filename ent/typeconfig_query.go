@@ -29,10 +29,10 @@ type TypeConfigQuery struct {
 	fields     []string
 	predicates []predicate.TypeConfig
 	// eager-loading edges.
-	withRelations   *RelationQuery
-	withPermissions *PermissionQuery
-	withSubjects    *SubjectQuery
-	withFKs         bool
+	withRelations      *RelationQuery
+	withPermissions    *PermissionQuery
+	withSubjects       *SubjectQuery
+	withRelTypeconfigs *RelationQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -128,6 +128,28 @@ func (tcq *TypeConfigQuery) QuerySubjects() *SubjectQuery {
 			sqlgraph.From(typeconfig.Table, typeconfig.FieldID, selector),
 			sqlgraph.To(subject.Table, subject.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, typeconfig.SubjectsTable, typeconfig.SubjectsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(tcq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryRelTypeconfigs chains the current query on the "rel_typeconfigs" edge.
+func (tcq *TypeConfigQuery) QueryRelTypeconfigs() *RelationQuery {
+	query := &RelationQuery{config: tcq.config}
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := tcq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := tcq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(typeconfig.Table, typeconfig.FieldID, selector),
+			sqlgraph.To(relation.Table, relation.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, true, typeconfig.RelTypeconfigsTable, typeconfig.RelTypeconfigsPrimaryKey...),
 		)
 		fromU = sqlgraph.SetNeighbors(tcq.driver.Dialect(), step)
 		return fromU, nil
@@ -311,14 +333,15 @@ func (tcq *TypeConfigQuery) Clone() *TypeConfigQuery {
 		return nil
 	}
 	return &TypeConfigQuery{
-		config:          tcq.config,
-		limit:           tcq.limit,
-		offset:          tcq.offset,
-		order:           append([]OrderFunc{}, tcq.order...),
-		predicates:      append([]predicate.TypeConfig{}, tcq.predicates...),
-		withRelations:   tcq.withRelations.Clone(),
-		withPermissions: tcq.withPermissions.Clone(),
-		withSubjects:    tcq.withSubjects.Clone(),
+		config:             tcq.config,
+		limit:              tcq.limit,
+		offset:             tcq.offset,
+		order:              append([]OrderFunc{}, tcq.order...),
+		predicates:         append([]predicate.TypeConfig{}, tcq.predicates...),
+		withRelations:      tcq.withRelations.Clone(),
+		withPermissions:    tcq.withPermissions.Clone(),
+		withSubjects:       tcq.withSubjects.Clone(),
+		withRelTypeconfigs: tcq.withRelTypeconfigs.Clone(),
 		// clone intermediate query.
 		sql:    tcq.sql.Clone(),
 		path:   tcq.path,
@@ -356,6 +379,17 @@ func (tcq *TypeConfigQuery) WithSubjects(opts ...func(*SubjectQuery)) *TypeConfi
 		opt(query)
 	}
 	tcq.withSubjects = query
+	return tcq
+}
+
+// WithRelTypeconfigs tells the query-builder to eager-load the nodes that are connected to
+// the "rel_typeconfigs" edge. The optional arguments are used to configure the query builder of the edge.
+func (tcq *TypeConfigQuery) WithRelTypeconfigs(opts ...func(*RelationQuery)) *TypeConfigQuery {
+	query := &RelationQuery{config: tcq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	tcq.withRelTypeconfigs = query
 	return tcq
 }
 
@@ -423,17 +457,14 @@ func (tcq *TypeConfigQuery) prepareQuery(ctx context.Context) error {
 func (tcq *TypeConfigQuery) sqlAll(ctx context.Context) ([]*TypeConfig, error) {
 	var (
 		nodes       = []*TypeConfig{}
-		withFKs     = tcq.withFKs
 		_spec       = tcq.querySpec()
-		loadedTypes = [3]bool{
+		loadedTypes = [4]bool{
 			tcq.withRelations != nil,
 			tcq.withPermissions != nil,
 			tcq.withSubjects != nil,
+			tcq.withRelTypeconfigs != nil,
 		}
 	)
-	if withFKs {
-		_spec.Node.Columns = append(_spec.Node.Columns, typeconfig.ForeignKeys...)
-	}
 	_spec.ScanValues = func(columns []string) ([]interface{}, error) {
 		node := &TypeConfig{config: tcq.config}
 		nodes = append(nodes, node)
@@ -538,6 +569,71 @@ func (tcq *TypeConfigQuery) sqlAll(ctx context.Context) ([]*TypeConfig, error) {
 				return nil, fmt.Errorf(`unexpected foreign-key "type_config_subjects" returned %v for node %v`, *fk, n.ID)
 			}
 			node.Edges.Subjects = append(node.Edges.Subjects, n)
+		}
+	}
+
+	if query := tcq.withRelTypeconfigs; query != nil {
+		fks := make([]driver.Value, 0, len(nodes))
+		ids := make(map[int]*TypeConfig, len(nodes))
+		for _, node := range nodes {
+			ids[node.ID] = node
+			fks = append(fks, node.ID)
+			node.Edges.RelTypeconfigs = []*Relation{}
+		}
+		var (
+			edgeids []int
+			edges   = make(map[int][]*TypeConfig)
+		)
+		_spec := &sqlgraph.EdgeQuerySpec{
+			Edge: &sqlgraph.EdgeSpec{
+				Inverse: true,
+				Table:   typeconfig.RelTypeconfigsTable,
+				Columns: typeconfig.RelTypeconfigsPrimaryKey,
+			},
+			Predicate: func(s *sql.Selector) {
+				s.Where(sql.InValues(typeconfig.RelTypeconfigsPrimaryKey[1], fks...))
+			},
+			ScanValues: func() [2]interface{} {
+				return [2]interface{}{new(sql.NullInt64), new(sql.NullInt64)}
+			},
+			Assign: func(out, in interface{}) error {
+				eout, ok := out.(*sql.NullInt64)
+				if !ok || eout == nil {
+					return fmt.Errorf("unexpected id value for edge-out")
+				}
+				ein, ok := in.(*sql.NullInt64)
+				if !ok || ein == nil {
+					return fmt.Errorf("unexpected id value for edge-in")
+				}
+				outValue := int(eout.Int64)
+				inValue := int(ein.Int64)
+				node, ok := ids[outValue]
+				if !ok {
+					return fmt.Errorf("unexpected node id in edges: %v", outValue)
+				}
+				if _, ok := edges[inValue]; !ok {
+					edgeids = append(edgeids, inValue)
+				}
+				edges[inValue] = append(edges[inValue], node)
+				return nil
+			},
+		}
+		if err := sqlgraph.QueryEdges(ctx, tcq.driver, _spec); err != nil {
+			return nil, fmt.Errorf(`query edges "rel_typeconfigs": %w`, err)
+		}
+		query.Where(relation.IDIn(edgeids...))
+		neighbors, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, n := range neighbors {
+			nodes, ok := edges[n.ID]
+			if !ok {
+				return nil, fmt.Errorf(`unexpected "rel_typeconfigs" node returned %v`, n.ID)
+			}
+			for i := range nodes {
+				nodes[i].Edges.RelTypeconfigs = append(nodes[i].Edges.RelTypeconfigs, n)
+			}
 		}
 	}
 

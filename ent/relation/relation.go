@@ -28,13 +28,11 @@ const (
 	TypeconfigInverseTable = "type_configs"
 	// TypeconfigColumn is the table column denoting the typeconfig relation/edge.
 	TypeconfigColumn = "type_config_relations"
-	// RelTypeconfigsTable is the table that holds the rel_typeconfigs relation/edge.
-	RelTypeconfigsTable = "type_configs"
+	// RelTypeconfigsTable is the table that holds the rel_typeconfigs relation/edge. The primary key declared below.
+	RelTypeconfigsTable = "relation_rel_typeconfigs"
 	// RelTypeconfigsInverseTable is the table name for the TypeConfig entity.
 	// It exists in this package in order to avoid circular dependency with the "typeconfig" package.
 	RelTypeconfigsInverseTable = "type_configs"
-	// RelTypeconfigsColumn is the table column denoting the rel_typeconfigs relation/edge.
-	RelTypeconfigsColumn = "relation_rel_typeconfigs"
 	// PermissionsTable is the table that holds the permissions relation/edge. The primary key declared below.
 	PermissionsTable = "permission_relations"
 	// PermissionsInverseTable is the table name for the Permission entity.
@@ -63,6 +61,9 @@ var ForeignKeys = []string{
 }
 
 var (
+	// RelTypeconfigsPrimaryKey and RelTypeconfigsColumn2 are the table columns denoting the
+	// primary key for the rel_typeconfigs relation (M2M).
+	RelTypeconfigsPrimaryKey = []string{"relation_id", "type_config_id"}
 	// PermissionsPrimaryKey and PermissionsColumn2 are the table columns denoting the
 	// primary key for the permissions relation (M2M).
 	PermissionsPrimaryKey = []string{"permission_id", "relation_id"}

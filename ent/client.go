@@ -382,7 +382,7 @@ func (c *RelationClient) QueryRelTypeconfigs(r *Relation) *TypeConfigQuery {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(relation.Table, relation.FieldID, id),
 			sqlgraph.To(typeconfig.Table, typeconfig.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, relation.RelTypeconfigsTable, relation.RelTypeconfigsColumn),
+			sqlgraph.Edge(sqlgraph.M2M, false, relation.RelTypeconfigsTable, relation.RelTypeconfigsPrimaryKey...),
 		)
 		fromV = sqlgraph.Neighbors(r.driver.Dialect(), step)
 		return fromV, nil
@@ -797,6 +797,22 @@ func (c *TypeConfigClient) QuerySubjects(tc *TypeConfig) *SubjectQuery {
 			sqlgraph.From(typeconfig.Table, typeconfig.FieldID, id),
 			sqlgraph.To(subject.Table, subject.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, typeconfig.SubjectsTable, typeconfig.SubjectsColumn),
+		)
+		fromV = sqlgraph.Neighbors(tc.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryRelTypeconfigs queries the rel_typeconfigs edge of a TypeConfig.
+func (c *TypeConfigClient) QueryRelTypeconfigs(tc *TypeConfig) *RelationQuery {
+	query := &RelationQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := tc.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(typeconfig.Table, typeconfig.FieldID, id),
+			sqlgraph.To(relation.Table, relation.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, true, typeconfig.RelTypeconfigsTable, typeconfig.RelTypeconfigsPrimaryKey...),
 		)
 		fromV = sqlgraph.Neighbors(tc.driver.Dialect(), step)
 		return fromV, nil

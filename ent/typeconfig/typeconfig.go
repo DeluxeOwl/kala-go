@@ -15,6 +15,8 @@ const (
 	EdgePermissions = "permissions"
 	// EdgeSubjects holds the string denoting the subjects edge name in mutations.
 	EdgeSubjects = "subjects"
+	// EdgeRelTypeconfigs holds the string denoting the rel_typeconfigs edge name in mutations.
+	EdgeRelTypeconfigs = "rel_typeconfigs"
 	// Table holds the table name of the typeconfig in the database.
 	Table = "type_configs"
 	// RelationsTable is the table that holds the relations relation/edge.
@@ -38,6 +40,11 @@ const (
 	SubjectsInverseTable = "subjects"
 	// SubjectsColumn is the table column denoting the subjects relation/edge.
 	SubjectsColumn = "type_config_subjects"
+	// RelTypeconfigsTable is the table that holds the rel_typeconfigs relation/edge. The primary key declared below.
+	RelTypeconfigsTable = "relation_rel_typeconfigs"
+	// RelTypeconfigsInverseTable is the table name for the Relation entity.
+	// It exists in this package in order to avoid circular dependency with the "relation" package.
+	RelTypeconfigsInverseTable = "relations"
 )
 
 // Columns holds all SQL columns for typeconfig fields.
@@ -46,21 +53,16 @@ var Columns = []string{
 	FieldName,
 }
 
-// ForeignKeys holds the SQL foreign-keys that are owned by the "type_configs"
-// table and are not defined as standalone fields in the schema.
-var ForeignKeys = []string{
-	"relation_rel_typeconfigs",
-}
+var (
+	// RelTypeconfigsPrimaryKey and RelTypeconfigsColumn2 are the table columns denoting the
+	// primary key for the rel_typeconfigs relation (M2M).
+	RelTypeconfigsPrimaryKey = []string{"relation_id", "type_config_id"}
+)
 
 // ValidColumn reports if the column name is valid (part of the table columns).
 func ValidColumn(column string) bool {
 	for i := range Columns {
 		if column == Columns[i] {
-			return true
-		}
-	}
-	for i := range ForeignKeys {
-		if column == ForeignKeys[i] {
 			return true
 		}
 	}

@@ -19,8 +19,7 @@ type TypeConfig struct {
 	Name string `json:"name,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the TypeConfigQuery when eager-loading is set.
-	Edges                    TypeConfigEdges `json:"edges"`
-	relation_rel_typeconfigs *int
+	Edges TypeConfigEdges `json:"edges"`
 }
 
 // TypeConfigEdges holds the relations/edges for other nodes in the graph.
@@ -31,9 +30,11 @@ type TypeConfigEdges struct {
 	Permissions []*Permission `json:"permissions,omitempty"`
 	// Subjects holds the value of the subjects edge.
 	Subjects []*Subject `json:"subjects,omitempty"`
+	// RelTypeconfigs holds the value of the rel_typeconfigs edge.
+	RelTypeconfigs []*Relation `json:"rel_typeconfigs,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [3]bool
+	loadedTypes [4]bool
 }
 
 // RelationsOrErr returns the Relations value or an error if the edge
@@ -63,6 +64,15 @@ func (e TypeConfigEdges) SubjectsOrErr() ([]*Subject, error) {
 	return nil, &NotLoadedError{edge: "subjects"}
 }
 
+// RelTypeconfigsOrErr returns the RelTypeconfigs value or an error if the edge
+// was not loaded in eager-loading.
+func (e TypeConfigEdges) RelTypeconfigsOrErr() ([]*Relation, error) {
+	if e.loadedTypes[3] {
+		return e.RelTypeconfigs, nil
+	}
+	return nil, &NotLoadedError{edge: "rel_typeconfigs"}
+}
+
 // scanValues returns the types for scanning values from sql.Rows.
 func (*TypeConfig) scanValues(columns []string) ([]interface{}, error) {
 	values := make([]interface{}, len(columns))
@@ -72,8 +82,6 @@ func (*TypeConfig) scanValues(columns []string) ([]interface{}, error) {
 			values[i] = new(sql.NullInt64)
 		case typeconfig.FieldName:
 			values[i] = new(sql.NullString)
-		case typeconfig.ForeignKeys[0]: // relation_rel_typeconfigs
-			values[i] = new(sql.NullInt64)
 		default:
 			return nil, fmt.Errorf("unexpected column %q for type TypeConfig", columns[i])
 		}
@@ -101,13 +109,6 @@ func (tc *TypeConfig) assignValues(columns []string, values []interface{}) error
 			} else if value.Valid {
 				tc.Name = value.String
 			}
-		case typeconfig.ForeignKeys[0]:
-			if value, ok := values[i].(*sql.NullInt64); !ok {
-				return fmt.Errorf("unexpected type %T for edge-field relation_rel_typeconfigs", value)
-			} else if value.Valid {
-				tc.relation_rel_typeconfigs = new(int)
-				*tc.relation_rel_typeconfigs = int(value.Int64)
-			}
 		}
 	}
 	return nil
@@ -126,6 +127,11 @@ func (tc *TypeConfig) QueryPermissions() *PermissionQuery {
 // QuerySubjects queries the "subjects" edge of the TypeConfig entity.
 func (tc *TypeConfig) QuerySubjects() *SubjectQuery {
 	return (&TypeConfigClient{config: tc.config}).QuerySubjects(tc)
+}
+
+// QueryRelTypeconfigs queries the "rel_typeconfigs" edge of the TypeConfig entity.
+func (tc *TypeConfig) QueryRelTypeconfigs() *RelationQuery {
+	return (&TypeConfigClient{config: tc.config}).QueryRelTypeconfigs(tc)
 }
 
 // Update returns a builder for updating this TypeConfig.

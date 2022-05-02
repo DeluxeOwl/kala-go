@@ -81,6 +81,21 @@ func (tcu *TypeConfigUpdate) AddSubjects(s ...*Subject) *TypeConfigUpdate {
 	return tcu.AddSubjectIDs(ids...)
 }
 
+// AddRelTypeconfigIDs adds the "rel_typeconfigs" edge to the Relation entity by IDs.
+func (tcu *TypeConfigUpdate) AddRelTypeconfigIDs(ids ...int) *TypeConfigUpdate {
+	tcu.mutation.AddRelTypeconfigIDs(ids...)
+	return tcu
+}
+
+// AddRelTypeconfigs adds the "rel_typeconfigs" edges to the Relation entity.
+func (tcu *TypeConfigUpdate) AddRelTypeconfigs(r ...*Relation) *TypeConfigUpdate {
+	ids := make([]int, len(r))
+	for i := range r {
+		ids[i] = r[i].ID
+	}
+	return tcu.AddRelTypeconfigIDs(ids...)
+}
+
 // Mutation returns the TypeConfigMutation object of the builder.
 func (tcu *TypeConfigUpdate) Mutation() *TypeConfigMutation {
 	return tcu.mutation
@@ -147,6 +162,27 @@ func (tcu *TypeConfigUpdate) RemoveSubjects(s ...*Subject) *TypeConfigUpdate {
 		ids[i] = s[i].ID
 	}
 	return tcu.RemoveSubjectIDs(ids...)
+}
+
+// ClearRelTypeconfigs clears all "rel_typeconfigs" edges to the Relation entity.
+func (tcu *TypeConfigUpdate) ClearRelTypeconfigs() *TypeConfigUpdate {
+	tcu.mutation.ClearRelTypeconfigs()
+	return tcu
+}
+
+// RemoveRelTypeconfigIDs removes the "rel_typeconfigs" edge to Relation entities by IDs.
+func (tcu *TypeConfigUpdate) RemoveRelTypeconfigIDs(ids ...int) *TypeConfigUpdate {
+	tcu.mutation.RemoveRelTypeconfigIDs(ids...)
+	return tcu
+}
+
+// RemoveRelTypeconfigs removes "rel_typeconfigs" edges to Relation entities.
+func (tcu *TypeConfigUpdate) RemoveRelTypeconfigs(r ...*Relation) *TypeConfigUpdate {
+	ids := make([]int, len(r))
+	for i := range r {
+		ids[i] = r[i].ID
+	}
+	return tcu.RemoveRelTypeconfigIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -390,6 +426,60 @@ func (tcu *TypeConfigUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if tcu.mutation.RelTypeconfigsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   typeconfig.RelTypeconfigsTable,
+			Columns: typeconfig.RelTypeconfigsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: relation.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := tcu.mutation.RemovedRelTypeconfigsIDs(); len(nodes) > 0 && !tcu.mutation.RelTypeconfigsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   typeconfig.RelTypeconfigsTable,
+			Columns: typeconfig.RelTypeconfigsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: relation.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := tcu.mutation.RelTypeconfigsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   typeconfig.RelTypeconfigsTable,
+			Columns: typeconfig.RelTypeconfigsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: relation.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if n, err = sqlgraph.UpdateNodes(ctx, tcu.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{typeconfig.Label}
@@ -460,6 +550,21 @@ func (tcuo *TypeConfigUpdateOne) AddSubjects(s ...*Subject) *TypeConfigUpdateOne
 	return tcuo.AddSubjectIDs(ids...)
 }
 
+// AddRelTypeconfigIDs adds the "rel_typeconfigs" edge to the Relation entity by IDs.
+func (tcuo *TypeConfigUpdateOne) AddRelTypeconfigIDs(ids ...int) *TypeConfigUpdateOne {
+	tcuo.mutation.AddRelTypeconfigIDs(ids...)
+	return tcuo
+}
+
+// AddRelTypeconfigs adds the "rel_typeconfigs" edges to the Relation entity.
+func (tcuo *TypeConfigUpdateOne) AddRelTypeconfigs(r ...*Relation) *TypeConfigUpdateOne {
+	ids := make([]int, len(r))
+	for i := range r {
+		ids[i] = r[i].ID
+	}
+	return tcuo.AddRelTypeconfigIDs(ids...)
+}
+
 // Mutation returns the TypeConfigMutation object of the builder.
 func (tcuo *TypeConfigUpdateOne) Mutation() *TypeConfigMutation {
 	return tcuo.mutation
@@ -526,6 +631,27 @@ func (tcuo *TypeConfigUpdateOne) RemoveSubjects(s ...*Subject) *TypeConfigUpdate
 		ids[i] = s[i].ID
 	}
 	return tcuo.RemoveSubjectIDs(ids...)
+}
+
+// ClearRelTypeconfigs clears all "rel_typeconfigs" edges to the Relation entity.
+func (tcuo *TypeConfigUpdateOne) ClearRelTypeconfigs() *TypeConfigUpdateOne {
+	tcuo.mutation.ClearRelTypeconfigs()
+	return tcuo
+}
+
+// RemoveRelTypeconfigIDs removes the "rel_typeconfigs" edge to Relation entities by IDs.
+func (tcuo *TypeConfigUpdateOne) RemoveRelTypeconfigIDs(ids ...int) *TypeConfigUpdateOne {
+	tcuo.mutation.RemoveRelTypeconfigIDs(ids...)
+	return tcuo
+}
+
+// RemoveRelTypeconfigs removes "rel_typeconfigs" edges to Relation entities.
+func (tcuo *TypeConfigUpdateOne) RemoveRelTypeconfigs(r ...*Relation) *TypeConfigUpdateOne {
+	ids := make([]int, len(r))
+	for i := range r {
+		ids[i] = r[i].ID
+	}
+	return tcuo.RemoveRelTypeconfigIDs(ids...)
 }
 
 // Select allows selecting one or more fields (columns) of the returned entity.
@@ -785,6 +911,60 @@ func (tcuo *TypeConfigUpdateOne) sqlSave(ctx context.Context) (_node *TypeConfig
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
 					Column: subject.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if tcuo.mutation.RelTypeconfigsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   typeconfig.RelTypeconfigsTable,
+			Columns: typeconfig.RelTypeconfigsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: relation.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := tcuo.mutation.RemovedRelTypeconfigsIDs(); len(nodes) > 0 && !tcuo.mutation.RelTypeconfigsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   typeconfig.RelTypeconfigsTable,
+			Columns: typeconfig.RelTypeconfigsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: relation.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := tcuo.mutation.RelTypeconfigsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   typeconfig.RelTypeconfigsTable,
+			Columns: typeconfig.RelTypeconfigsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: relation.FieldID,
 				},
 			},
 		}

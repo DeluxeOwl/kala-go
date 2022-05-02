@@ -361,7 +361,7 @@ func HasRelTypeconfigs() predicate.Relation {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
 			sqlgraph.To(RelTypeconfigsTable, FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, RelTypeconfigsTable, RelTypeconfigsColumn),
+			sqlgraph.Edge(sqlgraph.M2M, false, RelTypeconfigsTable, RelTypeconfigsPrimaryKey...),
 		)
 		sqlgraph.HasNeighbors(s, step)
 	})
@@ -373,7 +373,7 @@ func HasRelTypeconfigsWith(preds ...predicate.TypeConfig) predicate.Relation {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
 			sqlgraph.To(RelTypeconfigsInverseTable, FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, RelTypeconfigsTable, RelTypeconfigsColumn),
+			sqlgraph.Edge(sqlgraph.M2M, false, RelTypeconfigsTable, RelTypeconfigsPrimaryKey...),
 		)
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {

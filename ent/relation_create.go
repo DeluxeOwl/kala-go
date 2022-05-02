@@ -239,10 +239,10 @@ func (rc *RelationCreate) createSpec() (*Relation, *sqlgraph.CreateSpec) {
 	}
 	if nodes := rc.mutation.RelTypeconfigsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: false,
 			Table:   relation.RelTypeconfigsTable,
-			Columns: []string{relation.RelTypeconfigsColumn},
+			Columns: relation.RelTypeconfigsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{

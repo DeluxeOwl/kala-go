@@ -293,6 +293,34 @@ func HasSubjectsWith(preds ...predicate.Subject) predicate.TypeConfig {
 	})
 }
 
+// HasRelTypeconfigs applies the HasEdge predicate on the "rel_typeconfigs" edge.
+func HasRelTypeconfigs() predicate.TypeConfig {
+	return predicate.TypeConfig(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(RelTypeconfigsTable, FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, true, RelTypeconfigsTable, RelTypeconfigsPrimaryKey...),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasRelTypeconfigsWith applies the HasEdge predicate on the "rel_typeconfigs" edge with a given conditions (other predicates).
+func HasRelTypeconfigsWith(preds ...predicate.Relation) predicate.TypeConfig {
+	return predicate.TypeConfig(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(RelTypeconfigsInverseTable, FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, true, RelTypeconfigsTable, RelTypeconfigsPrimaryKey...),
+		)
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // And groups predicates with the AND operator between them.
 func And(predicates ...predicate.TypeConfig) predicate.TypeConfig {
 	return predicate.TypeConfig(func(s *sql.Selector) {

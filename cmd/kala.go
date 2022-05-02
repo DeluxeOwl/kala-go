@@ -12,7 +12,6 @@ import (
 	"github.com/DeluxeOwl/kala-go/ent/typeconfig"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/pkg/errors"
-	"golang.org/x/exp/slices"
 )
 
 func WithTx(ctx context.Context, client *ent.Client, fn func(tx *ent.Tx) error) error {
@@ -70,21 +69,13 @@ func (h *Handler) CreateTypeConfig(ctx context.Context, tcInput *TypeConfig) (*e
 	var refDelim = " | "
 	var refRelDelim = "#"
 
-	existingTypeConfigs, err := h.client.TypeConfig.
-		Query().
-		Select(typeconfig.FieldName).
-		Strings(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed when fetching existing types: %w", err)
-	}
-
 	relSlice := make([]*ent.RelationCreate, len(tcInput.Relations))
 	cnt := 0
 
 	log.Printf("for type: %s\n", tcInput.Name)
 	for relName, relValue := range tcInput.Relations {
 
-		log.Printf("validating '%s: %s'\n", relName, relValue)
+		log.Printf("-> validating '%s: %s'\n", relName, relValue)
 
 		if !regexAuthzType.MatchString(relValue) {
 			return nil, fmt.Errorf("malformed relation reference input: %s", relValue)
@@ -94,41 +85,64 @@ func (h *Handler) CreateTypeConfig(ctx context.Context, tcInput *TypeConfig) (*e
 			return nil, fmt.Errorf("malformed relation name input: %s", relName)
 		}
 
+		referencedTypeIDsSlice := make([]int, 0)
+
 		// type with relation, ex: user | group#member
-		for _, referencedRelation := range strings.Split(relValue, refDelim) {
-			if !strings.Contains(referencedRelation, refRelDelim) {
-				if !slices.Contains(existingTypeConfigs, referencedRelation) {
-					return nil, fmt.Errorf("referenced type does not exist: %s", referencedRelation)
+		for _, referencedType := range strings.Split(relValue, refDelim) {
+
+			if !strings.Contains(referencedType, refRelDelim) {
+
+				id, err := h.client.TypeConfig.
+					Query().
+					Where(typeconfig.Name(referencedType)).
+					OnlyID(ctx)
+
+				if err != nil {
+					return nil, fmt.Errorf("referenced type does not exist: %s", referencedType)
 				}
+
+				log.Printf("---> found id %d for %s\n", id, referencedType)
+
+				referencedTypeIDsSlice = append(referencedTypeIDsSlice, id)
+
 			} else {
 				// checking composed relation
-				s := strings.Split(referencedRelation, refRelDelim)
+				s := strings.Split(referencedType, refRelDelim)
 
 				refTypeName := s[0]
 				refTypeRelation := s[1]
 
-				if !slices.Contains(existingTypeConfigs, refTypeName) {
-					return nil, fmt.Errorf("referenced type does not exist: %s", refTypeName)
-				}
-				_, err := h.client.TypeConfig.
+				id, err := h.client.TypeConfig.
 					Query().
-					Where(typeconfig.NameEQ(refTypeName)).
-					QueryRelations().
-					Where(relation.NameEQ(refTypeRelation)).
-					Only(ctx)
+					Where(typeconfig.Name(refTypeName)).
+					OnlyID(ctx)
 
 				if err != nil {
+					return nil, fmt.Errorf("referenced type does not exist: %s", refTypeName)
+				}
+
+				hasRelation, err := h.client.TypeConfig.
+					Query().
+					Where(typeconfig.IDEQ(id)).
+					QueryRelations().
+					Where(relation.NameEQ(refTypeRelation)).
+					Exist(ctx)
+
+				if !hasRelation || err != nil {
 					return nil, fmt.Errorf("referenced relation does not exist: %s#%s", refTypeName, refTypeRelation)
 				}
+
+				log.Printf("---> found id %d for %s\n", id, refTypeName)
+				referencedTypeIDsSlice = append(referencedTypeIDsSlice, id)
 
 			}
 		}
 
-		// TODO: add rest of edges
 		relSlice[cnt] = h.client.Relation.
 			Create().
 			SetName(relName).
-			SetValue(relValue)
+			SetValue(relValue).
+			AddRelTypeconfigIDs(referencedTypeIDsSlice...)
 
 		cnt++
 
@@ -315,20 +329,21 @@ func main() {
 		})
 	fmt.Println(tc, err)
 
-	tc, err = h.CreateTypeConfig(ctx,
-		&TypeConfig{
-			Name: "test",
-			Permissions: map[string]string{
-				"read":           "reader | writer | parent_folder.reader",
-				"read_and_write": "reader & writer",
-				"read_only":      "reader & !writer",
-			},
-		})
-	fmt.Println(tc, err)
+	// TEST: empty permissions
+	// tc, err = h.CreateTypeConfig(ctx,
+	// 	&TypeConfig{
+	// 		Name: "test",
+	// 		Permissions: map[string]string{
+	// 			"read":           "reader | writer | parent_folder.reader",
+	// 			"read_and_write": "reader & writer",
+	// 			"read_only":      "reader & !writer",
+	// 		},
+	// 	})
+	// fmt.Println(tc, err)
 
 	// tc, _ = h.CreateTypeConfig(ctx, &TypeConfig{Name: "docs"})
 
-	// visualize
+	// VISUALIZE
 	// err := entc.Generate("./ent/schema", &gen.Config{}, entc.Extensions(entviz.Extension{}))
 	// if err != nil {
 	// 	log.Fatalf("running ent codegen: %v", err)

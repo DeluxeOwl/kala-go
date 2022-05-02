@@ -73,6 +73,21 @@ func (tcc *TypeConfigCreate) AddSubjects(s ...*Subject) *TypeConfigCreate {
 	return tcc.AddSubjectIDs(ids...)
 }
 
+// AddRelTypeconfigIDs adds the "rel_typeconfigs" edge to the Relation entity by IDs.
+func (tcc *TypeConfigCreate) AddRelTypeconfigIDs(ids ...int) *TypeConfigCreate {
+	tcc.mutation.AddRelTypeconfigIDs(ids...)
+	return tcc
+}
+
+// AddRelTypeconfigs adds the "rel_typeconfigs" edges to the Relation entity.
+func (tcc *TypeConfigCreate) AddRelTypeconfigs(r ...*Relation) *TypeConfigCreate {
+	ids := make([]int, len(r))
+	for i := range r {
+		ids[i] = r[i].ID
+	}
+	return tcc.AddRelTypeconfigIDs(ids...)
+}
+
 // Mutation returns the TypeConfigMutation object of the builder.
 func (tcc *TypeConfigCreate) Mutation() *TypeConfigMutation {
 	return tcc.mutation
@@ -230,6 +245,25 @@ func (tcc *TypeConfigCreate) createSpec() (*TypeConfig, *sqlgraph.CreateSpec) {
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
 					Column: subject.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := tcc.mutation.RelTypeconfigsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   typeconfig.RelTypeconfigsTable,
+			Columns: typeconfig.RelTypeconfigsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: relation.FieldID,
 				},
 			},
 		}
