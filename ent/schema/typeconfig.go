@@ -29,5 +29,8 @@ func (TypeConfig) Edges() []ent.Edge {
 		edge.To("permissions", Permission.Type),
 		// Points to a list of subjects with this type
 		edge.To("subjects", Subject.Type),
+		// Points from related typeconfigs
+		edge.From("rel_typeconfigs", Relation.Type).
+			Ref("rel_typeconfigs"),
 	}
 }
