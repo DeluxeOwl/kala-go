@@ -33,21 +33,6 @@ func (pc *PermissionCreate) SetValue(s string) *PermissionCreate {
 	return pc
 }
 
-// AddRelationIDs adds the "relations" edge to the Relation entity by IDs.
-func (pc *PermissionCreate) AddRelationIDs(ids ...int) *PermissionCreate {
-	pc.mutation.AddRelationIDs(ids...)
-	return pc
-}
-
-// AddRelations adds the "relations" edges to the Relation entity.
-func (pc *PermissionCreate) AddRelations(r ...*Relation) *PermissionCreate {
-	ids := make([]int, len(r))
-	for i := range r {
-		ids[i] = r[i].ID
-	}
-	return pc.AddRelationIDs(ids...)
-}
-
 // SetTypeconfigID sets the "typeconfig" edge to the TypeConfig entity by ID.
 func (pc *PermissionCreate) SetTypeconfigID(id int) *PermissionCreate {
 	pc.mutation.SetTypeconfigID(id)
@@ -65,6 +50,21 @@ func (pc *PermissionCreate) SetNillableTypeconfigID(id *int) *PermissionCreate {
 // SetTypeconfig sets the "typeconfig" edge to the TypeConfig entity.
 func (pc *PermissionCreate) SetTypeconfig(t *TypeConfig) *PermissionCreate {
 	return pc.SetTypeconfigID(t.ID)
+}
+
+// AddRelationIDs adds the "relations" edge to the Relation entity by IDs.
+func (pc *PermissionCreate) AddRelationIDs(ids ...int) *PermissionCreate {
+	pc.mutation.AddRelationIDs(ids...)
+	return pc
+}
+
+// AddRelations adds the "relations" edges to the Relation entity.
+func (pc *PermissionCreate) AddRelations(r ...*Relation) *PermissionCreate {
+	ids := make([]int, len(r))
+	for i := range r {
+		ids[i] = r[i].ID
+	}
+	return pc.AddRelationIDs(ids...)
 }
 
 // Mutation returns the PermissionMutation object of the builder.
@@ -186,25 +186,6 @@ func (pc *PermissionCreate) createSpec() (*Permission, *sqlgraph.CreateSpec) {
 		})
 		_node.Value = value
 	}
-	if nodes := pc.mutation.RelationsIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: false,
-			Table:   permission.RelationsTable,
-			Columns: permission.RelationsPrimaryKey,
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeInt,
-					Column: relation.FieldID,
-				},
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges = append(_spec.Edges, edge)
-	}
 	if nodes := pc.mutation.TypeconfigIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
@@ -223,6 +204,25 @@ func (pc *PermissionCreate) createSpec() (*Permission, *sqlgraph.CreateSpec) {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
 		_node.type_config_permissions = &nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := pc.mutation.RelationsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   permission.RelationsTable,
+			Columns: permission.RelationsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: relation.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec

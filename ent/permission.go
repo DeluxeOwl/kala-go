@@ -28,28 +28,19 @@ type Permission struct {
 
 // PermissionEdges holds the relations/edges for other nodes in the graph.
 type PermissionEdges struct {
-	// Relations holds the value of the relations edge.
-	Relations []*Relation `json:"relations,omitempty"`
 	// Typeconfig holds the value of the typeconfig edge.
 	Typeconfig *TypeConfig `json:"typeconfig,omitempty"`
+	// Relations holds the value of the relations edge.
+	Relations []*Relation `json:"relations,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
 	loadedTypes [2]bool
 }
 
-// RelationsOrErr returns the Relations value or an error if the edge
-// was not loaded in eager-loading.
-func (e PermissionEdges) RelationsOrErr() ([]*Relation, error) {
-	if e.loadedTypes[0] {
-		return e.Relations, nil
-	}
-	return nil, &NotLoadedError{edge: "relations"}
-}
-
 // TypeconfigOrErr returns the Typeconfig value or an error if the edge
 // was not loaded in eager-loading, or loaded but was not found.
 func (e PermissionEdges) TypeconfigOrErr() (*TypeConfig, error) {
-	if e.loadedTypes[1] {
+	if e.loadedTypes[0] {
 		if e.Typeconfig == nil {
 			// The edge typeconfig was loaded in eager-loading,
 			// but was not found.
@@ -58,6 +49,15 @@ func (e PermissionEdges) TypeconfigOrErr() (*TypeConfig, error) {
 		return e.Typeconfig, nil
 	}
 	return nil, &NotLoadedError{edge: "typeconfig"}
+}
+
+// RelationsOrErr returns the Relations value or an error if the edge
+// was not loaded in eager-loading.
+func (e PermissionEdges) RelationsOrErr() ([]*Relation, error) {
+	if e.loadedTypes[1] {
+		return e.Relations, nil
+	}
+	return nil, &NotLoadedError{edge: "relations"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -116,14 +116,14 @@ func (pe *Permission) assignValues(columns []string, values []interface{}) error
 	return nil
 }
 
-// QueryRelations queries the "relations" edge of the Permission entity.
-func (pe *Permission) QueryRelations() *RelationQuery {
-	return (&PermissionClient{config: pe.config}).QueryRelations(pe)
-}
-
 // QueryTypeconfig queries the "typeconfig" edge of the Permission entity.
 func (pe *Permission) QueryTypeconfig() *TypeConfigQuery {
 	return (&PermissionClient{config: pe.config}).QueryTypeconfig(pe)
+}
+
+// QueryRelations queries the "relations" edge of the Permission entity.
+func (pe *Permission) QueryRelations() *RelationQuery {
+	return (&PermissionClient{config: pe.config}).QueryRelations(pe)
 }
 
 // Update returns a builder for updating this Permission.

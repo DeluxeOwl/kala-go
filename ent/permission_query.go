@@ -28,8 +28,8 @@ type PermissionQuery struct {
 	fields     []string
 	predicates []predicate.Permission
 	// eager-loading edges.
-	withRelations  *RelationQuery
 	withTypeconfig *TypeConfigQuery
+	withRelations  *RelationQuery
 	withFKs        bool
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
@@ -67,28 +67,6 @@ func (pq *PermissionQuery) Order(o ...OrderFunc) *PermissionQuery {
 	return pq
 }
 
-// QueryRelations chains the current query on the "relations" edge.
-func (pq *PermissionQuery) QueryRelations() *RelationQuery {
-	query := &RelationQuery{config: pq.config}
-	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
-		if err := pq.prepareQuery(ctx); err != nil {
-			return nil, err
-		}
-		selector := pq.sqlQuery(ctx)
-		if err := selector.Err(); err != nil {
-			return nil, err
-		}
-		step := sqlgraph.NewStep(
-			sqlgraph.From(permission.Table, permission.FieldID, selector),
-			sqlgraph.To(relation.Table, relation.FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, false, permission.RelationsTable, permission.RelationsPrimaryKey...),
-		)
-		fromU = sqlgraph.SetNeighbors(pq.driver.Dialect(), step)
-		return fromU, nil
-	}
-	return query
-}
-
 // QueryTypeconfig chains the current query on the "typeconfig" edge.
 func (pq *PermissionQuery) QueryTypeconfig() *TypeConfigQuery {
 	query := &TypeConfigQuery{config: pq.config}
@@ -104,6 +82,28 @@ func (pq *PermissionQuery) QueryTypeconfig() *TypeConfigQuery {
 			sqlgraph.From(permission.Table, permission.FieldID, selector),
 			sqlgraph.To(typeconfig.Table, typeconfig.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, true, permission.TypeconfigTable, permission.TypeconfigColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(pq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryRelations chains the current query on the "relations" edge.
+func (pq *PermissionQuery) QueryRelations() *RelationQuery {
+	query := &RelationQuery{config: pq.config}
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := pq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := pq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(permission.Table, permission.FieldID, selector),
+			sqlgraph.To(relation.Table, relation.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, false, permission.RelationsTable, permission.RelationsPrimaryKey...),
 		)
 		fromU = sqlgraph.SetNeighbors(pq.driver.Dialect(), step)
 		return fromU, nil
@@ -292,24 +292,13 @@ func (pq *PermissionQuery) Clone() *PermissionQuery {
 		offset:         pq.offset,
 		order:          append([]OrderFunc{}, pq.order...),
 		predicates:     append([]predicate.Permission{}, pq.predicates...),
-		withRelations:  pq.withRelations.Clone(),
 		withTypeconfig: pq.withTypeconfig.Clone(),
+		withRelations:  pq.withRelations.Clone(),
 		// clone intermediate query.
 		sql:    pq.sql.Clone(),
 		path:   pq.path,
 		unique: pq.unique,
 	}
-}
-
-// WithRelations tells the query-builder to eager-load the nodes that are connected to
-// the "relations" edge. The optional arguments are used to configure the query builder of the edge.
-func (pq *PermissionQuery) WithRelations(opts ...func(*RelationQuery)) *PermissionQuery {
-	query := &RelationQuery{config: pq.config}
-	for _, opt := range opts {
-		opt(query)
-	}
-	pq.withRelations = query
-	return pq
 }
 
 // WithTypeconfig tells the query-builder to eager-load the nodes that are connected to
@@ -320,6 +309,17 @@ func (pq *PermissionQuery) WithTypeconfig(opts ...func(*TypeConfigQuery)) *Permi
 		opt(query)
 	}
 	pq.withTypeconfig = query
+	return pq
+}
+
+// WithRelations tells the query-builder to eager-load the nodes that are connected to
+// the "relations" edge. The optional arguments are used to configure the query builder of the edge.
+func (pq *PermissionQuery) WithRelations(opts ...func(*RelationQuery)) *PermissionQuery {
+	query := &RelationQuery{config: pq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	pq.withRelations = query
 	return pq
 }
 
@@ -390,8 +390,8 @@ func (pq *PermissionQuery) sqlAll(ctx context.Context) ([]*Permission, error) {
 		withFKs     = pq.withFKs
 		_spec       = pq.querySpec()
 		loadedTypes = [2]bool{
-			pq.withRelations != nil,
 			pq.withTypeconfig != nil,
+			pq.withRelations != nil,
 		}
 	)
 	if pq.withTypeconfig != nil {
@@ -418,6 +418,35 @@ func (pq *PermissionQuery) sqlAll(ctx context.Context) ([]*Permission, error) {
 	}
 	if len(nodes) == 0 {
 		return nodes, nil
+	}
+
+	if query := pq.withTypeconfig; query != nil {
+		ids := make([]int, 0, len(nodes))
+		nodeids := make(map[int][]*Permission)
+		for i := range nodes {
+			if nodes[i].type_config_permissions == nil {
+				continue
+			}
+			fk := *nodes[i].type_config_permissions
+			if _, ok := nodeids[fk]; !ok {
+				ids = append(ids, fk)
+			}
+			nodeids[fk] = append(nodeids[fk], nodes[i])
+		}
+		query.Where(typeconfig.IDIn(ids...))
+		neighbors, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, n := range neighbors {
+			nodes, ok := nodeids[n.ID]
+			if !ok {
+				return nil, fmt.Errorf(`unexpected foreign-key "type_config_permissions" returned %v`, n.ID)
+			}
+			for i := range nodes {
+				nodes[i].Edges.Typeconfig = n
+			}
+		}
 	}
 
 	if query := pq.withRelations; query != nil {
@@ -481,35 +510,6 @@ func (pq *PermissionQuery) sqlAll(ctx context.Context) ([]*Permission, error) {
 			}
 			for i := range nodes {
 				nodes[i].Edges.Relations = append(nodes[i].Edges.Relations, n)
-			}
-		}
-	}
-
-	if query := pq.withTypeconfig; query != nil {
-		ids := make([]int, 0, len(nodes))
-		nodeids := make(map[int][]*Permission)
-		for i := range nodes {
-			if nodes[i].type_config_permissions == nil {
-				continue
-			}
-			fk := *nodes[i].type_config_permissions
-			if _, ok := nodeids[fk]; !ok {
-				ids = append(ids, fk)
-			}
-			nodeids[fk] = append(nodeids[fk], nodes[i])
-		}
-		query.Where(typeconfig.IDIn(ids...))
-		neighbors, err := query.All(ctx)
-		if err != nil {
-			return nil, err
-		}
-		for _, n := range neighbors {
-			nodes, ok := nodeids[n.ID]
-			if !ok {
-				return nil, fmt.Errorf(`unexpected foreign-key "type_config_permissions" returned %v`, n.ID)
-			}
-			for i := range nodes {
-				nodes[i].Edges.Typeconfig = n
 			}
 		}
 	}

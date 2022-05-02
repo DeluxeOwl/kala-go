@@ -21,12 +21,13 @@ func (Permission) Fields() []ent.Field {
 
 // Edges of the Permission.
 func (Permission) Edges() []ent.Edge {
+
 	return []ent.Edge{
-		// Points to the relations in the value field
-		edge.To("relations", Relation.Type),
 		// The typeconfig has these permissions
 		edge.From("typeconfig", TypeConfig.Type).
 			Ref("permissions").
 			Unique(),
+		// Points to the relations in the value field for easier traversal
+		edge.To("relations", Relation.Type),
 	}
 }

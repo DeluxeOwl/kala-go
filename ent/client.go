@@ -236,22 +236,6 @@ func (c *PermissionClient) GetX(ctx context.Context, id int) *Permission {
 	return obj
 }
 
-// QueryRelations queries the relations edge of a Permission.
-func (c *PermissionClient) QueryRelations(pe *Permission) *RelationQuery {
-	query := &RelationQuery{config: c.config}
-	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
-		id := pe.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(permission.Table, permission.FieldID, id),
-			sqlgraph.To(relation.Table, relation.FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, false, permission.RelationsTable, permission.RelationsPrimaryKey...),
-		)
-		fromV = sqlgraph.Neighbors(pe.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
 // QueryTypeconfig queries the typeconfig edge of a Permission.
 func (c *PermissionClient) QueryTypeconfig(pe *Permission) *TypeConfigQuery {
 	query := &TypeConfigQuery{config: c.config}
@@ -261,6 +245,22 @@ func (c *PermissionClient) QueryTypeconfig(pe *Permission) *TypeConfigQuery {
 			sqlgraph.From(permission.Table, permission.FieldID, id),
 			sqlgraph.To(typeconfig.Table, typeconfig.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, true, permission.TypeconfigTable, permission.TypeconfigColumn),
+		)
+		fromV = sqlgraph.Neighbors(pe.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryRelations queries the relations edge of a Permission.
+func (c *PermissionClient) QueryRelations(pe *Permission) *RelationQuery {
+	query := &RelationQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := pe.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(permission.Table, permission.FieldID, id),
+			sqlgraph.To(relation.Table, relation.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, false, permission.RelationsTable, permission.RelationsPrimaryKey...),
 		)
 		fromV = sqlgraph.Neighbors(pe.driver.Dialect(), step)
 		return fromV, nil
@@ -358,15 +358,15 @@ func (c *RelationClient) GetX(ctx context.Context, id int) *Relation {
 	return obj
 }
 
-// QuerySubjects queries the subjects edge of a Relation.
-func (c *RelationClient) QuerySubjects(r *Relation) *SubjectQuery {
-	query := &SubjectQuery{config: c.config}
+// QueryTypeconfig queries the typeconfig edge of a Relation.
+func (c *RelationClient) QueryTypeconfig(r *Relation) *TypeConfigQuery {
+	query := &TypeConfigQuery{config: c.config}
 	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
 		id := r.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(relation.Table, relation.FieldID, id),
-			sqlgraph.To(subject.Table, subject.FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, false, relation.SubjectsTable, relation.SubjectsPrimaryKey...),
+			sqlgraph.To(typeconfig.Table, typeconfig.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, relation.TypeconfigTable, relation.TypeconfigColumn),
 		)
 		fromV = sqlgraph.Neighbors(r.driver.Dialect(), step)
 		return fromV, nil
@@ -399,22 +399,6 @@ func (c *RelationClient) QueryPermissions(r *Relation) *PermissionQuery {
 			sqlgraph.From(relation.Table, relation.FieldID, id),
 			sqlgraph.To(permission.Table, permission.FieldID),
 			sqlgraph.Edge(sqlgraph.M2M, true, relation.PermissionsTable, relation.PermissionsPrimaryKey...),
-		)
-		fromV = sqlgraph.Neighbors(r.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
-// QueryTypeconfig queries the typeconfig edge of a Relation.
-func (c *RelationClient) QueryTypeconfig(r *Relation) *TypeConfigQuery {
-	query := &TypeConfigQuery{config: c.config}
-	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
-		id := r.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(relation.Table, relation.FieldID, id),
-			sqlgraph.To(typeconfig.Table, typeconfig.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, relation.TypeconfigTable, relation.TypeconfigColumn),
 		)
 		fromV = sqlgraph.Neighbors(r.driver.Dialect(), step)
 		return fromV, nil
@@ -537,54 +521,6 @@ func (c *SubjectClient) QueryType(s *Subject) *TypeConfigQuery {
 			sqlgraph.From(subject.Table, subject.FieldID, id),
 			sqlgraph.To(typeconfig.Table, typeconfig.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, true, subject.TypeTable, subject.TypeColumn),
-		)
-		fromV = sqlgraph.Neighbors(s.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
-// QueryRelations queries the relations edge of a Subject.
-func (c *SubjectClient) QueryRelations(s *Subject) *RelationQuery {
-	query := &RelationQuery{config: c.config}
-	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
-		id := s.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(subject.Table, subject.FieldID, id),
-			sqlgraph.To(relation.Table, relation.FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, true, subject.RelationsTable, subject.RelationsPrimaryKey...),
-		)
-		fromV = sqlgraph.Neighbors(s.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
-// QueryAsDirectOwnerTuples queries the as_direct_owner_tuples edge of a Subject.
-func (c *SubjectClient) QueryAsDirectOwnerTuples(s *Subject) *TupleQuery {
-	query := &TupleQuery{config: c.config}
-	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
-		id := s.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(subject.Table, subject.FieldID, id),
-			sqlgraph.To(tuple.Table, tuple.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, true, subject.AsDirectOwnerTuplesTable, subject.AsDirectOwnerTuplesColumn),
-		)
-		fromV = sqlgraph.Neighbors(s.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
-// QueryAsResourceTuples queries the as_resource_tuples edge of a Subject.
-func (c *SubjectClient) QueryAsResourceTuples(s *Subject) *TupleQuery {
-	query := &TupleQuery{config: c.config}
-	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
-		id := s.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(subject.Table, subject.FieldID, id),
-			sqlgraph.To(tuple.Table, tuple.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, true, subject.AsResourceTuplesTable, subject.AsResourceTuplesColumn),
 		)
 		fromV = sqlgraph.Neighbors(s.driver.Dialect(), step)
 		return fromV, nil

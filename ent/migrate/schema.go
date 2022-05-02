@@ -148,31 +148,6 @@ var (
 			},
 		},
 	}
-	// RelationSubjectsColumns holds the columns for the "relation_subjects" table.
-	RelationSubjectsColumns = []*schema.Column{
-		{Name: "relation_id", Type: field.TypeInt},
-		{Name: "subject_id", Type: field.TypeInt},
-	}
-	// RelationSubjectsTable holds the schema information for the "relation_subjects" table.
-	RelationSubjectsTable = &schema.Table{
-		Name:       "relation_subjects",
-		Columns:    RelationSubjectsColumns,
-		PrimaryKey: []*schema.Column{RelationSubjectsColumns[0], RelationSubjectsColumns[1]},
-		ForeignKeys: []*schema.ForeignKey{
-			{
-				Symbol:     "relation_subjects_relation_id",
-				Columns:    []*schema.Column{RelationSubjectsColumns[0]},
-				RefColumns: []*schema.Column{RelationsColumns[0]},
-				OnDelete:   schema.Cascade,
-			},
-			{
-				Symbol:     "relation_subjects_subject_id",
-				Columns:    []*schema.Column{RelationSubjectsColumns[1]},
-				RefColumns: []*schema.Column{SubjectsColumns[0]},
-				OnDelete:   schema.Cascade,
-			},
-		},
-	}
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{
 		PermissionsTable,
@@ -181,7 +156,6 @@ var (
 		TuplesTable,
 		TypeConfigsTable,
 		PermissionRelationsTable,
-		RelationSubjectsTable,
 	}
 )
 
@@ -195,6 +169,4 @@ func init() {
 	TypeConfigsTable.ForeignKeys[0].RefTable = RelationsTable
 	PermissionRelationsTable.ForeignKeys[0].RefTable = PermissionsTable
 	PermissionRelationsTable.ForeignKeys[1].RefTable = RelationsTable
-	RelationSubjectsTable.ForeignKeys[0].RefTable = RelationsTable
-	RelationSubjectsTable.ForeignKeys[1].RefTable = SubjectsTable
 }

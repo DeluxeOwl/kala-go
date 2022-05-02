@@ -327,25 +327,25 @@ func ValueContainsFold(v string) predicate.Relation {
 	})
 }
 
-// HasSubjects applies the HasEdge predicate on the "subjects" edge.
-func HasSubjects() predicate.Relation {
+// HasTypeconfig applies the HasEdge predicate on the "typeconfig" edge.
+func HasTypeconfig() predicate.Relation {
 	return predicate.Relation(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
-			sqlgraph.To(SubjectsTable, FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, false, SubjectsTable, SubjectsPrimaryKey...),
+			sqlgraph.To(TypeconfigTable, FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, TypeconfigTable, TypeconfigColumn),
 		)
 		sqlgraph.HasNeighbors(s, step)
 	})
 }
 
-// HasSubjectsWith applies the HasEdge predicate on the "subjects" edge with a given conditions (other predicates).
-func HasSubjectsWith(preds ...predicate.Subject) predicate.Relation {
+// HasTypeconfigWith applies the HasEdge predicate on the "typeconfig" edge with a given conditions (other predicates).
+func HasTypeconfigWith(preds ...predicate.TypeConfig) predicate.Relation {
 	return predicate.Relation(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
-			sqlgraph.To(SubjectsInverseTable, FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, false, SubjectsTable, SubjectsPrimaryKey...),
+			sqlgraph.To(TypeconfigInverseTable, FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, TypeconfigTable, TypeconfigColumn),
 		)
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
@@ -402,34 +402,6 @@ func HasPermissionsWith(preds ...predicate.Permission) predicate.Relation {
 			sqlgraph.From(Table, FieldID),
 			sqlgraph.To(PermissionsInverseTable, FieldID),
 			sqlgraph.Edge(sqlgraph.M2M, true, PermissionsTable, PermissionsPrimaryKey...),
-		)
-		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
-			for _, p := range preds {
-				p(s)
-			}
-		})
-	})
-}
-
-// HasTypeconfig applies the HasEdge predicate on the "typeconfig" edge.
-func HasTypeconfig() predicate.Relation {
-	return predicate.Relation(func(s *sql.Selector) {
-		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
-			sqlgraph.To(TypeconfigTable, FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, TypeconfigTable, TypeconfigColumn),
-		)
-		sqlgraph.HasNeighbors(s, step)
-	})
-}
-
-// HasTypeconfigWith applies the HasEdge predicate on the "typeconfig" edge with a given conditions (other predicates).
-func HasTypeconfigWith(preds ...predicate.TypeConfig) predicate.Relation {
-	return predicate.Relation(func(s *sql.Selector) {
-		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
-			sqlgraph.To(TypeconfigInverseTable, FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, TypeconfigTable, TypeconfigColumn),
 		)
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {

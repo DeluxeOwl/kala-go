@@ -11,17 +11,12 @@ const (
 	FieldName = "name"
 	// FieldValue holds the string denoting the value field in the database.
 	FieldValue = "value"
-	// EdgeRelations holds the string denoting the relations edge name in mutations.
-	EdgeRelations = "relations"
 	// EdgeTypeconfig holds the string denoting the typeconfig edge name in mutations.
 	EdgeTypeconfig = "typeconfig"
+	// EdgeRelations holds the string denoting the relations edge name in mutations.
+	EdgeRelations = "relations"
 	// Table holds the table name of the permission in the database.
 	Table = "permissions"
-	// RelationsTable is the table that holds the relations relation/edge. The primary key declared below.
-	RelationsTable = "permission_relations"
-	// RelationsInverseTable is the table name for the Relation entity.
-	// It exists in this package in order to avoid circular dependency with the "relation" package.
-	RelationsInverseTable = "relations"
 	// TypeconfigTable is the table that holds the typeconfig relation/edge.
 	TypeconfigTable = "permissions"
 	// TypeconfigInverseTable is the table name for the TypeConfig entity.
@@ -29,6 +24,11 @@ const (
 	TypeconfigInverseTable = "type_configs"
 	// TypeconfigColumn is the table column denoting the typeconfig relation/edge.
 	TypeconfigColumn = "type_config_permissions"
+	// RelationsTable is the table that holds the relations relation/edge. The primary key declared below.
+	RelationsTable = "permission_relations"
+	// RelationsInverseTable is the table name for the Relation entity.
+	// It exists in this package in order to avoid circular dependency with the "relation" package.
+	RelationsInverseTable = "relations"
 )
 
 // Columns holds all SQL columns for permission fields.

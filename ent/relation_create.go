@@ -11,7 +11,6 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/DeluxeOwl/kala-go/ent/permission"
 	"github.com/DeluxeOwl/kala-go/ent/relation"
-	"github.com/DeluxeOwl/kala-go/ent/subject"
 	"github.com/DeluxeOwl/kala-go/ent/tuple"
 	"github.com/DeluxeOwl/kala-go/ent/typeconfig"
 )
@@ -35,19 +34,23 @@ func (rc *RelationCreate) SetValue(s string) *RelationCreate {
 	return rc
 }
 
-// AddSubjectIDs adds the "subjects" edge to the Subject entity by IDs.
-func (rc *RelationCreate) AddSubjectIDs(ids ...int) *RelationCreate {
-	rc.mutation.AddSubjectIDs(ids...)
+// SetTypeconfigID sets the "typeconfig" edge to the TypeConfig entity by ID.
+func (rc *RelationCreate) SetTypeconfigID(id int) *RelationCreate {
+	rc.mutation.SetTypeconfigID(id)
 	return rc
 }
 
-// AddSubjects adds the "subjects" edges to the Subject entity.
-func (rc *RelationCreate) AddSubjects(s ...*Subject) *RelationCreate {
-	ids := make([]int, len(s))
-	for i := range s {
-		ids[i] = s[i].ID
+// SetNillableTypeconfigID sets the "typeconfig" edge to the TypeConfig entity by ID if the given value is not nil.
+func (rc *RelationCreate) SetNillableTypeconfigID(id *int) *RelationCreate {
+	if id != nil {
+		rc = rc.SetTypeconfigID(*id)
 	}
-	return rc.AddSubjectIDs(ids...)
+	return rc
+}
+
+// SetTypeconfig sets the "typeconfig" edge to the TypeConfig entity.
+func (rc *RelationCreate) SetTypeconfig(t *TypeConfig) *RelationCreate {
+	return rc.SetTypeconfigID(t.ID)
 }
 
 // AddRelTypeconfigIDs adds the "rel_typeconfigs" edge to the TypeConfig entity by IDs.
@@ -78,25 +81,6 @@ func (rc *RelationCreate) AddPermissions(p ...*Permission) *RelationCreate {
 		ids[i] = p[i].ID
 	}
 	return rc.AddPermissionIDs(ids...)
-}
-
-// SetTypeconfigID sets the "typeconfig" edge to the TypeConfig entity by ID.
-func (rc *RelationCreate) SetTypeconfigID(id int) *RelationCreate {
-	rc.mutation.SetTypeconfigID(id)
-	return rc
-}
-
-// SetNillableTypeconfigID sets the "typeconfig" edge to the TypeConfig entity by ID if the given value is not nil.
-func (rc *RelationCreate) SetNillableTypeconfigID(id *int) *RelationCreate {
-	if id != nil {
-		rc = rc.SetTypeconfigID(*id)
-	}
-	return rc
-}
-
-// SetTypeconfig sets the "typeconfig" edge to the TypeConfig entity.
-func (rc *RelationCreate) SetTypeconfig(t *TypeConfig) *RelationCreate {
-	return rc.SetTypeconfigID(t.ID)
 }
 
 // AddTupleIDs adds the "tuples" edge to the Tuple entity by IDs.
@@ -233,23 +217,24 @@ func (rc *RelationCreate) createSpec() (*Relation, *sqlgraph.CreateSpec) {
 		})
 		_node.Value = value
 	}
-	if nodes := rc.mutation.SubjectsIDs(); len(nodes) > 0 {
+	if nodes := rc.mutation.TypeconfigIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: false,
-			Table:   relation.SubjectsTable,
-			Columns: relation.SubjectsPrimaryKey,
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   relation.TypeconfigTable,
+			Columns: []string{relation.TypeconfigColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
-					Column: subject.FieldID,
+					Column: typeconfig.FieldID,
 				},
 			},
 		}
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
+		_node.type_config_relations = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := rc.mutation.RelTypeconfigsIDs(); len(nodes) > 0 {
@@ -288,26 +273,6 @@ func (rc *RelationCreate) createSpec() (*Relation, *sqlgraph.CreateSpec) {
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
-		_spec.Edges = append(_spec.Edges, edge)
-	}
-	if nodes := rc.mutation.TypeconfigIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   relation.TypeconfigTable,
-			Columns: []string{relation.TypeconfigColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeInt,
-					Column: typeconfig.FieldID,
-				},
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_node.type_config_relations = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := rc.mutation.TuplesIDs(); len(nodes) > 0 {
