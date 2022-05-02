@@ -66,6 +66,7 @@ func (h *Handler) CreateTypeConfig(ctx context.Context, tcInput *TypeConfig) (*e
 		return tc, nil
 	}
 
+	// --------- check if relation types exist
 	var refDelim = " | "
 	var refRelDelim = "#"
 
@@ -77,8 +78,10 @@ func (h *Handler) CreateTypeConfig(ctx context.Context, tcInput *TypeConfig) (*e
 		return nil, fmt.Errorf("failed when fetching existing types: %w", err)
 	}
 
+	relSlice := make([]*ent.RelationCreate, len(tcInput.Relations))
+	cnt := 0
+
 	log.Printf("for type: %s\n", tcInput.Name)
-	// check if relation types exist
 	for relName, relValue := range tcInput.Relations {
 
 		log.Printf("validating '%s: %s'\n", relName, relValue)
@@ -121,6 +124,24 @@ func (h *Handler) CreateTypeConfig(ctx context.Context, tcInput *TypeConfig) (*e
 			}
 		}
 
+		relSlice[cnt] = h.client.Relation.
+			Create().
+			SetName(relName).
+			SetValue(relValue)
+
+		cnt++
+
+	}
+
+	// Save relations and permissions in db
+	relBulk, err := h.client.Relation.CreateBulk(relSlice...).Save(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed when creating relations: %w", err)
+	}
+
+	tc, err = tc.Update().AddRelations(relBulk...).Save(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed when adding relations: %w", err)
 	}
 
 	return tc, nil
