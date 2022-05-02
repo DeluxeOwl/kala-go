@@ -6,6 +6,7 @@ require (
 	entgo.io/ent v0.10.1
 	github.com/mattn/go-sqlite3 v1.14.10
 	github.com/pkg/errors v0.9.1
+	golang.org/x/exp v0.0.0-20220428152302-39d4317da171
 )
 
 require (
@@ -18,6 +19,6 @@ require (
 	github.com/hashicorp/hcl/v2 v2.10.0 // indirect
 	github.com/mitchellh/go-wordwrap v0.0.0-20150314170334-ad45545899c7 // indirect
 	github.com/zclconf/go-cty v1.8.0 // indirect
-	golang.org/x/mod v0.5.1 // indirect
+	golang.org/x/mod v0.6.0-dev.0.20211013180041-c96bc1413d57 // indirect
 	golang.org/x/text v0.3.7 // indirect
 )

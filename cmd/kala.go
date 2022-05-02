@@ -8,9 +8,11 @@ import (
 	"strings"
 
 	"github.com/DeluxeOwl/kala-go/ent"
+	"github.com/DeluxeOwl/kala-go/ent/relation"
 	"github.com/DeluxeOwl/kala-go/ent/typeconfig"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/pkg/errors"
+	"golang.org/x/exp/slices"
 )
 
 func WithTx(ctx context.Context, client *ent.Client, fn func(tx *ent.Tx) error) error {
@@ -45,52 +47,80 @@ type TypeConfig struct {
 var regexAuthzType = regexp.MustCompile(`^[a-zA-Z_]{1,64}(#[a-zA-Z_]{1,64})?( \| [a-zA-Z_]{1,64}(#[a-zA-Z_]{1,64})?)*$`)
 var regexAuthzRel = regexp.MustCompile(`^[a-zA-Z_]{1,64}$`)
 
-func (h *Handler) CreateTypeConfig(ctx context.Context, typeconfig *TypeConfig) (*ent.TypeConfig, error) {
+// TODO: make the errors as variables?
+func (h *Handler) CreateTypeConfig(ctx context.Context, tcInput *TypeConfig) (*ent.TypeConfig, error) {
 
 	tc, err := h.client.TypeConfig.Create().
-		SetName(typeconfig.Name).
+		SetName(tcInput.Name).
 		Save(ctx)
 
 	if err != nil {
 		return nil, fmt.Errorf("failed creating type config: %w", err)
 	}
 
-	if typeconfig.Relations == nil && typeconfig.Permissions != nil {
+	if tcInput.Relations == nil && tcInput.Permissions != nil {
 		return nil, errors.New("failed creating type config: relations cannot be empty while permissions exist")
 	}
 	// if no relations, we created just the type with the name
-	if typeconfig.Relations == nil {
+	if tcInput.Relations == nil {
 		return tc, nil
 	}
 
 	var refDelim = " | "
 	var refRelDelim = "#"
 
+	existingTypeConfigs, err := h.client.TypeConfig.
+		Query().
+		Select(typeconfig.FieldName).
+		Strings(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed when fetching existing types: %w", err)
+	}
+
+	log.Printf("for type: %s\n", tcInput.Name)
 	// check if relation types exist
-	// TODO: validation in goroutines?
-	for relName, relValue := range typeconfig.Relations {
+	for relName, relValue := range tcInput.Relations {
+
+		log.Printf("validating '%s: %s'\n", relName, relValue)
+
 		if !regexAuthzType.MatchString(relValue) {
-			return nil, fmt.Errorf("malformed relation reference '%s'", relValue)
+			return nil, fmt.Errorf("malformed relation reference input: %s", relValue)
 		}
 
 		if !regexAuthzRel.MatchString(relName) {
-			return nil, fmt.Errorf("malformed relation name '%s'", relName)
+			return nil, fmt.Errorf("malformed relation name input: %s", relName)
 		}
 
 		// type with relation, ex: user | group#member
 		for _, referencedRelation := range strings.Split(relValue, refDelim) {
-			// composed relation, ex: group#member
-			if strings.Contains(referencedRelation, refRelDelim) {
+			if !strings.Contains(referencedRelation, refRelDelim) {
+				if !slices.Contains(existingTypeConfigs, referencedRelation) {
+					return nil, fmt.Errorf("referenced type does not exist: %s", referencedRelation)
+				}
+			} else {
+				// checking composed relation
 				s := strings.Split(referencedRelation, refRelDelim)
 
 				refTypeName := s[0]
 				refTypeRelation := s[1]
 
-				fmt.Printf("TODO: checking if type:%s with relation:%s exists\n", refTypeName, refTypeRelation)
-			} else {
-				fmt.Printf("TODO: checking if type:%s exists\n", referencedRelation)
+				if !slices.Contains(existingTypeConfigs, refTypeName) {
+					return nil, fmt.Errorf("referenced type does not exist: %s", refTypeName)
+				}
+				_, err := h.client.TypeConfig.
+					Query().
+					Where(typeconfig.NameEQ(refTypeName)).
+					QueryRelations().
+					Where(relation.NameEQ(refTypeRelation)).
+					Only(ctx)
+
+				if err != nil {
+					return nil, fmt.Errorf("referenced relation does not exist: %s#%s", refTypeName, refTypeRelation)
+				}
+
 			}
 		}
+
 	}
 
 	return tc, nil
@@ -220,9 +250,9 @@ func main() {
 		client: client,
 	}
 
-	// tc, _ := h.CreateTypeConfigOld(ctx)
+	// ac, _ := h.CreateTypeConfigOld(ctx)
 	// h.QueryTypeConfig(ctx)
-	// QueryRelations(ctx, tc)
+	// QueryRelations(ctx, ac)
 
 	tc, err := h.CreateTypeConfig(ctx,
 		&TypeConfig{Name: "user"},
