@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"regexp"
+	"strings"
 
 	"github.com/DeluxeOwl/kala-go/ent"
 	"github.com/DeluxeOwl/kala-go/ent/typeconfig"
@@ -40,15 +42,58 @@ type TypeConfig struct {
 	Permissions map[string]string
 }
 
-// TODO: order the list of events https://entgo.io/docs/transactions/#transactional-client
-// You also have to add refs, so be careful https://entgo.io/docs/schema-edges#o2o-two-types
-// check the dependencies
-// if they depend, use the id after
-func (h *Handler) CreateTypeConfig(ctx context.Context, tc *TypeConfig) error {
-	// if tc.Relations == nil {
-	// 	fmt.Println("nil map")
-	// }
-	return nil
+var regexAuthzType = regexp.MustCompile(`^[a-zA-Z_]{1,64}(#[a-zA-Z_]{1,64})?( \| [a-zA-Z_]{1,64}(#[a-zA-Z_]{1,64})?)*$`)
+var regexAuthzRel = regexp.MustCompile(`^[a-zA-Z_]{1,64}$`)
+
+func (h *Handler) CreateTypeConfig(ctx context.Context, typeconfig *TypeConfig) (*ent.TypeConfig, error) {
+
+	tc, err := h.client.TypeConfig.Create().
+		SetName(typeconfig.Name).
+		Save(ctx)
+
+	if err != nil {
+		return nil, fmt.Errorf("failed creating type config: %w", err)
+	}
+
+	if typeconfig.Relations == nil && typeconfig.Permissions != nil {
+		return nil, errors.New("failed creating type config: relations cannot be empty while permissions exist")
+	}
+	// if no relations, we created just the type with the name
+	if typeconfig.Relations == nil {
+		return tc, nil
+	}
+
+	var refDelim = " | "
+	var refRelDelim = "#"
+
+	// check if relation types exist
+	// TODO: validation in goroutines?
+	for relName, relValue := range typeconfig.Relations {
+		if !regexAuthzType.MatchString(relValue) {
+			return nil, fmt.Errorf("malformed relation reference '%s'", relValue)
+		}
+
+		if !regexAuthzRel.MatchString(relName) {
+			return nil, fmt.Errorf("malformed relation name '%s'", relName)
+		}
+
+		// type with relation, ex: user | group#member
+		for _, referencedRelation := range strings.Split(relValue, refDelim) {
+			// composed relation, ex: group#member
+			if strings.Contains(referencedRelation, refRelDelim) {
+				s := strings.Split(referencedRelation, refRelDelim)
+
+				refTypeName := s[0]
+				refTypeRelation := s[1]
+
+				fmt.Printf("TODO: checking if type:%s with relation:%s exists\n", refTypeName, refTypeRelation)
+			} else {
+				fmt.Printf("TODO: checking if type:%s exists\n", referencedRelation)
+			}
+		}
+	}
+
+	return tc, nil
 }
 
 func (h *Handler) CreateTypeConfigOld(ctx context.Context) (*ent.TypeConfig, error) {
@@ -175,10 +220,61 @@ func main() {
 		client: client,
 	}
 
-	tc, _ := h.CreateTypeConfigOld(ctx)
-	h.QueryTypeConfig(ctx)
-	QueryRelations(ctx, tc)
-	_ = h.CreateTypeConfig(ctx, &TypeConfig{Name: "docs"})
+	// tc, _ := h.CreateTypeConfigOld(ctx)
+	// h.QueryTypeConfig(ctx)
+	// QueryRelations(ctx, tc)
+
+	tc, err := h.CreateTypeConfig(ctx,
+		&TypeConfig{Name: "user"},
+	)
+	fmt.Println(tc, err)
+
+	tc, err = h.CreateTypeConfig(ctx,
+		&TypeConfig{
+			Name: "group",
+			Relations: map[string]string{
+				"member": "user",
+			},
+		})
+	fmt.Println(tc, err)
+
+	tc, err = h.CreateTypeConfig(ctx,
+		&TypeConfig{
+			Name: "folder",
+			Relations: map[string]string{
+				"reader": "user | group#member",
+			},
+		})
+	fmt.Println(tc, err)
+
+	tc, err = h.CreateTypeConfig(ctx,
+		&TypeConfig{
+			Name: "document",
+			Relations: map[string]string{
+				"parent_folder": "folder",
+				"writer":        "user",
+				"reader":        "user",
+			},
+			Permissions: map[string]string{
+				"read":           "reader | writer | parent_folder.reader",
+				"read_and_write": "reader & writer",
+				"read_only":      "reader & !writer",
+			},
+		})
+	fmt.Println(tc, err)
+
+	tc, err = h.CreateTypeConfig(ctx,
+		&TypeConfig{
+			Name: "test",
+			Permissions: map[string]string{
+				"read":           "reader | writer | parent_folder.reader",
+				"read_and_write": "reader & writer",
+				"read_only":      "reader & !writer",
+			},
+		})
+	fmt.Println(tc, err)
+
+	// tc, _ = h.CreateTypeConfig(ctx, &TypeConfig{Name: "docs"})
 
 	// visualize
 	// err := entc.Generate("./ent/schema", &gen.Config{}, entc.Extensions(entviz.Extension{}))
