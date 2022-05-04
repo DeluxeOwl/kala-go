@@ -165,12 +165,27 @@ func (h *Handler) CreateTypeConfig(ctx context.Context, tcInput *TypeConfig) (*e
 
 	var parentRelDelim = "."
 
+	permSlice := make([]*ent.PermissionCreate, len(tcInput.Permissions))
+	cnt = 0
+
 	permDelim := regexp.MustCompile(`(( \| )|( & )(!)?)|!`)
 	inputRelations := maps.Keys(tcInput.Relations)
 	fmt.Println("relations:", inputRelations)
+
+	getIdForRelationName := func(name string) int {
+		for _, rel := range relBulk {
+			if rel.Name == name {
+				return rel.ID
+			}
+		}
+		return -1
+	}
+
 	for permName, permValue := range tcInput.Permissions {
 
 		// TODO: validate permName and permValue
+
+		referencedTypeIDsSlice := make([]int, 0)
 
 		fmt.Printf("-> validating '%s: %s'\n", permName, permValue)
 		for _, referencedRelation := range permDelim.Split(permValue, -1) {
@@ -182,7 +197,11 @@ func (h *Handler) CreateTypeConfig(ctx context.Context, tcInput *TypeConfig) (*e
 				if !slices.Contains(inputRelations, referencedRelation) {
 					return nil, fmt.Errorf("referenced relation '%s' in permission '%s' not found", referencedRelation, permName)
 				}
-				fmt.Printf("--> found relation '%s'\n", referencedRelation)
+
+				relID := getIdForRelationName(referencedRelation)
+				referencedTypeIDsSlice = append(referencedTypeIDsSlice, relID)
+
+				fmt.Printf("--> found relation '%s' with id %d \n", referencedRelation, relID)
 			} else {
 				// check parent relations
 				s := strings.Split(referencedRelation, parentRelDelim)
@@ -210,10 +229,33 @@ func (h *Handler) CreateTypeConfig(ctx context.Context, tcInput *TypeConfig) (*e
 						refParentRel)
 				}
 
-				fmt.Printf("--> found parent relation '%s' with relation '%s'\n", refParent, refParentRel)
+				relID := getIdForRelationName(refParent)
+				referencedTypeIDsSlice = append(referencedTypeIDsSlice, relID)
+
+				fmt.Printf("--> found parent relation '%s' with relation '%s' with id %d\n", refParent, refParentRel, relID)
 			}
 
 		}
+
+		permSlice[cnt] = h.client.Permission.
+			Create().
+			SetName(permName).
+			SetValue(permValue).
+			AddRelationIDs(referencedTypeIDsSlice...)
+
+		cnt++
+
+	}
+
+	// save relations and permissions in db
+	permBulk, err := h.client.Permission.CreateBulk(permSlice...).Save(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed when creating permissions: %w", err)
+	}
+
+	tc, err = tc.Update().AddPermissions(permBulk...).Save(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed when adding permissions: %w", err)
 	}
 
 	return tc, nil
