@@ -80,11 +80,11 @@ func (h *Handler) CreateTypeConfig(ctx context.Context, tcInput *TypeConfig) (*e
 		log.Printf("-> validating '%s: %s'\n", relName, relValue)
 
 		if !regexAuthzType.MatchString(relValue) {
-			return nil, fmt.Errorf("malformed relation reference input: %s", relValue)
+			return nil, fmt.Errorf("malformed relation reference input: '%s'", relValue)
 		}
 
 		if !regexAuthzRel.MatchString(relName) {
-			return nil, fmt.Errorf("malformed relation name input: %s", relName)
+			return nil, fmt.Errorf("malformed relation name input: '%s'", relName)
 		}
 
 		referencedTypeIDsSlice := make([]int, 0)
@@ -100,7 +100,7 @@ func (h *Handler) CreateTypeConfig(ctx context.Context, tcInput *TypeConfig) (*e
 					OnlyID(ctx)
 
 				if err != nil {
-					return nil, fmt.Errorf("referenced type does not exist: %s", referencedType)
+					return nil, fmt.Errorf("referenced type does not exist: '%s'", referencedType)
 				}
 
 				log.Printf("---> found id %d for %s\n", id, referencedType)
@@ -120,7 +120,7 @@ func (h *Handler) CreateTypeConfig(ctx context.Context, tcInput *TypeConfig) (*e
 					OnlyID(ctx)
 
 				if err != nil {
-					return nil, fmt.Errorf("referenced type does not exist: %s", refTypeName)
+					return nil, fmt.Errorf("referenced type does not exist: '%s'", refTypeName)
 				}
 
 				hasRelation, err := h.client.TypeConfig.
@@ -131,7 +131,7 @@ func (h *Handler) CreateTypeConfig(ctx context.Context, tcInput *TypeConfig) (*e
 					Exist(ctx)
 
 				if !hasRelation || err != nil {
-					return nil, fmt.Errorf("referenced relation does not exist: %s#%s", refTypeName, refTypeRelation)
+					return nil, fmt.Errorf("referenced relation does not exist: '%s#%s'", refTypeName, refTypeRelation)
 				}
 
 				log.Printf("---> found id %d for %s\n", id, refTypeName)
@@ -184,10 +184,32 @@ func (h *Handler) CreateTypeConfig(ctx context.Context, tcInput *TypeConfig) (*e
 				}
 				fmt.Printf("--> found relation '%s'\n", referencedRelation)
 			} else {
-				// TODO: check parent relations
+				// check parent relations
 				s := strings.Split(referencedRelation, parentRelDelim)
 				refParent := s[0]
 				refParentRel := s[1]
+				if !slices.Contains(inputRelations, refParent) {
+					return nil, fmt.Errorf("referenced relation '%s' in permission '%s' not found", referencedRelation, permName)
+				}
+				// error if composed relation: user | group#member
+				referencedType := tcInput.Relations[refParent]
+				if strings.Contains(referencedType, refDelim) {
+					return nil, fmt.Errorf("referenced relation '%s' can't contain a composed value: '%s'", refParent, referencedType)
+				}
+				hasRelation, err := h.client.TypeConfig.
+					Query().
+					Where(typeconfig.NameEQ(referencedType)).
+					QueryRelations().
+					Where(relation.NameEQ(refParentRel)).
+					Exist(ctx)
+
+				if !hasRelation || err != nil {
+					return nil, fmt.Errorf("referenced type '%s' in relation '%s' doesn't have a '%s' relation",
+						referencedType,
+						refParent,
+						refParentRel)
+				}
+
 				fmt.Printf("--> found parent relation '%s' with relation '%s'\n", refParent, refParentRel)
 			}
 
