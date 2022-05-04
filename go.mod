@@ -6,6 +6,7 @@ require (
 	entgo.io/ent v0.10.1
 	github.com/mattn/go-sqlite3 v1.14.10
 	github.com/pkg/errors v0.9.1
+	golang.org/x/exp v0.0.0-20220428152302-39d4317da171
 )
 
 require (

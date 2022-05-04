@@ -12,6 +12,7 @@ import (
 	"github.com/DeluxeOwl/kala-go/ent/typeconfig"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/pkg/errors"
+	"golang.org/x/exp/maps"
 )
 
 func WithTx(ctx context.Context, client *ent.Client, fn func(tx *ent.Tx) error) error {
@@ -65,7 +66,7 @@ func (h *Handler) CreateTypeConfig(ctx context.Context, tcInput *TypeConfig) (*e
 		return tc, nil
 	}
 
-	// --------- check if relation types exist
+	// validate if relation types exist
 	var refDelim = " | "
 	var refRelDelim = "#"
 
@@ -148,7 +149,7 @@ func (h *Handler) CreateTypeConfig(ctx context.Context, tcInput *TypeConfig) (*e
 
 	}
 
-	// Save relations and permissions in db
+	// save relations and permissions in db
 	relBulk, err := h.client.Relation.CreateBulk(relSlice...).Save(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed when creating relations: %w", err)
@@ -157,6 +158,16 @@ func (h *Handler) CreateTypeConfig(ctx context.Context, tcInput *TypeConfig) (*e
 	tc, err = tc.Update().AddRelations(relBulk...).Save(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed when adding relations: %w", err)
+	}
+
+	// validate permissions
+	permDelim := regexp.MustCompile(`( \| )|( & )|!`)
+	inputRelations := maps.Keys(tcInput.Relations)
+	fmt.Println("relations:", inputRelations)
+	for permName, permValue := range tcInput.Permissions {
+		fmt.Printf("-> validating '%s: %s'\n", permName, permValue)
+		s := permDelim.Split(permValue, -1)
+		fmt.Println(s)
 	}
 
 	return tc, nil
