@@ -13,6 +13,7 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/pkg/errors"
 	"golang.org/x/exp/maps"
+	"golang.org/x/exp/slices"
 )
 
 func WithTx(ctx context.Context, client *ent.Client, fn func(tx *ent.Tx) error) error {
@@ -161,13 +162,36 @@ func (h *Handler) CreateTypeConfig(ctx context.Context, tcInput *TypeConfig) (*e
 	}
 
 	// validate permissions
-	permDelim := regexp.MustCompile(`( \| )|( & )|!`)
+
+	var parentRelDelim = "."
+
+	permDelim := regexp.MustCompile(`(( \| )|( & )(!)?)|!`)
 	inputRelations := maps.Keys(tcInput.Relations)
 	fmt.Println("relations:", inputRelations)
 	for permName, permValue := range tcInput.Permissions {
+
+		// TODO: validate permName and permValue
+
 		fmt.Printf("-> validating '%s: %s'\n", permName, permValue)
-		s := permDelim.Split(permValue, -1)
-		fmt.Println(s)
+		for _, referencedRelation := range permDelim.Split(permValue, -1) {
+			if referencedRelation == "" {
+				continue
+			}
+			// check direct relations
+			if !strings.Contains(referencedRelation, parentRelDelim) {
+				if !slices.Contains(inputRelations, referencedRelation) {
+					return nil, fmt.Errorf("referenced relation '%s' in permission '%s' not found", referencedRelation, permName)
+				}
+				fmt.Printf("--> found relation '%s'\n", referencedRelation)
+			} else {
+				// TODO: check parent relations
+				s := strings.Split(referencedRelation, parentRelDelim)
+				refParent := s[0]
+				refParentRel := s[1]
+				fmt.Printf("--> found parent relation '%s' with relation '%s'\n", refParent, refParentRel)
+			}
+
+		}
 	}
 
 	return tc, nil
@@ -335,7 +359,7 @@ func main() {
 			Permissions: map[string]string{
 				"read":           "reader | writer | parent_folder.reader",
 				"read_and_write": "reader & writer",
-				"read_only":      "reader & !writer",
+				"read_only":      "reader | !writer",
 			},
 		})
 	fmt.Println(tc, err)
