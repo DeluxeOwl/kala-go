@@ -39,7 +39,7 @@ func WithTx(ctx context.Context, client *ent.Client, fn func(tx *ent.Tx) error) 
 	return nil
 }
 
-type TypeConfig struct {
+type TypeConfigReq struct {
 	Name        string
 	Relations   map[string]string
 	Permissions map[string]string
@@ -54,7 +54,7 @@ var regexRelValue = regexp.MustCompile(`^[a-zA-Z_]{1,64}(#[a-zA-Z_]{1,64})?( \| 
 var regexPermValue = regexp.MustCompile(`^((!)?[a-zA-Z_]{1,64}(\.[a-zA-Z_]{1,64})?)((( \| )|( & ))((!)?[a-zA-Z_]{1,64}(\.[a-zA-Z_]{1,64})?))*$`)
 
 // TODO: make the errors as variables?
-func (h *Handler) CreateTypeConfig(ctx context.Context, tcInput *TypeConfig) (*ent.TypeConfig, error) {
+func (h *Handler) CreateTypeConfig(ctx context.Context, tcInput *TypeConfigReq) (*ent.TypeConfig, error) {
 
 	if !regexTypeName.MatchString(tcInput.Name) {
 		return nil, fmt.Errorf("malformed type name input: '%s'", tcInput.Name)
@@ -317,38 +317,55 @@ func QueryRelations(ctx context.Context, tc *ent.TypeConfig) error {
 
 var regexSubjName = regexp.MustCompile(`^[a-zA-Z0-9\._\/-]{1,64}$`)
 
-func (h *Handler) CreateSubject(ctx context.Context, tcName, subjName string) (*ent.Subject, error) {
+type SubjectReq struct {
+	TypeConfigName string
+	SubjectName    string
+}
 
-	if !regexSubjName.MatchString(subjName) {
-		return nil, fmt.Errorf("malformed subj name input: '%s'", subjName)
+func (h *Handler) CreateSubject(ctx context.Context, s *SubjectReq) (*ent.Subject, error) {
+
+	if !regexSubjName.MatchString(s.SubjectName) {
+		return nil, fmt.Errorf("malformed subj name input: '%s'", s.SubjectName)
 	}
 
 	exists, err := h.client.TypeConfig.
 		Query().
-		Where(typeconfig.NameEQ(tcName)).
+		Where(typeconfig.NameEQ(s.TypeConfigName)).
 		Exist(ctx)
 
 	if err != nil {
 		return nil, fmt.Errorf("failed querying type config: %w", err)
 	}
 	if !exists {
-		return nil, fmt.Errorf("failed when creating subject, type '%s' does not exist", tcName)
+		return nil, fmt.Errorf("failed when creating subject, type '%s' does not exist", s.TypeConfigName)
 	}
 
-	subj, err := h.client.Subject.Create().SetName(subjName).Save(ctx)
+	subj, err := h.client.Subject.Create().SetName(s.SubjectName).Save(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed creating subject: %w", err)
 	}
 
 	_, err = h.client.TypeConfig.Update().
-		Where(typeconfig.NameEQ(tcName)).
+		Where(typeconfig.NameEQ(s.TypeConfigName)).
 		AddSubjects(subj).
 		Save(ctx)
+
 	if err != nil {
 		return nil, fmt.Errorf("error when updating typeconfig: %w", err)
 	}
 
 	return subj, nil
+}
+
+type TupleReq struct {
+	Subject  *SubjectReq
+	Relation string
+	Resource *SubjectReq
+}
+
+func (h *Handler) CreateTuple(ctx context.Context, tr *TupleReq) (*ent.Tuple, error) {
+
+	return nil, nil
 }
 
 type Handler struct {
@@ -374,12 +391,12 @@ func main() {
 	}
 
 	tc, err := h.CreateTypeConfig(ctx,
-		&TypeConfig{Name: "user"},
+		&TypeConfigReq{Name: "user"},
 	)
 	fmt.Println(tc, err)
 
 	tc, err = h.CreateTypeConfig(ctx,
-		&TypeConfig{
+		&TypeConfigReq{
 			Name: "group",
 			Relations: map[string]string{
 				"member": "user",
@@ -388,7 +405,7 @@ func main() {
 	fmt.Println(tc, err)
 
 	tc, err = h.CreateTypeConfig(ctx,
-		&TypeConfig{
+		&TypeConfigReq{
 			Name: "folder",
 			Relations: map[string]string{
 				"reader": "user | group#member",
@@ -397,7 +414,7 @@ func main() {
 	fmt.Println(tc, err)
 
 	tc, err = h.CreateTypeConfig(ctx,
-		&TypeConfig{
+		&TypeConfigReq{
 			Name: "document",
 			Relations: map[string]string{
 				"parent_folder": "folder",
@@ -412,10 +429,31 @@ func main() {
 		})
 	fmt.Println(tc, err)
 
-	subj, err := h.CreateSubject(ctx, "document", "secret")
+	subj, err := h.CreateSubject(ctx, &SubjectReq{
+		TypeConfigName: "document",
+		SubjectName:    "secret",
+	})
 	fmt.Println(subj, err)
 
-	h.QueryTest(ctx)
+	subj, err = h.CreateSubject(ctx, &SubjectReq{
+		TypeConfigName: "user",
+		SubjectName:    "anna",
+	})
+	fmt.Println(subj, err)
+
+	tuple, err := h.CreateTuple(ctx, &TupleReq{
+		Subject: &SubjectReq{
+			TypeConfigName: "user",
+			SubjectName:    "anna",
+		},
+		Relation: "reader",
+		Resource: &SubjectReq{
+			TypeConfigName: "document",
+			SubjectName:    "secret",
+		},
+	})
+	fmt.Println(tuple, err)
+	// h.QueryTest(ctx)
 
 	// TEST: empty permissions
 	// tc, err = h.CreateTypeConfig(ctx,
