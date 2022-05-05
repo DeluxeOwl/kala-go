@@ -45,12 +45,16 @@ type TypeConfig struct {
 	Permissions map[string]string
 }
 
-var regexAuthzType = regexp.MustCompile(`^[a-zA-Z_]{1,64}(#[a-zA-Z_]{1,64})?( \| [a-zA-Z_]{1,64}(#[a-zA-Z_]{1,64})?)*$`)
-var regexAuthzRel = regexp.MustCompile(`^[a-zA-Z_]{1,64}$`)
+// valid regex for relations, permissions
+var regexPropertyName = regexp.MustCompile(`^[a-zA-Z_]{1,64}$`)
+
+var regexRelValue = regexp.MustCompile(`^[a-zA-Z_]{1,64}(#[a-zA-Z_]{1,64})?( \| [a-zA-Z_]{1,64}(#[a-zA-Z_]{1,64})?)*$`)
+var regexPermValue = regexp.MustCompile(`^((!)?[a-zA-Z_]{1,64}(\.[a-zA-Z_]{1,64})?)((( \| )|( & ))((!)?[a-zA-Z_]{1,64}(\.[a-zA-Z_]{1,64})?))*$`)
 
 // TODO: make the errors as variables?
 func (h *Handler) CreateTypeConfig(ctx context.Context, tcInput *TypeConfig) (*ent.TypeConfig, error) {
 
+	// TODO: validate name
 	tc, err := h.client.TypeConfig.Create().
 		SetName(tcInput.Name).
 		Save(ctx)
@@ -67,9 +71,10 @@ func (h *Handler) CreateTypeConfig(ctx context.Context, tcInput *TypeConfig) (*e
 		return tc, nil
 	}
 
-	// validate if relation types exist
-	var refDelim = " | "
-	var refRelDelim = "#"
+	// delimiter for the value of a relation
+	var refValueDelim = " | "
+	// delimiter for a subrelation
+	var refSubrelationDelim = "#"
 
 	relSlice := make([]*ent.RelationCreate, len(tcInput.Relations))
 	cnt := 0
@@ -79,20 +84,20 @@ func (h *Handler) CreateTypeConfig(ctx context.Context, tcInput *TypeConfig) (*e
 
 		log.Printf("-> validating '%s: %s'\n", relName, relValue)
 
-		if !regexAuthzType.MatchString(relValue) {
-			return nil, fmt.Errorf("malformed relation reference input: '%s'", relValue)
+		if !regexPropertyName.MatchString(relName) {
+			return nil, fmt.Errorf("malformed relation name input: '%s'", relName)
 		}
 
-		if !regexAuthzRel.MatchString(relName) {
-			return nil, fmt.Errorf("malformed relation name input: '%s'", relName)
+		if !regexRelValue.MatchString(relValue) {
+			return nil, fmt.Errorf("malformed relation reference input: '%s'", relValue)
 		}
 
 		referencedTypeIDsSlice := make([]int, 0)
 
 		// type with relation, ex: user | group#member
-		for _, referencedType := range strings.Split(relValue, refDelim) {
+		for _, referencedType := range strings.Split(relValue, refValueDelim) {
 
-			if !strings.Contains(referencedType, refRelDelim) {
+			if !strings.Contains(referencedType, refSubrelationDelim) {
 
 				id, err := h.client.TypeConfig.
 					Query().
@@ -109,7 +114,7 @@ func (h *Handler) CreateTypeConfig(ctx context.Context, tcInput *TypeConfig) (*e
 
 			} else {
 				// checking composed relation
-				s := strings.Split(referencedType, refRelDelim)
+				s := strings.Split(referencedType, refSubrelationDelim)
 
 				refTypeName := s[0]
 				refTypeRelation := s[1]
@@ -183,7 +188,13 @@ func (h *Handler) CreateTypeConfig(ctx context.Context, tcInput *TypeConfig) (*e
 
 	for permName, permValue := range tcInput.Permissions {
 
-		// TODO: validate permName and permValue
+		if !regexPropertyName.MatchString(permName) {
+			return nil, fmt.Errorf("malformed permission name input: '%s'", permName)
+		}
+
+		if !regexPermValue.MatchString(permValue) {
+			return nil, fmt.Errorf("malformed permission reference input: '%s'", permValue)
+		}
 
 		referencedTypeIDsSlice := make([]int, 0)
 
@@ -212,7 +223,7 @@ func (h *Handler) CreateTypeConfig(ctx context.Context, tcInput *TypeConfig) (*e
 				}
 				// error if composed relation: user | group#member
 				referencedType := tcInput.Relations[refParent]
-				if strings.Contains(referencedType, refDelim) {
+				if strings.Contains(referencedType, refValueDelim) {
 					return nil, fmt.Errorf("referenced relation '%s' can't contain a composed value: '%s'", refParent, referencedType)
 				}
 				hasRelation, err := h.client.TypeConfig.
@@ -447,4 +458,18 @@ func main() {
 	// if err != nil {
 	// 	log.Fatalf("running ent codegen: %v", err)
 	// }
+
+	// reader | writer | parent_folder.reader
+	// reader & writer
+	// reader | writer
+	// reader | !writer
+	// !writer
+	// reader
+	// reader & writer | !tester
+	// !tester & reader | writer
+
+	// reader |
+	// !writer |
+	// reader &
+	// writer & reader | !
 }
