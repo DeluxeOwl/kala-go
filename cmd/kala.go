@@ -9,6 +9,7 @@ import (
 
 	"github.com/DeluxeOwl/kala-go/ent"
 	"github.com/DeluxeOwl/kala-go/ent/relation"
+	"github.com/DeluxeOwl/kala-go/ent/subject"
 	"github.com/DeluxeOwl/kala-go/ent/typeconfig"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/pkg/errors"
@@ -365,7 +366,57 @@ type TupleReq struct {
 
 func (h *Handler) CreateTuple(ctx context.Context, tr *TupleReq) (*ent.Tuple, error) {
 
-	return nil, nil
+	subj, err := h.client.Subject.
+		Query().
+		Where(
+			subject.And(
+				subject.NameEQ(tr.Subject.SubjectName),
+				subject.HasTypeWith(
+					typeconfig.NameEQ(tr.Subject.TypeConfigName)))).
+		Only(ctx)
+
+	if err != nil {
+		return nil, fmt.Errorf("error when getting subject: %w", err)
+	}
+
+	res, err := h.client.Subject.
+		Query().
+		Where(
+			subject.And(
+				subject.NameEQ(tr.Resource.SubjectName),
+				subject.HasTypeWith(
+					typeconfig.NameEQ(tr.Resource.TypeConfigName)))).
+		Only(ctx)
+
+	if err != nil {
+		return nil, fmt.Errorf("error when getting resource: %w", err)
+	}
+
+	rel, err := h.client.Relation.
+		Query().
+		Where(
+			relation.And(
+				relation.HasTypeconfigWith(
+					typeconfig.NameEQ(tr.Resource.TypeConfigName)),
+				relation.NameEQ(tr.Relation))).
+		Only(ctx)
+
+	if err != nil {
+		return nil, fmt.Errorf("error when getting relation for resource: %w", err)
+	}
+
+	tuple, err := h.client.Tuple.
+		Create().
+		SetSubject(subj).
+		SetRelation(rel).
+		SetResource(res).
+		Save(ctx)
+
+	if err != nil {
+		return nil, fmt.Errorf("error when creating tuple: %w", err)
+	}
+
+	return tuple, nil
 }
 
 type Handler struct {
