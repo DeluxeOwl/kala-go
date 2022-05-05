@@ -289,17 +289,19 @@ func (h *Handler) CreateTypeConfig(ctx context.Context, tcInput *TypeConfig) (*e
 	return tc, nil
 }
 
-func (h *Handler) QueryTypeConfig(ctx context.Context) (*ent.TypeConfig, error) {
+func (h *Handler) QueryTest(ctx context.Context) {
 	tc, err := h.client.TypeConfig.
 		Query().
 		Where(typeconfig.Name("document")).
-		Only(ctx)
+		QuerySubjects().
+		All(ctx)
 
-	if err != nil {
-		return nil, fmt.Errorf("failed querying type config: %w", err)
+	for _, v := range tc {
+		a, _ := v.QueryType().Only(ctx)
+		fmt.Println("type for subj", a)
 	}
-	log.Println("type config returned: ", tc)
-	return tc, nil
+
+	fmt.Println(tc, err)
 }
 
 func QueryRelations(ctx context.Context, tc *ent.TypeConfig) error {
@@ -311,6 +313,42 @@ func QueryRelations(ctx context.Context, tc *ent.TypeConfig) error {
 	log.Println("returned relations:\n", relations)
 
 	return nil
+}
+
+var regexSubjName = regexp.MustCompile(`^[a-zA-Z0-9\._\/-]{1,64}$`)
+
+func (h *Handler) CreateSubject(ctx context.Context, tcName, subjName string) (*ent.Subject, error) {
+
+	if !regexSubjName.MatchString(subjName) {
+		return nil, fmt.Errorf("malformed subj name input: '%s'", subjName)
+	}
+
+	exists, err := h.client.TypeConfig.
+		Query().
+		Where(typeconfig.NameEQ(tcName)).
+		Exist(ctx)
+
+	if err != nil {
+		return nil, fmt.Errorf("failed querying type config: %w", err)
+	}
+	if !exists {
+		return nil, fmt.Errorf("failed when creating subject, type '%s' does not exist", tcName)
+	}
+
+	subj, err := h.client.Subject.Create().SetName(subjName).Save(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed creating subject: %w", err)
+	}
+
+	_, err = h.client.TypeConfig.Update().
+		Where(typeconfig.NameEQ(tcName)).
+		AddSubjects(subj).
+		Save(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("error when updating typeconfig: %w", err)
+	}
+
+	return subj, nil
 }
 
 type Handler struct {
@@ -334,9 +372,6 @@ func main() {
 	h := Handler{
 		client: client,
 	}
-
-	// h.QueryTypeConfig(ctx)
-	// QueryRelations(ctx, ac)
 
 	tc, err := h.CreateTypeConfig(ctx,
 		&TypeConfig{Name: "user"},
@@ -376,6 +411,11 @@ func main() {
 			},
 		})
 	fmt.Println(tc, err)
+
+	subj, err := h.CreateSubject(ctx, "document", "secret")
+	fmt.Println(subj, err)
+
+	h.QueryTest(ctx)
 
 	// TEST: empty permissions
 	// tc, err = h.CreateTypeConfig(ctx,
