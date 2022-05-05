@@ -45,16 +45,21 @@ type TypeConfig struct {
 	Permissions map[string]string
 }
 
-// valid regex for relations, permissions
+// valid regex for relations, permissions and type names
 var regexPropertyName = regexp.MustCompile(`^[a-zA-Z_]{1,64}$`)
+var regexTypeName = regexp.MustCompile(`^[a-zA-Z_]{1,64}$`)
 
+// valid regexes for relation, permission values
 var regexRelValue = regexp.MustCompile(`^[a-zA-Z_]{1,64}(#[a-zA-Z_]{1,64})?( \| [a-zA-Z_]{1,64}(#[a-zA-Z_]{1,64})?)*$`)
 var regexPermValue = regexp.MustCompile(`^((!)?[a-zA-Z_]{1,64}(\.[a-zA-Z_]{1,64})?)((( \| )|( & ))((!)?[a-zA-Z_]{1,64}(\.[a-zA-Z_]{1,64})?))*$`)
 
 // TODO: make the errors as variables?
 func (h *Handler) CreateTypeConfig(ctx context.Context, tcInput *TypeConfig) (*ent.TypeConfig, error) {
 
-	// TODO: validate name
+	if !regexTypeName.MatchString(tcInput.Name) {
+		return nil, fmt.Errorf("malformed type name input: '%s'", tcInput.Name)
+	}
+
 	tc, err := h.client.TypeConfig.Create().
 		SetName(tcInput.Name).
 		Save(ctx)
