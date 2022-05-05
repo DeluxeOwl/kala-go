@@ -157,7 +157,6 @@ func (h *Handler) CreateTypeConfig(ctx context.Context, tcInput *TypeConfig) (*e
 			AddRelTypeconfigIDs(referencedTypeIDsSlice...)
 
 		cnt++
-
 	}
 
 	// save relations and permissions in db
@@ -182,13 +181,14 @@ func (h *Handler) CreateTypeConfig(ctx context.Context, tcInput *TypeConfig) (*e
 	inputRelations := maps.Keys(tcInput.Relations)
 	fmt.Println("relations:", inputRelations)
 
-	getIdForRelationName := func(name string) int {
+	getIdForRelationName := func(name string) (int, error) {
 		for _, rel := range relBulk {
 			if rel.Name == name {
-				return rel.ID
+				return rel.ID, nil
 			}
 		}
-		return -1
+
+		return -1, fmt.Errorf("adding relation: couldn't get id for relation '%s'", name)
 	}
 
 	for permName, permValue := range tcInput.Permissions {
@@ -214,23 +214,31 @@ func (h *Handler) CreateTypeConfig(ctx context.Context, tcInput *TypeConfig) (*e
 					return nil, fmt.Errorf("referenced relation '%s' in permission '%s' not found", referencedRelation, permName)
 				}
 
-				relID := getIdForRelationName(referencedRelation)
+				relID, err := getIdForRelationName(referencedRelation)
+				if err != nil {
+					return nil, err
+				}
+
 				referencedTypeIDsSlice = append(referencedTypeIDsSlice, relID)
 
 				fmt.Printf("--> found relation '%s' with id %d \n", referencedRelation, relID)
 			} else {
 				// check parent relations
 				s := strings.Split(referencedRelation, parentRelDelim)
+
 				refParent := s[0]
 				refParentRel := s[1]
+
 				if !slices.Contains(inputRelations, refParent) {
 					return nil, fmt.Errorf("referenced relation '%s' in permission '%s' not found", referencedRelation, permName)
 				}
 				// error if composed relation: user | group#member
 				referencedType := tcInput.Relations[refParent]
+
 				if strings.Contains(referencedType, refValueDelim) {
 					return nil, fmt.Errorf("referenced relation '%s' can't contain a composed value: '%s'", refParent, referencedType)
 				}
+
 				hasRelation, err := h.client.TypeConfig.
 					Query().
 					Where(typeconfig.NameEQ(referencedType)).
@@ -245,7 +253,11 @@ func (h *Handler) CreateTypeConfig(ctx context.Context, tcInput *TypeConfig) (*e
 						refParentRel)
 				}
 
-				relID := getIdForRelationName(refParent)
+				relID, err := getIdForRelationName(refParent)
+				if err != nil {
+					return nil, err
+				}
+
 				referencedTypeIDsSlice = append(referencedTypeIDsSlice, relID)
 
 				fmt.Printf("--> found parent relation '%s' with relation '%s' with id %d\n", refParent, refParentRel, relID)
@@ -277,84 +289,6 @@ func (h *Handler) CreateTypeConfig(ctx context.Context, tcInput *TypeConfig) (*e
 	return tc, nil
 }
 
-func (h *Handler) CreateTypeConfigOld(ctx context.Context) (*ent.TypeConfig, error) {
-
-	subj, err := h.client.Subject.Create().
-		SetName("anna").
-		Save(ctx)
-
-	if err != nil {
-		return nil, fmt.Errorf("failed creating subject: %w", err)
-	}
-	fmt.Println("subject was created: ", subj)
-
-	relations := map[string]string{
-		"parent_folder": "folder",
-		"writer":        "user",
-		"reader":        "user",
-	}
-
-	permissions := map[string]string{
-		"read":           "reader | writer | parent_folder.reader",
-		"read_and_write": "reader & writer",
-		"read_only":      "reader & !writer",
-	}
-
-	relSlice := make([]*ent.RelationCreate, len(relations))
-	cnt := 0
-	for i, r := range relations {
-		relSlice[cnt] = h.client.Relation.
-			Create().
-			SetName(i).
-			SetValue(r)
-
-		cnt++
-	}
-
-	permSlice := make([]*ent.PermissionCreate, len(permissions))
-	cnt = 0
-	for i, r := range permissions {
-		permSlice[cnt] = h.client.Permission.
-			Create().
-			SetName(i).
-			SetValue(r)
-
-		cnt++
-	}
-
-	// Save relations and permissions in db
-	relBulk, err := h.client.Relation.CreateBulk(relSlice...).Save(ctx)
-
-	if err != nil {
-		return nil, fmt.Errorf("failed creating relations: %w", err)
-	} else {
-		fmt.Println("created relations: ", relBulk)
-	}
-
-	permBulk, err := h.client.Permission.CreateBulk(permSlice...).Save(ctx)
-
-	if err != nil {
-		return nil, fmt.Errorf("failed creating relations: %w", err)
-	} else {
-		fmt.Println("created permissions: ", permBulk)
-	}
-
-	tc, err := h.client.TypeConfig.
-		Create().
-		SetName("document").
-		AddRelations(relBulk...).
-		AddPermissions(permBulk...).
-		AddSubjects(subj).
-		Save(ctx)
-
-	if err != nil {
-		return nil, fmt.Errorf("failed creating type config: %w", err)
-	}
-
-	log.Println("type config was created: ", tc)
-
-	return tc, nil
-}
 func (h *Handler) QueryTypeConfig(ctx context.Context) (*ent.TypeConfig, error) {
 	tc, err := h.client.TypeConfig.
 		Query().
@@ -401,7 +335,6 @@ func main() {
 		client: client,
 	}
 
-	// ac, _ := h.CreateTypeConfigOld(ctx)
 	// h.QueryTypeConfig(ctx)
 	// QueryRelations(ctx, ac)
 
