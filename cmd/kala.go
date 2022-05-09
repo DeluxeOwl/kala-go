@@ -17,8 +17,8 @@ import (
 	"golang.org/x/exp/slices"
 )
 
-func WithTx(ctx context.Context, client *ent.Client, fn func(tx *ent.Tx) error) error {
-	tx, err := client.Tx(ctx)
+func (h *Handler) WithTx(ctx context.Context, fn func(tx *ent.Tx) error) error {
+	tx, err := h.client.Tx(ctx)
 	if err != nil {
 		return err
 	}
@@ -38,6 +38,31 @@ func WithTx(ctx context.Context, client *ent.Client, fn func(tx *ent.Tx) error) 
 		return errors.Wrapf(err, "committing transaction: %v", err)
 	}
 	return nil
+}
+
+// TODO: separate these methods in packages
+func (h *Handler) Do(ctx context.Context) {
+	// WithTx helper.
+	if err := h.WithTx(ctx, func(tx *ent.Tx) error {
+		h := Handler{
+			client: tx.Client(),
+		}
+		tuple, err := h.CreateTuple(ctx, &TupleReq{
+			Subject: &SubjectReq{
+				TypeConfigName: "user",
+				SubjectName:    "anna",
+			},
+			Relation: "reader",
+			Resource: &SubjectReq{
+				TypeConfigName: "document",
+				SubjectName:    "secret",
+			},
+		})
+		fmt.Println(tuple, err)
+		return err
+	}); err != nil {
+		fmt.Println(err)
+	}
 }
 
 type TypeConfigReq struct {
@@ -291,16 +316,12 @@ func (h *Handler) CreateTypeConfig(ctx context.Context, tcInput *TypeConfigReq) 
 }
 
 func (h *Handler) QueryTest(ctx context.Context) {
+	fmt.Println("----------- Query for type document")
 	tc, err := h.client.TypeConfig.
 		Query().
 		Where(typeconfig.Name("document")).
 		QuerySubjects().
 		All(ctx)
-
-	for _, v := range tc {
-		a, _ := v.QueryType().Only(ctx)
-		fmt.Println("type for subj", a)
-	}
 
 	fmt.Println(tc, err)
 }
@@ -488,7 +509,7 @@ func main() {
 
 	subj, err = h.CreateSubject(ctx, &SubjectReq{
 		TypeConfigName: "document",
-		SubjectName:    "dude",
+		SubjectName:    "something.csv",
 	})
 	fmt.Println(subj, err)
 
@@ -511,7 +532,9 @@ func main() {
 	})
 	fmt.Println(tuple, err)
 
-	// h.QueryTest(ctx)
+	// h.Do(ctx)
+
+	h.QueryTest(ctx)
 
 	// TEST: empty permissions
 	// tc, err = h.CreateTypeConfig(ctx,
