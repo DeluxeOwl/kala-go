@@ -109,6 +109,13 @@ var (
 				OnDelete:   schema.NoAction,
 			},
 		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "tuple_subject_id_relation_id_resource_id",
+				Unique:  true,
+				Columns: []*schema.Column{TuplesColumns[1], TuplesColumns[2], TuplesColumns[3]},
+			},
+		},
 	}
 	// TypeConfigsColumns holds the columns for the "type_configs" table.
 	TypeConfigsColumns = []*schema.Column{

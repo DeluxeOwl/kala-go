@@ -487,6 +487,12 @@ func main() {
 	fmt.Println(subj, err)
 
 	subj, err = h.CreateSubject(ctx, &SubjectReq{
+		TypeConfigName: "document",
+		SubjectName:    "dude",
+	})
+	fmt.Println(subj, err)
+
+	subj, err = h.CreateSubject(ctx, &SubjectReq{
 		TypeConfigName: "user",
 		SubjectName:    "anna",
 	})
@@ -504,6 +510,7 @@ func main() {
 		},
 	})
 	fmt.Println(tuple, err)
+
 	// h.QueryTest(ctx)
 
 	// TEST: empty permissions
