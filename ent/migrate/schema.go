@@ -53,7 +53,7 @@ var (
 	// SubjectsColumns holds the columns for the "subjects" table.
 	SubjectsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
-		{Name: "name", Type: field.TypeString, Unique: true},
+		{Name: "name", Type: field.TypeString},
 		{Name: "type_config_subjects", Type: field.TypeInt, Nullable: true},
 	}
 	// SubjectsTable holds the schema information for the "subjects" table.
@@ -67,6 +67,13 @@ var (
 				Columns:    []*schema.Column{SubjectsColumns[2]},
 				RefColumns: []*schema.Column{TypeConfigsColumns[0]},
 				OnDelete:   schema.SetNull,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "subject_name_type_config_subjects",
+				Unique:  true,
+				Columns: []*schema.Column{SubjectsColumns[1], SubjectsColumns[2]},
 			},
 		},
 	}
