@@ -7,6 +7,8 @@ const (
 	Label = "tuple"
 	// FieldID holds the string denoting the id field in the database.
 	FieldID = "id"
+	// FieldSubjectRel holds the string denoting the subject_rel field in the database.
+	FieldSubjectRel = "subject_rel"
 	// FieldSubjectID holds the string denoting the subject_id field in the database.
 	FieldSubjectID = "subject_id"
 	// FieldRelationID holds the string denoting the relation_id field in the database.
@@ -47,6 +49,7 @@ const (
 // Columns holds all SQL columns for tuple fields.
 var Columns = []string{
 	FieldID,
+	FieldSubjectRel,
 	FieldSubjectID,
 	FieldRelationID,
 	FieldResourceID,

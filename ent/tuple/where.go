@@ -91,6 +91,13 @@ func IDLTE(id int) predicate.Tuple {
 	})
 }
 
+// SubjectRel applies equality check predicate on the "subject_rel" field. It's identical to SubjectRelEQ.
+func SubjectRel(v string) predicate.Tuple {
+	return predicate.Tuple(func(s *sql.Selector) {
+		s.Where(sql.EQ(s.C(FieldSubjectRel), v))
+	})
+}
+
 // SubjectID applies equality check predicate on the "subject_id" field. It's identical to SubjectIDEQ.
 func SubjectID(v int) predicate.Tuple {
 	return predicate.Tuple(func(s *sql.Selector) {
@@ -109,6 +116,131 @@ func RelationID(v int) predicate.Tuple {
 func ResourceID(v int) predicate.Tuple {
 	return predicate.Tuple(func(s *sql.Selector) {
 		s.Where(sql.EQ(s.C(FieldResourceID), v))
+	})
+}
+
+// SubjectRelEQ applies the EQ predicate on the "subject_rel" field.
+func SubjectRelEQ(v string) predicate.Tuple {
+	return predicate.Tuple(func(s *sql.Selector) {
+		s.Where(sql.EQ(s.C(FieldSubjectRel), v))
+	})
+}
+
+// SubjectRelNEQ applies the NEQ predicate on the "subject_rel" field.
+func SubjectRelNEQ(v string) predicate.Tuple {
+	return predicate.Tuple(func(s *sql.Selector) {
+		s.Where(sql.NEQ(s.C(FieldSubjectRel), v))
+	})
+}
+
+// SubjectRelIn applies the In predicate on the "subject_rel" field.
+func SubjectRelIn(vs ...string) predicate.Tuple {
+	v := make([]interface{}, len(vs))
+	for i := range v {
+		v[i] = vs[i]
+	}
+	return predicate.Tuple(func(s *sql.Selector) {
+		// if not arguments were provided, append the FALSE constants,
+		// since we can't apply "IN ()". This will make this predicate falsy.
+		if len(v) == 0 {
+			s.Where(sql.False())
+			return
+		}
+		s.Where(sql.In(s.C(FieldSubjectRel), v...))
+	})
+}
+
+// SubjectRelNotIn applies the NotIn predicate on the "subject_rel" field.
+func SubjectRelNotIn(vs ...string) predicate.Tuple {
+	v := make([]interface{}, len(vs))
+	for i := range v {
+		v[i] = vs[i]
+	}
+	return predicate.Tuple(func(s *sql.Selector) {
+		// if not arguments were provided, append the FALSE constants,
+		// since we can't apply "IN ()". This will make this predicate falsy.
+		if len(v) == 0 {
+			s.Where(sql.False())
+			return
+		}
+		s.Where(sql.NotIn(s.C(FieldSubjectRel), v...))
+	})
+}
+
+// SubjectRelGT applies the GT predicate on the "subject_rel" field.
+func SubjectRelGT(v string) predicate.Tuple {
+	return predicate.Tuple(func(s *sql.Selector) {
+		s.Where(sql.GT(s.C(FieldSubjectRel), v))
+	})
+}
+
+// SubjectRelGTE applies the GTE predicate on the "subject_rel" field.
+func SubjectRelGTE(v string) predicate.Tuple {
+	return predicate.Tuple(func(s *sql.Selector) {
+		s.Where(sql.GTE(s.C(FieldSubjectRel), v))
+	})
+}
+
+// SubjectRelLT applies the LT predicate on the "subject_rel" field.
+func SubjectRelLT(v string) predicate.Tuple {
+	return predicate.Tuple(func(s *sql.Selector) {
+		s.Where(sql.LT(s.C(FieldSubjectRel), v))
+	})
+}
+
+// SubjectRelLTE applies the LTE predicate on the "subject_rel" field.
+func SubjectRelLTE(v string) predicate.Tuple {
+	return predicate.Tuple(func(s *sql.Selector) {
+		s.Where(sql.LTE(s.C(FieldSubjectRel), v))
+	})
+}
+
+// SubjectRelContains applies the Contains predicate on the "subject_rel" field.
+func SubjectRelContains(v string) predicate.Tuple {
+	return predicate.Tuple(func(s *sql.Selector) {
+		s.Where(sql.Contains(s.C(FieldSubjectRel), v))
+	})
+}
+
+// SubjectRelHasPrefix applies the HasPrefix predicate on the "subject_rel" field.
+func SubjectRelHasPrefix(v string) predicate.Tuple {
+	return predicate.Tuple(func(s *sql.Selector) {
+		s.Where(sql.HasPrefix(s.C(FieldSubjectRel), v))
+	})
+}
+
+// SubjectRelHasSuffix applies the HasSuffix predicate on the "subject_rel" field.
+func SubjectRelHasSuffix(v string) predicate.Tuple {
+	return predicate.Tuple(func(s *sql.Selector) {
+		s.Where(sql.HasSuffix(s.C(FieldSubjectRel), v))
+	})
+}
+
+// SubjectRelIsNil applies the IsNil predicate on the "subject_rel" field.
+func SubjectRelIsNil() predicate.Tuple {
+	return predicate.Tuple(func(s *sql.Selector) {
+		s.Where(sql.IsNull(s.C(FieldSubjectRel)))
+	})
+}
+
+// SubjectRelNotNil applies the NotNil predicate on the "subject_rel" field.
+func SubjectRelNotNil() predicate.Tuple {
+	return predicate.Tuple(func(s *sql.Selector) {
+		s.Where(sql.NotNull(s.C(FieldSubjectRel)))
+	})
+}
+
+// SubjectRelEqualFold applies the EqualFold predicate on the "subject_rel" field.
+func SubjectRelEqualFold(v string) predicate.Tuple {
+	return predicate.Tuple(func(s *sql.Selector) {
+		s.Where(sql.EqualFold(s.C(FieldSubjectRel), v))
+	})
+}
+
+// SubjectRelContainsFold applies the ContainsFold predicate on the "subject_rel" field.
+func SubjectRelContainsFold(v string) predicate.Tuple {
+	return predicate.Tuple(func(s *sql.Selector) {
+		s.Where(sql.ContainsFold(s.C(FieldSubjectRel), v))
 	})
 }
 

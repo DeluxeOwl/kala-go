@@ -80,6 +80,7 @@ var (
 	// TuplesColumns holds the columns for the "tuples" table.
 	TuplesColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "subject_rel", Type: field.TypeString, Nullable: true},
 		{Name: "subject_id", Type: field.TypeInt},
 		{Name: "relation_id", Type: field.TypeInt},
 		{Name: "resource_id", Type: field.TypeInt},
@@ -92,19 +93,19 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "tuples_subjects_subject",
-				Columns:    []*schema.Column{TuplesColumns[1]},
+				Columns:    []*schema.Column{TuplesColumns[2]},
 				RefColumns: []*schema.Column{SubjectsColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 			{
 				Symbol:     "tuples_relations_relation",
-				Columns:    []*schema.Column{TuplesColumns[2]},
+				Columns:    []*schema.Column{TuplesColumns[3]},
 				RefColumns: []*schema.Column{RelationsColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 			{
 				Symbol:     "tuples_subjects_resource",
-				Columns:    []*schema.Column{TuplesColumns[3]},
+				Columns:    []*schema.Column{TuplesColumns[4]},
 				RefColumns: []*schema.Column{SubjectsColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -113,7 +114,7 @@ var (
 			{
 				Name:    "tuple_subject_id_relation_id_resource_id",
 				Unique:  true,
-				Columns: []*schema.Column{TuplesColumns[1], TuplesColumns[2], TuplesColumns[3]},
+				Columns: []*schema.Column{TuplesColumns[2], TuplesColumns[3], TuplesColumns[4]},
 			},
 		},
 	}

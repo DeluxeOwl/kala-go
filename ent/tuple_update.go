@@ -29,6 +29,26 @@ func (tu *TupleUpdate) Where(ps ...predicate.Tuple) *TupleUpdate {
 	return tu
 }
 
+// SetSubjectRel sets the "subject_rel" field.
+func (tu *TupleUpdate) SetSubjectRel(s string) *TupleUpdate {
+	tu.mutation.SetSubjectRel(s)
+	return tu
+}
+
+// SetNillableSubjectRel sets the "subject_rel" field if the given value is not nil.
+func (tu *TupleUpdate) SetNillableSubjectRel(s *string) *TupleUpdate {
+	if s != nil {
+		tu.SetSubjectRel(*s)
+	}
+	return tu
+}
+
+// ClearSubjectRel clears the value of the "subject_rel" field.
+func (tu *TupleUpdate) ClearSubjectRel() *TupleUpdate {
+	tu.mutation.ClearSubjectRel()
+	return tu
+}
+
 // SetSubjectID sets the "subject_id" field.
 func (tu *TupleUpdate) SetSubjectID(i int) *TupleUpdate {
 	tu.mutation.SetSubjectID(i)
@@ -177,6 +197,19 @@ func (tu *TupleUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			}
 		}
 	}
+	if value, ok := tu.mutation.SubjectRel(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeString,
+			Value:  value,
+			Column: tuple.FieldSubjectRel,
+		})
+	}
+	if tu.mutation.SubjectRelCleared() {
+		_spec.Fields.Clear = append(_spec.Fields.Clear, &sqlgraph.FieldSpec{
+			Type:   field.TypeString,
+			Column: tuple.FieldSubjectRel,
+		})
+	}
 	if tu.mutation.SubjectCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
@@ -299,6 +332,26 @@ type TupleUpdateOne struct {
 	fields   []string
 	hooks    []Hook
 	mutation *TupleMutation
+}
+
+// SetSubjectRel sets the "subject_rel" field.
+func (tuo *TupleUpdateOne) SetSubjectRel(s string) *TupleUpdateOne {
+	tuo.mutation.SetSubjectRel(s)
+	return tuo
+}
+
+// SetNillableSubjectRel sets the "subject_rel" field if the given value is not nil.
+func (tuo *TupleUpdateOne) SetNillableSubjectRel(s *string) *TupleUpdateOne {
+	if s != nil {
+		tuo.SetSubjectRel(*s)
+	}
+	return tuo
+}
+
+// ClearSubjectRel clears the value of the "subject_rel" field.
+func (tuo *TupleUpdateOne) ClearSubjectRel() *TupleUpdateOne {
+	tuo.mutation.ClearSubjectRel()
+	return tuo
 }
 
 // SetSubjectID sets the "subject_id" field.
@@ -472,6 +525,19 @@ func (tuo *TupleUpdateOne) sqlSave(ctx context.Context) (_node *Tuple, err error
 				ps[i](selector)
 			}
 		}
+	}
+	if value, ok := tuo.mutation.SubjectRel(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeString,
+			Value:  value,
+			Column: tuple.FieldSubjectRel,
+		})
+	}
+	if tuo.mutation.SubjectRelCleared() {
+		_spec.Fields.Clear = append(_spec.Fields.Clear, &sqlgraph.FieldSpec{
+			Type:   field.TypeString,
+			Column: tuple.FieldSubjectRel,
+		})
 	}
 	if tuo.mutation.SubjectCleared() {
 		edge := &sqlgraph.EdgeSpec{

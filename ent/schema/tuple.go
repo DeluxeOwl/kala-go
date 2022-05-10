@@ -15,6 +15,8 @@ type Tuple struct {
 // Fields of the Tuple.
 func (Tuple) Fields() []ent.Field {
 	return []ent.Field{
+		field.String("subject_rel").
+			Optional(),
 		field.Int("subject_id"),
 		field.Int("relation_id"),
 		field.Int("resource_id"),

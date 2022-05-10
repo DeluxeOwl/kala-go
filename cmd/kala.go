@@ -10,6 +10,7 @@ import (
 	"github.com/DeluxeOwl/kala-go/ent"
 	"github.com/DeluxeOwl/kala-go/ent/relation"
 	"github.com/DeluxeOwl/kala-go/ent/subject"
+	"github.com/DeluxeOwl/kala-go/ent/tuple"
 	"github.com/DeluxeOwl/kala-go/ent/typeconfig"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/pkg/errors"
@@ -317,24 +318,11 @@ func (h *Handler) CreateTypeConfig(ctx context.Context, tcInput *TypeConfigReq) 
 
 func (h *Handler) QueryTest(ctx context.Context) {
 	fmt.Println("----------- Query for type document")
-	tc, err := h.client.TypeConfig.
-		Query().
-		Where(typeconfig.Name("document")).
-		QuerySubjects().
+	tc, err := h.client.Tuple.Query().
+		Where(tuple.SubjectRelNotNil()).
 		All(ctx)
 
 	fmt.Println(tc, err)
-}
-
-func QueryRelations(ctx context.Context, tc *ent.TypeConfig) error {
-	relations, err := tc.QueryRelations().
-		All(ctx)
-	if err != nil {
-		return fmt.Errorf("failed querying tc relations: %w", err)
-	}
-	log.Println("returned relations:\n", relations)
-
-	return nil
 }
 
 var regexSubjName = regexp.MustCompile(`^[a-zA-Z0-9\._\/-]{1,64}$`)
@@ -385,14 +373,37 @@ type TupleReq struct {
 	Resource *SubjectReq
 }
 
-// TODO: check if you pass group:dev#member
+// TODO handle group:* viewer on document
 func (h *Handler) CreateTuple(ctx context.Context, tr *TupleReq) (*ent.Tuple, error) {
+
+	var subjectName string
+	var subjectRelation string = ""
+
+	if !strings.Contains(tr.Subject.SubjectName, "#") {
+		subjectName = tr.Subject.SubjectName
+	} else {
+		subjectName = strings.Split(tr.Subject.SubjectName, "#")[0]
+		subjectRelation = strings.Split(tr.Subject.SubjectName, "#")[1]
+	}
+
+	// handling cases like group:dev#member and group:dev#*
+	if subjectRelation != "" {
+		hasRelation, err := h.client.TypeConfig.
+			Query().
+			Where(typeconfig.NameEQ(tr.Subject.TypeConfigName)).
+			QueryRelations().
+			Where(relation.NameEQ(subjectRelation)).
+			Exist(ctx)
+		if !hasRelation || err != nil {
+			return nil, fmt.Errorf("error when checking subject relation: %w", err)
+		}
+	}
 
 	subj, err := h.client.Subject.
 		Query().
 		Where(
 			subject.And(
-				subject.NameEQ(tr.Subject.SubjectName),
+				subject.NameEQ(subjectName),
 				subject.HasTypeWith(
 					typeconfig.NameEQ(tr.Subject.TypeConfigName)))).
 		Only(ctx)
@@ -427,12 +438,17 @@ func (h *Handler) CreateTuple(ctx context.Context, tr *TupleReq) (*ent.Tuple, er
 		return nil, fmt.Errorf("error when getting relation for resource: %w", err)
 	}
 
-	tuple, err := h.client.Tuple.
+	tupleCreate := h.client.Tuple.
 		Create().
 		SetSubject(subj).
 		SetRelation(rel).
-		SetResource(res).
-		Save(ctx)
+		SetResource(res)
+
+	if subjectRelation != "" {
+		tupleCreate.SetSubjectRel(subjectRelation)
+	}
+
+	tuple, err := tupleCreate.Save(ctx)
 
 	if err != nil {
 		return nil, fmt.Errorf("error when creating tuple: %w", err)
@@ -586,7 +602,17 @@ func main() {
 				SubjectName:    "dev",
 			},
 		},
-		// TODO: one more
+		{
+			Subject: &SubjectReq{
+				TypeConfigName: "group",
+				SubjectName:    "dev#member",
+			},
+			Relation: "reader",
+			Resource: &SubjectReq{
+				TypeConfigName: "folder",
+				SubjectName:    "secret_folder",
+			},
+		},
 	}
 
 	for _, v := range tuples {
@@ -596,7 +622,7 @@ func main() {
 
 	// h.Do(ctx)
 
-	// h.QueryTest(ctx)
+	h.QueryTest(ctx)
 
 	// TEST: empty permissions
 	// tc, err = h.CreateTypeConfig(ctx,

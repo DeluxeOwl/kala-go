@@ -17,6 +17,8 @@ type Tuple struct {
 	config `json:"-"`
 	// ID of the ent.
 	ID int `json:"id,omitempty"`
+	// SubjectRel holds the value of the "subject_rel" field.
+	SubjectRel string `json:"subject_rel,omitempty"`
 	// SubjectID holds the value of the "subject_id" field.
 	SubjectID int `json:"subject_id,omitempty"`
 	// RelationID holds the value of the "relation_id" field.
@@ -90,6 +92,8 @@ func (*Tuple) scanValues(columns []string) ([]interface{}, error) {
 		switch columns[i] {
 		case tuple.FieldID, tuple.FieldSubjectID, tuple.FieldRelationID, tuple.FieldResourceID:
 			values[i] = new(sql.NullInt64)
+		case tuple.FieldSubjectRel:
+			values[i] = new(sql.NullString)
 		default:
 			return nil, fmt.Errorf("unexpected column %q for type Tuple", columns[i])
 		}
@@ -111,6 +115,12 @@ func (t *Tuple) assignValues(columns []string, values []interface{}) error {
 				return fmt.Errorf("unexpected type %T for field id", value)
 			}
 			t.ID = int(value.Int64)
+		case tuple.FieldSubjectRel:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field subject_rel", values[i])
+			} else if value.Valid {
+				t.SubjectRel = value.String
+			}
 		case tuple.FieldSubjectID:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
 				return fmt.Errorf("unexpected type %T for field subject_id", values[i])
@@ -172,6 +182,8 @@ func (t *Tuple) String() string {
 	var builder strings.Builder
 	builder.WriteString("Tuple(")
 	builder.WriteString(fmt.Sprintf("id=%v", t.ID))
+	builder.WriteString(", subject_rel=")
+	builder.WriteString(t.SubjectRel)
 	builder.WriteString(", subject_id=")
 	builder.WriteString(fmt.Sprintf("%v", t.SubjectID))
 	builder.WriteString(", relation_id=")

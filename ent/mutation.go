@@ -1620,6 +1620,7 @@ type TupleMutation struct {
 	op              Op
 	typ             string
 	id              *int
+	subject_rel     *string
 	clearedFields   map[string]struct{}
 	subject         *int
 	clearedsubject  bool
@@ -1728,6 +1729,55 @@ func (m *TupleMutation) IDs(ctx context.Context) ([]int, error) {
 	default:
 		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
 	}
+}
+
+// SetSubjectRel sets the "subject_rel" field.
+func (m *TupleMutation) SetSubjectRel(s string) {
+	m.subject_rel = &s
+}
+
+// SubjectRel returns the value of the "subject_rel" field in the mutation.
+func (m *TupleMutation) SubjectRel() (r string, exists bool) {
+	v := m.subject_rel
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSubjectRel returns the old "subject_rel" field's value of the Tuple entity.
+// If the Tuple object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *TupleMutation) OldSubjectRel(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSubjectRel is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSubjectRel requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSubjectRel: %w", err)
+	}
+	return oldValue.SubjectRel, nil
+}
+
+// ClearSubjectRel clears the value of the "subject_rel" field.
+func (m *TupleMutation) ClearSubjectRel() {
+	m.subject_rel = nil
+	m.clearedFields[tuple.FieldSubjectRel] = struct{}{}
+}
+
+// SubjectRelCleared returns if the "subject_rel" field was cleared in this mutation.
+func (m *TupleMutation) SubjectRelCleared() bool {
+	_, ok := m.clearedFields[tuple.FieldSubjectRel]
+	return ok
+}
+
+// ResetSubjectRel resets all changes to the "subject_rel" field.
+func (m *TupleMutation) ResetSubjectRel() {
+	m.subject_rel = nil
+	delete(m.clearedFields, tuple.FieldSubjectRel)
 }
 
 // SetSubjectID sets the "subject_id" field.
@@ -1935,7 +1985,10 @@ func (m *TupleMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *TupleMutation) Fields() []string {
-	fields := make([]string, 0, 3)
+	fields := make([]string, 0, 4)
+	if m.subject_rel != nil {
+		fields = append(fields, tuple.FieldSubjectRel)
+	}
 	if m.subject != nil {
 		fields = append(fields, tuple.FieldSubjectID)
 	}
@@ -1953,6 +2006,8 @@ func (m *TupleMutation) Fields() []string {
 // schema.
 func (m *TupleMutation) Field(name string) (ent.Value, bool) {
 	switch name {
+	case tuple.FieldSubjectRel:
+		return m.SubjectRel()
 	case tuple.FieldSubjectID:
 		return m.SubjectID()
 	case tuple.FieldRelationID:
@@ -1968,6 +2023,8 @@ func (m *TupleMutation) Field(name string) (ent.Value, bool) {
 // database failed.
 func (m *TupleMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
 	switch name {
+	case tuple.FieldSubjectRel:
+		return m.OldSubjectRel(ctx)
 	case tuple.FieldSubjectID:
 		return m.OldSubjectID(ctx)
 	case tuple.FieldRelationID:
@@ -1983,6 +2040,13 @@ func (m *TupleMutation) OldField(ctx context.Context, name string) (ent.Value, e
 // type.
 func (m *TupleMutation) SetField(name string, value ent.Value) error {
 	switch name {
+	case tuple.FieldSubjectRel:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSubjectRel(v)
+		return nil
 	case tuple.FieldSubjectID:
 		v, ok := value.(int)
 		if !ok {
@@ -2036,7 +2100,11 @@ func (m *TupleMutation) AddField(name string, value ent.Value) error {
 // ClearedFields returns all nullable fields that were cleared during this
 // mutation.
 func (m *TupleMutation) ClearedFields() []string {
-	return nil
+	var fields []string
+	if m.FieldCleared(tuple.FieldSubjectRel) {
+		fields = append(fields, tuple.FieldSubjectRel)
+	}
+	return fields
 }
 
 // FieldCleared returns a boolean indicating if a field with the given name was
@@ -2049,6 +2117,11 @@ func (m *TupleMutation) FieldCleared(name string) bool {
 // ClearField clears the value of the field with the given name. It returns an
 // error if the field is not defined in the schema.
 func (m *TupleMutation) ClearField(name string) error {
+	switch name {
+	case tuple.FieldSubjectRel:
+		m.ClearSubjectRel()
+		return nil
+	}
 	return fmt.Errorf("unknown Tuple nullable field %s", name)
 }
 
@@ -2056,6 +2129,9 @@ func (m *TupleMutation) ClearField(name string) error {
 // It returns an error if the field is not defined in the schema.
 func (m *TupleMutation) ResetField(name string) error {
 	switch name {
+	case tuple.FieldSubjectRel:
+		m.ResetSubjectRel()
+		return nil
 	case tuple.FieldSubjectID:
 		m.ResetSubjectID()
 		return nil

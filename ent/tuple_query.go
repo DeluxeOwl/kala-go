@@ -362,12 +362,12 @@ func (tq *TupleQuery) WithResource(opts ...func(*SubjectQuery)) *TupleQuery {
 // Example:
 //
 //	var v []struct {
-//		SubjectID int `json:"subject_id,omitempty"`
+//		SubjectRel string `json:"subject_rel,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
 //	client.Tuple.Query().
-//		GroupBy(tuple.FieldSubjectID).
+//		GroupBy(tuple.FieldSubjectRel).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
 //
@@ -389,11 +389,11 @@ func (tq *TupleQuery) GroupBy(field string, fields ...string) *TupleGroupBy {
 // Example:
 //
 //	var v []struct {
-//		SubjectID int `json:"subject_id,omitempty"`
+//		SubjectRel string `json:"subject_rel,omitempty"`
 //	}
 //
 //	client.Tuple.Query().
-//		Select(tuple.FieldSubjectID).
+//		Select(tuple.FieldSubjectRel).
 //		Scan(ctx, &v)
 //
 func (tq *TupleQuery) Select(fields ...string) *TupleSelect {

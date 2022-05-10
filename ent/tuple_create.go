@@ -21,6 +21,20 @@ type TupleCreate struct {
 	hooks    []Hook
 }
 
+// SetSubjectRel sets the "subject_rel" field.
+func (tc *TupleCreate) SetSubjectRel(s string) *TupleCreate {
+	tc.mutation.SetSubjectRel(s)
+	return tc
+}
+
+// SetNillableSubjectRel sets the "subject_rel" field if the given value is not nil.
+func (tc *TupleCreate) SetNillableSubjectRel(s *string) *TupleCreate {
+	if s != nil {
+		tc.SetSubjectRel(*s)
+	}
+	return tc
+}
+
 // SetSubjectID sets the "subject_id" field.
 func (tc *TupleCreate) SetSubjectID(i int) *TupleCreate {
 	tc.mutation.SetSubjectID(i)
@@ -169,6 +183,14 @@ func (tc *TupleCreate) createSpec() (*Tuple, *sqlgraph.CreateSpec) {
 			},
 		}
 	)
+	if value, ok := tc.mutation.SubjectRel(); ok {
+		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
+			Type:   field.TypeString,
+			Value:  value,
+			Column: tuple.FieldSubjectRel,
+		})
+		_node.SubjectRel = value
+	}
 	if nodes := tc.mutation.SubjectIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
