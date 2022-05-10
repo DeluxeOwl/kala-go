@@ -374,6 +374,7 @@ type TupleReq struct {
 }
 
 // TODO handle group:* viewer on document
+// create a default subject called '*' when creating the type?
 func (h *Handler) CreateTuple(ctx context.Context, tr *TupleReq) (*ent.Tuple, error) {
 
 	var subjectName string
