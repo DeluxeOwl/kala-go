@@ -385,6 +385,7 @@ type TupleReq struct {
 	Resource *SubjectReq
 }
 
+// TODO: check if you pass group:dev#member
 func (h *Handler) CreateTuple(ctx context.Context, tr *TupleReq) (*ent.Tuple, error) {
 
 	subj, err := h.client.Subject.
@@ -501,40 +502,101 @@ func main() {
 		})
 	fmt.Println(tc, err)
 
-	subj, err := h.CreateSubject(ctx, &SubjectReq{
-		TypeConfigName: "document",
-		SubjectName:    "secret",
-	})
-	fmt.Println(subj, err)
-
-	subj, err = h.CreateSubject(ctx, &SubjectReq{
-		TypeConfigName: "document",
-		SubjectName:    "something.csv",
-	})
-	fmt.Println(subj, err)
-
-	subj, err = h.CreateSubject(ctx, &SubjectReq{
-		TypeConfigName: "user",
-		SubjectName:    "anna",
-	})
-	fmt.Println(subj, err)
-
-	tuple, err := h.CreateTuple(ctx, &TupleReq{
-		Subject: &SubjectReq{
+	subjects := []SubjectReq{
+		{
+			TypeConfigName: "document",
+			SubjectName:    "report.csv",
+		},
+		{
 			TypeConfigName: "user",
 			SubjectName:    "anna",
 		},
-		Relation: "reader",
-		Resource: &SubjectReq{
-			TypeConfigName: "document",
-			SubjectName:    "secret",
+		{
+			TypeConfigName: "user",
+			SubjectName:    "john",
 		},
-	})
-	fmt.Println(tuple, err)
+		{
+			TypeConfigName: "folder",
+			SubjectName:    "secret_folder",
+		},
+		{
+			TypeConfigName: "group",
+			SubjectName:    "dev",
+		},
+	}
+
+	for _, v := range subjects {
+		subj, err := h.CreateSubject(ctx, &v)
+		fmt.Println(subj, err)
+	}
+
+	tuples := []TupleReq{
+		{
+			Subject: &SubjectReq{
+				TypeConfigName: "user",
+				SubjectName:    "anna",
+			},
+			Relation: "reader",
+			Resource: &SubjectReq{
+				TypeConfigName: "document",
+				SubjectName:    "report.csv",
+			},
+		},
+		{
+			Subject: &SubjectReq{
+				TypeConfigName: "user",
+				SubjectName:    "anna",
+			},
+			Relation: "writer",
+			Resource: &SubjectReq{
+				TypeConfigName: "document",
+				SubjectName:    "report.csv",
+			},
+		},
+		{
+			Subject: &SubjectReq{
+				TypeConfigName: "folder",
+				SubjectName:    "secret_folder",
+			},
+			Relation: "parent_folder",
+			Resource: &SubjectReq{
+				TypeConfigName: "document",
+				SubjectName:    "report.csv",
+			},
+		},
+		{
+			Subject: &SubjectReq{
+				TypeConfigName: "user",
+				SubjectName:    "john",
+			},
+			Relation: "reader",
+			Resource: &SubjectReq{
+				TypeConfigName: "folder",
+				SubjectName:    "secret_folder",
+			},
+		},
+		{
+			Subject: &SubjectReq{
+				TypeConfigName: "user",
+				SubjectName:    "john",
+			},
+			Relation: "member",
+			Resource: &SubjectReq{
+				TypeConfigName: "group",
+				SubjectName:    "dev",
+			},
+		},
+		// TODO: one more
+	}
+
+	for _, v := range tuples {
+		tuple, err := h.CreateTuple(ctx, &v)
+		fmt.Println(tuple, err)
+	}
 
 	// h.Do(ctx)
 
-	h.QueryTest(ctx)
+	// h.QueryTest(ctx)
 
 	// TEST: empty permissions
 	// tc, err = h.CreateTypeConfig(ctx,
