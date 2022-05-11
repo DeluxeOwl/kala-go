@@ -8,9 +8,9 @@ import (
 	"strings"
 
 	"github.com/DeluxeOwl/kala-go/ent"
+	"github.com/DeluxeOwl/kala-go/ent/permission"
 	"github.com/DeluxeOwl/kala-go/ent/relation"
 	"github.com/DeluxeOwl/kala-go/ent/subject"
-	"github.com/DeluxeOwl/kala-go/ent/tuple"
 	"github.com/DeluxeOwl/kala-go/ent/typeconfig"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/pkg/errors"
@@ -80,6 +80,18 @@ var regexTypeName = regexp.MustCompile(`^[a-zA-Z_]{1,64}$`)
 var regexRelValue = regexp.MustCompile(`^[a-zA-Z_]{1,64}(#[a-zA-Z_]{1,64})?( \| [a-zA-Z_]{1,64}(#[a-zA-Z_]{1,64})?)*$`)
 var regexPermValue = regexp.MustCompile(`^((!)?[a-zA-Z_]{1,64}(\.[a-zA-Z_]{1,64})?)((( \| )|( & ))((!)?[a-zA-Z_]{1,64}(\.[a-zA-Z_]{1,64})?))*$`)
 
+// delimiter for the value of a relation
+var refValueDelim = " | "
+
+// delimiter for a subrelation
+var refSubrelationDelim = "#"
+
+// delimiter for parent relation in permission
+var parentRelDelim = "."
+
+// delimiter for permissions
+var permDelim = regexp.MustCompile(`(( \| )|( & )(!)?)|!`)
+
 // TODO: make the errors as variables?
 func (h *Handler) CreateTypeConfig(ctx context.Context, tcInput *TypeConfigReq) (*ent.TypeConfig, error) {
 
@@ -102,11 +114,6 @@ func (h *Handler) CreateTypeConfig(ctx context.Context, tcInput *TypeConfigReq) 
 	if tcInput.Relations == nil {
 		return tc, nil
 	}
-
-	// delimiter for the value of a relation
-	var refValueDelim = " | "
-	// delimiter for a subrelation
-	var refSubrelationDelim = "#"
 
 	relSlice := make([]*ent.RelationCreate, len(tcInput.Relations))
 	cnt := 0
@@ -199,12 +206,9 @@ func (h *Handler) CreateTypeConfig(ctx context.Context, tcInput *TypeConfigReq) 
 
 	// validate permissions
 
-	var parentRelDelim = "."
-
 	permSlice := make([]*ent.PermissionCreate, len(tcInput.Permissions))
 	cnt = 0
 
-	permDelim := regexp.MustCompile(`(( \| )|( & )(!)?)|!`)
 	inputRelations := maps.Keys(tcInput.Relations)
 	fmt.Println("relations:", inputRelations)
 
@@ -314,15 +318,6 @@ func (h *Handler) CreateTypeConfig(ctx context.Context, tcInput *TypeConfigReq) 
 	}
 
 	return tc, nil
-}
-
-func (h *Handler) QueryTest(ctx context.Context) {
-	fmt.Println("----------- Query for type document")
-	tc, err := h.client.Tuple.Query().
-		Where(tuple.SubjectRelNotNil()).
-		All(ctx)
-
-	fmt.Println(tc, err)
 }
 
 var regexSubjName = regexp.MustCompile(`^[a-zA-Z0-9\._\/-]{1,64}$`)
@@ -623,7 +618,9 @@ func main() {
 
 	// h.Do(ctx)
 
-	h.QueryTest(ctx)
+	canAnnaRead, err := h.QueryTest(ctx)
+	fmt.Println("⟶ Can anna read?", canAnnaRead)
+	fmt.Println(err)
 
 	// TEST: empty permissions
 	// tc, err = h.CreateTypeConfig(ctx,
@@ -636,14 +633,6 @@ func main() {
 	// 		},
 	// 	})
 	// fmt.Println(tc, err)
-
-	// tc, _ = h.CreateTypeConfig(ctx, &TypeConfig{Name: "docs"})
-
-	// VISUALIZE
-	// err := entc.Generate("./ent/schema", &gen.Config{}, entc.Extensions(entviz.Extension{}))
-	// if err != nil {
-	// 	log.Fatalf("running ent codegen: %v", err)
-	// }
 
 	// reader | writer | parent_folder.reader
 	// reader & writer
@@ -658,4 +647,53 @@ func main() {
 	// !writer |
 	// reader &
 	// writer & reader | !
+}
+
+func (h *Handler) QueryTest(ctx context.Context) (bool, error) {
+	fmt.Println("====> Does `user:anna` have `read` permission on `document:report.csv`?")
+
+	permQuery := h.client.TypeConfig.
+		Query().
+		Where(typeconfig.NameEQ("document")).
+		QueryPermissions().
+		Where(permission.NameEQ("read"))
+
+	perm, err := permQuery.
+		Only(ctx)
+
+	if err != nil {
+		return false, fmt.Errorf("error when querying permission: %w", err)
+	}
+
+	fmt.Println(perm)
+
+	// TODO: refactor this in its own function, same one as in CreateTypeConfig
+	// or you should probably parse it
+	for _, referencedRelation := range permDelim.Split(perm.Value, -1) {
+		if referencedRelation == "" {
+			continue
+		}
+
+		// check direct relations and indirect relations
+		if !strings.Contains(referencedRelation, parentRelDelim) {
+			fmt.Println(referencedRelation)
+
+			// Get value of this and recurse again
+			t, _ := permQuery.
+				QueryRelations().
+				Where(relation.NameEQ(referencedRelation)).
+				All(ctx)
+			fmt.Println(t)
+
+		} else {
+			s := strings.Split(referencedRelation, parentRelDelim)
+
+			refParent := s[0]
+			refParentRel := s[1]
+			fmt.Println(refParent, refParentRel)
+		}
+
+	}
+
+	return true, nil
 }
