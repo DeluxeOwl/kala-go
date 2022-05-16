@@ -45,6 +45,12 @@ group:dev #member @user:john
 folder:secret_folder #reader @group:dev#member
 ```
 
+## Relation answering
+
+1. Is `user:john` a `reader` on `folder:secret_folder`
+
+## Permission answering
+
 1. Does `user:anna` have `read` permission on `document:report.csv`?
 2. Does `user:john` have `read` permission on `document:report.csv`?
 3. Does `user:anna` have `read_only` permission on `document:report.csv`?

@@ -619,8 +619,8 @@ func main() {
 	// h.Do(ctx)
 
 	canAnnaRead, err := h.QueryTest(ctx)
-	fmt.Println("⟶ Can anna read?", canAnnaRead)
 	fmt.Println(err)
+	fmt.Println("⟶\tCan anna read?", canAnnaRead)
 
 	// TEST: empty permissions
 	// tc, err = h.CreateTypeConfig(ctx,
@@ -649,12 +649,49 @@ func main() {
 	// writer & reader | !
 }
 
-func (h *Handler) QueryTest(ctx context.Context) (bool, error) {
-	fmt.Println("====> Does `user:anna` have `read` permission on `document:report.csv`?")
+type RelationCheck struct {
+	Subj *ent.Subject
+	Rel  *ent.Relation
+	Res  *ent.Subject
+}
 
-	permQuery := h.client.TypeConfig.
+func (h *Handler) CheckRelation(ctx context.Context, rc *RelationCheck) {
+	fmt.Println("\tChecking relation:", rc)
+}
+
+func (h *Handler) GetSubject(ctx context.Context, tfName string, name string) (*ent.Subject, error) {
+	subj, err := h.client.Subject.
 		Query().
-		Where(typeconfig.NameEQ("document")).
+		Where(
+			subject.And(
+				subject.NameEQ(name),
+				subject.HasTypeWith(typeconfig.NameEQ(tfName)))).
+		Only(ctx)
+	return subj, err
+}
+
+// TODO: remove hardcoded values
+func (h *Handler) QueryTest(ctx context.Context) (bool, error) {
+	fmt.Println("====> Does `user:john` have `read` permission on `document:report.csv`?")
+
+	subj, err := h.GetSubject(ctx, "user", "john")
+
+	if err != nil {
+		return false, fmt.Errorf("error when querying subject: %w", err)
+	}
+
+	fmt.Println("Checking if subject exists:", subj)
+
+	res, err := h.GetSubject(ctx, "document", "report.csv")
+
+	if err != nil {
+		return false, fmt.Errorf("error when querying resource: %w", err)
+	}
+
+	fmt.Println("Checking if resource exists:", res)
+
+	permQuery := res.
+		QueryType().
 		QueryPermissions().
 		Where(permission.NameEQ("read"))
 
@@ -665,10 +702,11 @@ func (h *Handler) QueryTest(ctx context.Context) (bool, error) {
 		return false, fmt.Errorf("error when querying permission: %w", err)
 	}
 
-	fmt.Println(perm)
+	fmt.Println("Getting relations for perm:", perm)
 
 	// TODO: refactor this in its own function, same one as in CreateTypeConfig
 	// or you should probably parse it
+	// probably shouldnt return on all errors
 	for _, referencedRelation := range permDelim.Split(perm.Value, -1) {
 		if referencedRelation == "" {
 			continue
@@ -676,21 +714,59 @@ func (h *Handler) QueryTest(ctx context.Context) (bool, error) {
 
 		// check direct relations and indirect relations
 		if !strings.Contains(referencedRelation, parentRelDelim) {
-			fmt.Println(referencedRelation)
-
-			// Get value of this and recurse again
-			t, _ := permQuery.
+			rel, err := permQuery.
 				QueryRelations().
 				Where(relation.NameEQ(referencedRelation)).
-				All(ctx)
-			fmt.Println(t)
+				Only(ctx)
+
+			if err != nil {
+				return false, fmt.Errorf("error when querying relation: %w", err)
+			}
+
+			h.CheckRelation(ctx, &RelationCheck{
+				Subj: subj,
+				Rel:  rel,
+				Res:  res,
+			})
 
 		} else {
 			s := strings.Split(referencedRelation, parentRelDelim)
 
 			refParent := s[0]
 			refParentRel := s[1]
-			fmt.Println(refParent, refParentRel)
+
+			// Get the relation, for this type of query
+			// it can only be one anyway
+			r, err := perm.QueryRelations().
+				Where(relation.NameEQ(refParent)).
+				QueryRelTypeconfigs().
+				QueryRelations().
+				Where(relation.NameEQ(refParentRel)).
+				Only(ctx)
+
+			if err != nil {
+				return false, fmt.Errorf("error when querying relation: %w", err)
+			}
+
+			// Get all referenced subjects
+			subjects, err := perm.QueryRelations().
+				Where(relation.NameEQ(refParent)).
+				QueryTuples().
+				QuerySubject().
+				All(ctx)
+
+			if err != nil {
+				fmt.Println(err)
+				continue
+			}
+
+			for _, s := range subjects {
+				h.CheckRelation(ctx, &RelationCheck{
+					Subj: subj,
+					Rel:  r,
+					Res:  s,
+				})
+			}
 		}
 
 	}
