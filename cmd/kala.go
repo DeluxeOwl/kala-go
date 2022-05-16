@@ -686,7 +686,7 @@ type RelationCheck struct {
 	Res  *ent.Subject
 }
 
-// TODO: boolean returns, add some depth, maybe add path taken
+// TODO: boolean returns, add some depth, maybe add path taken, goroutines
 func (h *Handler) CheckRelation(ctx context.Context, rc *RelationCheck) {
 	fmt.Println("\tChecking relation:", rc)
 
