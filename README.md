@@ -41,8 +41,9 @@ document:report.csv #writer @user:anna
 folder:secret_folder #parent_folder @document:report.csv
 folder:secret_folder #reader @user:john
 
-group:dev #member @user:john
+group:dev #member @user:steve
 folder:secret_folder #reader @group:dev#member
+folder:secret_folder #reader @group:test_group#member
 ```
 
 ## Relation answering
@@ -54,7 +55,7 @@ folder:secret_folder #reader @group:dev#member
 1. Does `user:anna` have `read` permission on `document:report.csv`?
 2. Does `user:john` have `read` permission on `document:report.csv`?
 3. Does `user:anna` have `read_only` permission on `document:report.csv`?
-4. Does `user:john` have `read` permission on `document:report.csv`?
+4. Does `user:steve` have `read` permission on `document:report.csv`?
 
 - List everyone with `read` permission on `document:report.csv`
 - List everyone with `read_only` permission on `document:report.csv`

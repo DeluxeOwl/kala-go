@@ -529,12 +529,20 @@ func main() {
 			SubjectName:    "john",
 		},
 		{
+			TypeConfigName: "user",
+			SubjectName:    "steve",
+		},
+		{
 			TypeConfigName: "folder",
 			SubjectName:    "secret_folder",
 		},
 		{
 			TypeConfigName: "group",
 			SubjectName:    "dev",
+		},
+		{
+			TypeConfigName: "group",
+			SubjectName:    "test_group",
 		},
 	}
 
@@ -610,6 +618,28 @@ func main() {
 				SubjectName:    "secret_folder",
 			},
 		},
+		{
+			Subject: &SubjectReq{
+				TypeConfigName: "group",
+				SubjectName:    "test_group#member",
+			},
+			Relation: "reader",
+			Resource: &SubjectReq{
+				TypeConfigName: "folder",
+				SubjectName:    "secret_folder",
+			},
+		},
+		{
+			Subject: &SubjectReq{
+				TypeConfigName: "user",
+				SubjectName:    "steve",
+			},
+			Relation: "member",
+			Resource: &SubjectReq{
+				TypeConfigName: "group",
+				SubjectName:    "dev",
+			},
+		},
 	}
 
 	for _, v := range tuples {
@@ -619,9 +649,9 @@ func main() {
 
 	// h.Do(ctx)
 
-	canAnnaRead, err := h.QueryTest(ctx)
+	canSteveRead, err := h.QueryTest(ctx)
 	fmt.Println(err)
-	fmt.Println("⟶\tCan anna read?", canAnnaRead)
+	fmt.Println("⟶\tCan steve read?", canSteveRead)
 
 	// TEST: empty permissions
 	// tc, err = h.CreateTypeConfig(ctx,
@@ -656,11 +686,19 @@ type RelationCheck struct {
 	Res  *ent.Subject
 }
 
+// TODO: boolean returns, add some depth, maybe add path taken
 func (h *Handler) CheckRelation(ctx context.Context, rc *RelationCheck) {
 	fmt.Println("\tChecking relation:", rc)
 
+	subjTypeString := rc.Subj.QueryType().Select(typeconfig.FieldName).StringX(ctx)
+
 	// check if direct
 	if !strings.Contains(rc.Rel.Value, refValueDelim) {
+		if rc.Rel.Value != subjTypeString {
+			fmt.Println("\t\t Type doesnt match with subject")
+			return
+		}
+
 		tupleExists, err := h.client.Tuple.
 			Query().
 			Where(
@@ -672,10 +710,81 @@ func (h *Handler) CheckRelation(ctx context.Context, rc *RelationCheck) {
 			).
 			Exist(ctx)
 
+		fmt.Printf("\t\tDirect relationship? %t\n", tupleExists)
+
 		if err != nil {
 			fmt.Println(err)
 		}
-		fmt.Printf("\t\tDirect relationship? %t\n", tupleExists)
+
+	} else {
+		for _, referencedType := range strings.Split(rc.Rel.Value, refValueDelim) {
+			if referencedType == subjTypeString {
+				tupleExists, err := h.client.Tuple.
+					Query().
+					Where(
+						tuple.And(
+							tuple.SubjectID(rc.Subj.ID),
+							tuple.RelationID(rc.Rel.ID),
+							tuple.ResourceID(rc.Res.ID),
+						),
+					).
+					Exist(ctx)
+
+				fmt.Printf("\t\tDirect relationship? %t\n", tupleExists)
+
+				if err != nil {
+					fmt.Println(err)
+					return
+				}
+			} else {
+				// checking composed relation
+				// TODO: repeated, own function
+				s := strings.Split(referencedType, refSubrelationDelim)
+
+				refTypeName := s[0]
+				refTypeRelation := s[1]
+
+				// Get all refTypeName and get the relation refTypeName (e.g. group#member) with relation rc.Rel.Name
+				fmt.Printf("\t\tGetting all `%s:<name>#%s` with relation `%s` on `%s`\n", refTypeName, refTypeRelation, rc.Rel.Name, rc.Res.Name)
+				fmt.Printf("\t\tand checking if subject `%s` has relation `%s` on each group\n", rc.Subj.Name, refTypeRelation)
+
+				refTypeRelationObject, err := h.client.TypeConfig.
+					Query().
+					Where(typeconfig.NameEQ(refTypeName)).
+					QueryRelations().
+					Where(relation.NameEQ(refTypeRelation)).
+					Only(ctx)
+
+				if err != nil {
+					fmt.Println(err)
+					return
+				}
+
+				subjects, err := h.client.Tuple.
+					Query().
+					Where(tuple.And(
+						tuple.SubjectRelEQ(refTypeRelation),
+						tuple.RelationID(rc.Rel.ID),
+						tuple.ResourceID(rc.Res.ID),
+					)).
+					QuerySubject().
+					All(ctx)
+
+				if err != nil {
+					fmt.Println(err)
+					return
+				}
+
+				for _, s := range subjects {
+					h.CheckRelation(ctx, &RelationCheck{
+						Subj: rc.Subj,
+						Rel:  refTypeRelationObject,
+						Res:  s,
+					})
+				}
+
+			}
+		}
 	}
 
 }
@@ -693,9 +802,9 @@ func (h *Handler) GetSubject(ctx context.Context, tfName string, name string) (*
 
 // TODO: remove hardcoded values
 func (h *Handler) QueryTest(ctx context.Context) (bool, error) {
-	fmt.Println("====> Does `user:john` have `read` permission on `document:report.csv`?")
+	fmt.Println("====> Does `user:steve` have `read` permission on `document:report.csv`?")
 
-	subj, err := h.GetSubject(ctx, "user", "john")
+	subj, err := h.GetSubject(ctx, "user", "steve")
 
 	if err != nil {
 		return false, fmt.Errorf("error when querying subject: %w", err)
