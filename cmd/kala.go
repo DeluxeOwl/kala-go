@@ -11,6 +11,7 @@ import (
 	"github.com/DeluxeOwl/kala-go/ent/permission"
 	"github.com/DeluxeOwl/kala-go/ent/relation"
 	"github.com/DeluxeOwl/kala-go/ent/subject"
+	"github.com/DeluxeOwl/kala-go/ent/tuple"
 	"github.com/DeluxeOwl/kala-go/ent/typeconfig"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/pkg/errors"
@@ -657,6 +658,26 @@ type RelationCheck struct {
 
 func (h *Handler) CheckRelation(ctx context.Context, rc *RelationCheck) {
 	fmt.Println("\tChecking relation:", rc)
+
+	// check if direct
+	if !strings.Contains(rc.Rel.Value, refValueDelim) {
+		tupleExists, err := h.client.Tuple.
+			Query().
+			Where(
+				tuple.And(
+					tuple.SubjectID(rc.Subj.ID),
+					tuple.RelationID(rc.Rel.ID),
+					tuple.ResourceID(rc.Res.ID),
+				),
+			).
+			Exist(ctx)
+
+		if err != nil {
+			fmt.Println(err)
+		}
+		fmt.Printf("\t\tDirect relationship? %t\n", tupleExists)
+	}
+
 }
 
 func (h *Handler) GetSubject(ctx context.Context, tfName string, name string) (*ent.Subject, error) {
