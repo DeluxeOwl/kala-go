@@ -49,7 +49,7 @@ func (h *Handler) Do(ctx context.Context) {
 		h := Handler{
 			client: tx.Client(),
 		}
-		tuple, err := h.CreateTuple(ctx, &TupleReq{
+		tuple, err := h.CreateTuple(ctx, &TupleReqRelation{
 			Subject: &SubjectReq{
 				TypeConfigName: "user",
 				SubjectName:    "anna",
@@ -363,7 +363,7 @@ func (h *Handler) CreateSubject(ctx context.Context, s *SubjectReq) (*ent.Subjec
 	return subj, nil
 }
 
-type TupleReq struct {
+type TupleReqRelation struct {
 	Subject  *SubjectReq
 	Relation string
 	Resource *SubjectReq
@@ -371,7 +371,7 @@ type TupleReq struct {
 
 // TODO handle group:* viewer on document
 // create a default subject called '*' when creating the type?
-func (h *Handler) CreateTuple(ctx context.Context, tr *TupleReq) (*ent.Tuple, error) {
+func (h *Handler) CreateTuple(ctx context.Context, tr *TupleReqRelation) (*ent.Tuple, error) {
 
 	var subjectName string
 	var subjectRelation string = ""
@@ -551,7 +551,7 @@ func main() {
 		fmt.Println(subj, err)
 	}
 
-	tuples := []TupleReq{
+	tuples := []TupleReqRelation{
 		{
 			Subject: &SubjectReq{
 				TypeConfigName: "user",
@@ -649,9 +649,19 @@ func main() {
 
 	// h.Do(ctx)
 
-	canSteveRead, err := h.QueryTest(ctx)
+	hasRead, err := h.CheckPermission(ctx, &TupleReqPermission{
+		Subject: &SubjectReq{
+			TypeConfigName: "user",
+			SubjectName:    "steve",
+		},
+		Permission: "read",
+		Resource: &SubjectReq{
+			TypeConfigName: "document",
+			SubjectName:    "report.csv",
+		},
+	})
 	fmt.Println(err)
-	fmt.Println("⟶\tCan steve read?", canSteveRead)
+	fmt.Println("⟶\tCan steve read?", hasRead)
 
 	// TEST: empty permissions
 	// tc, err = h.CreateTypeConfig(ctx,
@@ -789,7 +799,7 @@ func (h *Handler) CheckRelation(ctx context.Context, rc *RelationCheck) {
 
 }
 
-func (h *Handler) GetSubject(ctx context.Context, tfName string, name string) (*ent.Subject, error) {
+func (h *Handler) Subject(ctx context.Context, tfName string, name string) (*ent.Subject, error) {
 	subj, err := h.client.Subject.
 		Query().
 		Where(
@@ -800,11 +810,22 @@ func (h *Handler) GetSubject(ctx context.Context, tfName string, name string) (*
 	return subj, err
 }
 
-// TODO: remove hardcoded values
-func (h *Handler) QueryTest(ctx context.Context) (bool, error) {
-	fmt.Println("====> Does `user:steve` have `read` permission on `document:report.csv`?")
+type TupleReqPermission struct {
+	Subject    *SubjectReq
+	Permission string
+	Resource   *SubjectReq
+}
 
-	subj, err := h.GetSubject(ctx, "user", "steve")
+// TODO: remove hardcoded values
+func (h *Handler) CheckPermission(ctx context.Context, tr *TupleReqPermission) (bool, error) {
+	fmt.Printf("====> Does `%s:%s` have `%s` permission on `%s:%s`?",
+		tr.Subject.TypeConfigName,
+		tr.Subject.SubjectName,
+		tr.Permission,
+		tr.Resource.TypeConfigName,
+		tr.Resource.SubjectName)
+
+	subj, err := h.Subject(ctx, tr.Subject.TypeConfigName, tr.Subject.SubjectName)
 
 	if err != nil {
 		return false, fmt.Errorf("error when querying subject: %w", err)
@@ -812,7 +833,7 @@ func (h *Handler) QueryTest(ctx context.Context) (bool, error) {
 
 	fmt.Println("Checking if subject exists:", subj)
 
-	res, err := h.GetSubject(ctx, "document", "report.csv")
+	res, err := h.Subject(ctx, tr.Resource.TypeConfigName, tr.Resource.SubjectName)
 
 	if err != nil {
 		return false, fmt.Errorf("error when querying resource: %w", err)
@@ -823,7 +844,7 @@ func (h *Handler) QueryTest(ctx context.Context) (bool, error) {
 	permQuery := res.
 		QueryType().
 		QueryPermissions().
-		Where(permission.NameEQ("read"))
+		Where(permission.NameEQ(tr.Permission))
 
 	perm, err := permQuery.
 		Only(ctx)
