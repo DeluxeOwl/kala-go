@@ -698,17 +698,19 @@ type RelationCheck struct {
 	Res  *ent.Subject
 }
 
-// TODO: boolean returns, add some depth, maybe add path taken (ident in a json and print graph?), goroutines
-func (h *Handler) CheckRelation(ctx context.Context, rc *RelationCheck) {
-	fmt.Println("\tChecking relation:", rc)
+// TODO: add some depth, maybe add path taken (ident in a json and print graph?), goroutines
+func (h *Handler) CheckRelation(ctx context.Context, rc *RelationCheck, depth int) bool {
+
+	fmt.Println(strings.Repeat("\t", depth+1)+"• Checking relation:", rc)
 
 	subjTypeString := rc.Subj.QueryType().Select(typeconfig.FieldName).StringX(ctx)
 
 	// check if direct
 	if !strings.Contains(rc.Rel.Value, refValueDelim) {
+
 		if rc.Rel.Value != subjTypeString {
 			fmt.Println("\t\t Type doesnt match with subject")
-			return
+			return false
 		}
 
 		tupleExists, err := h.client.Tuple.
@@ -728,8 +730,12 @@ func (h *Handler) CheckRelation(ctx context.Context, rc *RelationCheck) {
 			fmt.Println(err)
 		}
 
+		return tupleExists
+
 	} else {
 		for _, referencedType := range strings.Split(rc.Rel.Value, refValueDelim) {
+
+			// if direct type
 			if referencedType == subjTypeString {
 				tupleExists, err := h.client.Tuple.
 					Query().
@@ -746,8 +752,12 @@ func (h *Handler) CheckRelation(ctx context.Context, rc *RelationCheck) {
 
 				if err != nil {
 					fmt.Println(err)
-					return
 				}
+
+				if tupleExists {
+					return true
+				}
+
 			} else {
 				// checking composed relation
 				// TODO: repeated, own function
@@ -757,8 +767,16 @@ func (h *Handler) CheckRelation(ctx context.Context, rc *RelationCheck) {
 				refTypeRelation := s[1]
 
 				// Get all refTypeName and get the relation refTypeName (e.g. group#member) with relation rc.Rel.Name
-				fmt.Printf("\t\tGetting all `%s:<name>#%s` with relation `%s` on `%s`\n", refTypeName, refTypeRelation, rc.Rel.Name, rc.Res.Name)
-				fmt.Printf("\t\tand checking if subject `%s` has relation `%s` on each group\n", rc.Subj.Name, refTypeRelation)
+				fmt.Printf("%sGetting all `%s:<name>#%s` with relation `%s` on `%s`\n",
+					strings.Repeat("\t", depth+2),
+					refTypeName,
+					refTypeRelation,
+					rc.Rel.Name,
+					rc.Res.Name)
+				fmt.Printf("%sand checking if subject `%s` has relation `%s` on each group\n",
+					strings.Repeat("\t", depth+2),
+					rc.Subj.Name,
+					refTypeRelation)
 
 				refTypeRelationObject, err := h.client.TypeConfig.
 					Query().
@@ -769,7 +787,7 @@ func (h *Handler) CheckRelation(ctx context.Context, rc *RelationCheck) {
 
 				if err != nil {
 					fmt.Println(err)
-					return
+					return false
 				}
 
 				subjects, err := h.client.Tuple.
@@ -784,21 +802,27 @@ func (h *Handler) CheckRelation(ctx context.Context, rc *RelationCheck) {
 
 				if err != nil {
 					fmt.Println(err)
-					return
+					return false
 				}
 
+				relExists := false
 				for _, s := range subjects {
-					h.CheckRelation(ctx, &RelationCheck{
+
+					relExists = relExists || h.CheckRelation(ctx, &RelationCheck{
 						Subj: rc.Subj,
 						Rel:  refTypeRelationObject,
 						Res:  s,
-					})
-				}
+					}, depth+1)
 
+					if relExists {
+						return relExists
+					}
+				}
 			}
 		}
 	}
 
+	return false
 }
 
 func (h *Handler) Subject(ctx context.Context, tfName string, name string) (*ent.Subject, error) {
@@ -819,7 +843,7 @@ type TupleReqPermission struct {
 }
 
 func (h *Handler) CheckPermission(ctx context.Context, tr *TupleReqPermission) (bool, error) {
-	fmt.Printf("====> Does `%s:%s` have `%s` permission on `%s:%s`?",
+	fmt.Printf("====> Does `%s:%s` have `%s` permission on `%s:%s`?\n",
 		tr.Subject.TypeConfigName,
 		tr.Subject.SubjectName,
 		tr.Permission,
@@ -856,6 +880,9 @@ func (h *Handler) CheckPermission(ctx context.Context, tr *TupleReqPermission) (
 
 	fmt.Println("Getting relations for perm:", perm)
 
+	// Getting the result from the check relations
+	hasPerm := false
+
 	// TODO: refactor this in its own function, same one as in CreateTypeConfig
 	// or you should probably parse it
 	// probably shouldnt return on all errors
@@ -875,11 +902,15 @@ func (h *Handler) CheckPermission(ctx context.Context, tr *TupleReqPermission) (
 				return false, fmt.Errorf("error when querying relation: %w", err)
 			}
 
-			h.CheckRelation(ctx, &RelationCheck{
+			hasPerm = hasPerm || h.CheckRelation(ctx, &RelationCheck{
 				Subj: subj,
 				Rel:  rel,
 				Res:  res,
-			})
+			}, 0)
+
+			if hasPerm {
+				return hasPerm, nil
+			}
 
 		} else {
 			s := strings.Split(referencedRelation, parentRelDelim)
@@ -907,21 +938,26 @@ func (h *Handler) CheckPermission(ctx context.Context, tr *TupleReqPermission) (
 				QuerySubject().
 				All(ctx)
 
+			// if it doesn't have subjects, just move on
 			if err != nil {
 				fmt.Println(err)
 				continue
 			}
 
 			for _, s := range subjects {
-				h.CheckRelation(ctx, &RelationCheck{
+				hasPerm = hasPerm || h.CheckRelation(ctx, &RelationCheck{
 					Subj: subj,
 					Rel:  r,
 					Res:  s,
-				})
+				}, 0)
+
+				if hasPerm {
+					return hasPerm, nil
+				}
 			}
 		}
 
 	}
 
-	return true, nil
+	return hasPerm, nil
 }
