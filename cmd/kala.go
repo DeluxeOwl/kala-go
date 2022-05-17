@@ -660,7 +660,9 @@ func main() {
 			SubjectName:    "report.csv",
 		},
 	})
-	fmt.Println(err)
+	if err != nil {
+		fmt.Println(err)
+	}
 	fmt.Println("⟶\tCan steve read?", hasRead)
 
 	// TEST: empty permissions
@@ -696,7 +698,7 @@ type RelationCheck struct {
 	Res  *ent.Subject
 }
 
-// TODO: boolean returns, add some depth, maybe add path taken, goroutines
+// TODO: boolean returns, add some depth, maybe add path taken (ident in a json and print graph?), goroutines
 func (h *Handler) CheckRelation(ctx context.Context, rc *RelationCheck) {
 	fmt.Println("\tChecking relation:", rc)
 
@@ -816,7 +818,6 @@ type TupleReqPermission struct {
 	Resource   *SubjectReq
 }
 
-// TODO: remove hardcoded values
 func (h *Handler) CheckPermission(ctx context.Context, tr *TupleReqPermission) (bool, error) {
 	fmt.Printf("====> Does `%s:%s` have `%s` permission on `%s:%s`?",
 		tr.Subject.TypeConfigName,

@@ -8,6 +8,8 @@ An authorization and policy engine written in go.
 
 - separate in modules
 - run every operation in a transaction
+- add some logging and replace instances of fmt.Println
+- add expression parsing
 
 # Example of config
 
