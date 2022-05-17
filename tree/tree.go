@@ -7,7 +7,17 @@ import (
 	"go/token"
 )
 
-func Walk(node ast.Node, f func(ast.Node) bool) {
+func shouldStop(node ast.Node) bool {
+
+	switch node.(type) {
+	case *ast.SelectorExpr:
+		return true
+	}
+
+	return false
+}
+
+func Walk(node ast.Node, f func(ast.Node)) {
 
 	queue := []ast.Node{node}
 
@@ -17,9 +27,9 @@ func Walk(node ast.Node, f func(ast.Node) bool) {
 		queue = queue[1:]
 
 		// dont process children if signal is given
-		stop := f(current)
+		f(current)
 
-		if !stop {
+		if !shouldStop(current) {
 			switch n := current.(type) {
 			// Comments and fields
 			case *ast.Comment:
@@ -372,20 +382,20 @@ func Walk(node ast.Node, f func(ast.Node) bool) {
 	}
 }
 
-func Inspect(node ast.Node, f func(ast.Node) bool) {
+func Inspect(node ast.Node, f func(ast.Node)) {
 	Walk(node, f)
 }
 
 func main() {
 	fs := token.NewFileSet()
-	tr, _ := parser.ParseExpr("reader & !writer")
-	ast.Print(fs, tr)
+	// tr, _ := parser.ParseExpr("reader & !writer")
+	// ast.Print(fs, tr)
 
 	// tr, _ := parser.ParseExpr("reader | writer | !parent_folder.reader")
 	// ast.Print(fs, tr)
 
-	// tr, _ := parser.ParseExpr("!parent_folder.reader | reader | writer")
-	// ast.Print(fs, tr)
+	tr, _ := parser.ParseExpr("!parent_folder.reader | reader | writer")
+	ast.Print(fs, tr)
 
 	// tr, _ := parser.ParseExpr("(reader | writer) & !parent_folder.reader")
 	// ast.Print(fs, tr)
@@ -399,7 +409,7 @@ func main() {
 	// tr, _ := parser.ParseExpr("!reader")
 	// ast.Print(fs, tr)
 
-	Inspect(tr, func(n ast.Node) bool {
+	Inspect(tr, func(n ast.Node) {
 		var s string
 
 		switch node := n.(type) {
@@ -416,22 +426,14 @@ func main() {
 		case *ast.UnaryExpr:
 			s = node.Op.String()
 			if s != "" {
-				fmt.Printf("negation: %s\n", s)
+				fmt.Printf("negation: %s \n", s)
 			}
-			// switch nodeInner := node.X.(type) {
-			// case *ast.Ident:
-			// 	if s != "" {
-			// 		fmt.Printf("check relation: %s\n", nodeInner.Name)
-			// 	}
-			// }
 
 		// continue if selector
 		case *ast.SelectorExpr:
 			left := node.X.(*ast.Ident).Name
 			right := node.Sel.Name
 			fmt.Printf("composed relation: %s.%s\n", left, right)
-			return true
 		}
-		return false
 	})
 }
