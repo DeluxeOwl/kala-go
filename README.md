@@ -9,7 +9,20 @@ An authorization and policy engine written in go.
 - separate in modules
 - run every operation in a transaction
 - add some logging and replace instances of fmt.Println
-- add expression parsing
+- add expression parsing: paranthesis support, http calls
+  - Parser supports paranthesis by default
+  - `tr, _ := parser.ParseExpr("(reader | writer) & !parent_folder.reader")`
+  - add binary expr type in ent
+  - convert to breadth first search
+
+```
+[00] operation: &
+[00] operation: |
+[00] check relation: reader
+[00] check relation: writer
+[00] negation: !
+[00] composed relation: parent_folder.reader
+```
 
 # Example of config
 

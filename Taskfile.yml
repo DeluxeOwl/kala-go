@@ -11,6 +11,10 @@ tasks:
     cmds:
       - go mod tidy
       - reflex -g 'cmd/kala.go' -s go run ./cmd/kala.go
+  tree:
+    cmds:
+      - go mod tidy
+      - reflex -g 'tree/tree.go' -s go run ./tree/tree.go
   reflex:
     cmds:
       - reflex -d none -g 'ent/schema/*.go' -s task gen

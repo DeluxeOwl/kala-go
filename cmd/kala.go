@@ -663,7 +663,7 @@ func main() {
 	if err != nil {
 		fmt.Println(err)
 	}
-	fmt.Println("⟶\tCan steve read?", hasRead)
+	fmt.Println("⟶\tPermission:", hasRead)
 
 	// TEST: empty permissions
 	// tc, err = h.CreateTypeConfig(ctx,
