@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"go/ast"
 	"go/parser"
-	"go/token"
+	"time"
 )
 
 func CheckRelation(ctx context.Context, done chan bool, rel string) bool {
@@ -14,7 +14,8 @@ func CheckRelation(ctx context.Context, done chan bool, rel string) bool {
 		return false
 	}
 
-	fmt.Printf("checking rel: %s\n", rel)
+	// fmt.Printf("checking rel: %s\n", rel)
+	time.Sleep(time.Second)
 	return true
 }
 
@@ -113,7 +114,6 @@ func EvalBinaryExpr(ctx context.Context, done chan bool, expr *ast.Expr) bool {
 				select {
 				case isDone := <-done:
 					if isDone {
-						fmt.Println("cancel")
 						cancel()
 						return true
 					}
@@ -126,7 +126,6 @@ func EvalBinaryExpr(ctx context.Context, done chan bool, expr *ast.Expr) bool {
 				select {
 				case isDone := <-done:
 					if !isDone {
-						fmt.Println("cancel")
 						cancel()
 						return false
 					}
@@ -160,12 +159,24 @@ func StartEval(expr *ast.Expr) bool {
 
 }
 
-func main() {
-	fs := token.NewFileSet()
-	// tr, _ := parser.ParseExpr("reader & !writer")
+func ParsePermissionAndEvaluate(permValue string) (bool, error) {
+	// fs := token.NewFileSet()
+
+	tr, err := parser.ParseExpr(permValue)
+
 	// ast.Print(fs, tr)
 
-	// tr, _ := parser.ParseExpr("reader | writer | !parent_folder.reader")
+	if err != nil {
+		return false, fmt.Errorf("error when parsing expression: %w", err)
+	}
+	hasPerm := StartEval(&tr)
+
+	return hasPerm, nil
+}
+
+func main() {
+
+	// tr, _ := parser.ParseExpr("reader & !writer")
 	// ast.Print(fs, tr)
 
 	// tr, _ := parser.ParseExpr("!parent_folder.reader | reader | writer")
@@ -180,11 +191,24 @@ func main() {
 	// tr, _ := parser.ParseExpr("reader")
 	// ast.Print(fs, tr)
 
-	tr, _ := parser.ParseExpr("!reader")
-	ast.Print(fs, tr)
+	// tr, _ := parser.ParseExpr("!reader")
+	// ast.Print(fs, tr)
 
-	hasPerm := StartEval(&tr)
-	fmt.Println("has permission?", hasPerm)
-	// time.Sleep(5 * time.Second)
+	permValues := []string{
+		"reader & !writer",
+		"!parent_folder.reader | reader | writer",
+		"(reader | writer | tester) & !parent_folder.reader",
+		"reader & writer",
+		"reader",
+		"!reader",
+	}
+
+	for _, v := range permValues {
+		hasPerm, err := ParsePermissionAndEvaluate(v)
+		if err != nil {
+			fmt.Println(err)
+		}
+		fmt.Printf("has permission '%s'? %t\n", v, hasPerm)
+	}
 
 }
