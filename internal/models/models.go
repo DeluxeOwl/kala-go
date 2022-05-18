@@ -1,4 +1,4 @@
-package services
+package models
 
 import "github.com/DeluxeOwl/kala-go/ent"
 
