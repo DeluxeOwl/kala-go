@@ -1,49 +1,41 @@
-package eval
+package services
 
 import (
 	"context"
 	"errors"
+	"fmt"
 	"go/ast"
 	"go/parser"
-	"time"
+
+	"github.com/DeluxeOwl/kala-go/ent/relation"
+	"github.com/DeluxeOwl/kala-go/internal/models"
 )
 
 var ErrParsing = errors.New("error when parsing expression")
 
-func CheckRelation(ctx context.Context, rel string) bool {
-
-	if ctx.Err() != nil {
-		return false
-	}
-
-	// fmt.Printf("checking rel: %s\n", rel)
-	time.Sleep(time.Second)
-	return true
-}
-
-func EvalExpr(ctx context.Context, done chan bool, expr *ast.Expr) bool {
+func EvalExpr(ctx context.Context, done chan bool, expr *ast.Expr, pc *models.PermissionCheck, h *Handler) bool {
 	if ctx.Err() != nil {
 		return false
 	}
 
 	switch (*expr).(type) {
 	case *ast.ParenExpr:
-		return EvalParenExpr(ctx, done, expr)
+		return EvalParenExpr(ctx, done, expr, pc, h)
 	case *ast.SelectorExpr:
-		return EvalSelectorExpr(ctx, done, expr)
+		return EvalSelectorExpr(ctx, done, expr, pc, h)
 	case *ast.Ident:
-		return EvalIdent(ctx, done, expr)
+		return EvalIdent(ctx, done, expr, pc, h)
 	case *ast.UnaryExpr:
-		return EvalUnaryExpr(ctx, done, expr)
+		return EvalUnaryExpr(ctx, done, expr, pc, h)
 	case *ast.BinaryExpr:
-		return EvalBinaryExpr(ctx, done, expr)
+		return EvalBinaryExpr(ctx, done, expr, pc, h)
 	}
 
 	return false
 
 }
 
-func EvalParenExpr(ctx context.Context, done chan bool, expr *ast.Expr) bool {
+func EvalParenExpr(ctx context.Context, done chan bool, expr *ast.Expr, pc *models.PermissionCheck, h *Handler) bool {
 
 	if ctx.Err() != nil {
 		return false
@@ -51,38 +43,94 @@ func EvalParenExpr(ctx context.Context, done chan bool, expr *ast.Expr) bool {
 
 	switch n := (*expr).(type) {
 	case *ast.ParenExpr:
-		return EvalExpr(ctx, done, &n.X)
+		return EvalExpr(ctx, done, &n.X, pc, h)
 	}
 	return false
 }
 
-func EvalSelectorExpr(ctx context.Context, done chan bool, expr *ast.Expr) bool {
+func EvalSelectorExpr(ctx context.Context, done chan bool, expr *ast.Expr, pc *models.PermissionCheck, h *Handler) bool {
 	if ctx.Err() != nil {
 		return false
 	}
 	switch n := (*expr).(type) {
 	case *ast.SelectorExpr:
 		if ident, ok := n.X.(*ast.Ident); ok {
-			return CheckRelation(ctx, "!"+ident.Name+"."+n.Sel.Name)
+			// Get the relation, for this type of query
+			rel, err := pc.Perm.
+				QueryRelations().
+				Where(relation.NameEQ(ident.Name)).
+				QueryRelTypeconfigs().
+				QueryRelations().
+				Where(relation.NameEQ(n.Sel.Name)).
+				Only(ctx)
+
+			if err != nil {
+				fmt.Println(err)
+				return false
+			}
+			// Get all referenced subjects
+			subjects, err := pc.Perm.
+				QueryRelations().
+				Where(relation.NameEQ(ident.Name)).
+				QueryTuples().
+				QuerySubject().
+				All(ctx)
+
+			if err != nil {
+				fmt.Println(err)
+				return false
+			}
+
+			// TODO: goroutines
+			hasAnyRelPerm := false
+
+			for _, s := range subjects {
+				hasAnyRelPerm = hasAnyRelPerm || h.CheckRelation(ctx, &models.RelationCheck{
+					Subj: pc.Subj,
+					Rel:  rel,
+					Res:  s,
+				}, 0)
+
+				if hasAnyRelPerm {
+					return hasAnyRelPerm
+				}
+			}
+
+			return hasAnyRelPerm
 		}
 	}
 	return false
 }
 
-func EvalIdent(ctx context.Context, done chan bool, expr *ast.Expr) bool {
+func EvalIdent(ctx context.Context, done chan bool, expr *ast.Expr, pc *models.PermissionCheck, h *Handler) bool {
 	if ctx.Err() != nil {
 		return false
 	}
 
 	switch n := (*expr).(type) {
 	case *ast.Ident:
-		return CheckRelation(ctx, n.Name)
+
+		rel, err := pc.Perm.
+			QueryRelations().
+			Where(relation.NameEQ(n.Name)).
+			Only(ctx)
+
+		if err != nil {
+			fmt.Println(err)
+			return false
+		}
+
+		return h.CheckRelation(ctx, &models.RelationCheck{
+			Subj: pc.Subj,
+			Rel:  rel,
+			Res:  pc.Res,
+		}, 0)
 	}
 
 	return false
 }
 
-func EvalUnaryExpr(ctx context.Context, done chan bool, expr *ast.Expr) bool {
+func EvalUnaryExpr(ctx context.Context, done chan bool, expr *ast.Expr, pc *models.PermissionCheck, h *Handler) bool {
 
 	if ctx.Err() != nil {
 		return false
@@ -90,7 +138,7 @@ func EvalUnaryExpr(ctx context.Context, done chan bool, expr *ast.Expr) bool {
 
 	switch n := (*expr).(type) {
 	case *ast.UnaryExpr:
-		return !EvalExpr(ctx, done, &n.X)
+		return !EvalExpr(ctx, done, &n.X, pc, h)
 	}
 
 	return false
@@ -99,7 +147,7 @@ func EvalUnaryExpr(ctx context.Context, done chan bool, expr *ast.Expr) bool {
 // EvalBinaryExpr runs both sides of the binary tree concurrently
 // for a short circuit evaluation, if one branch in OR returns true, cancel all other goroutines
 // if one in AND returns false, cancel all other goroutines as well
-func EvalBinaryExpr(ctx context.Context, done chan bool, expr *ast.Expr) bool {
+func EvalBinaryExpr(ctx context.Context, done chan bool, expr *ast.Expr, pc *models.PermissionCheck, h *Handler) bool {
 
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
@@ -107,10 +155,10 @@ func EvalBinaryExpr(ctx context.Context, done chan bool, expr *ast.Expr) bool {
 	switch n := (*expr).(type) {
 	case *ast.BinaryExpr:
 		go func() {
-			done <- EvalExpr(ctx, done, &n.X)
+			done <- EvalExpr(ctx, done, &n.X, pc, h)
 		}()
 		go func() {
-			done <- EvalExpr(ctx, done, &n.Y)
+			done <- EvalExpr(ctx, done, &n.Y, pc, h)
 		}()
 
 		if n.Op.String() == "|" {
@@ -144,14 +192,14 @@ func EvalBinaryExpr(ctx context.Context, done chan bool, expr *ast.Expr) bool {
 	return false
 }
 
-func StartEval(expr *ast.Expr) bool {
+func StartEval(expr *ast.Expr, pc *models.PermissionCheck, h *Handler) bool {
 	ctx := context.Background()
 	done := make(chan bool, 2)
 
 	returned := make(chan bool)
 
 	go func() {
-		returned <- EvalExpr(ctx, done, expr)
+		returned <- EvalExpr(ctx, done, expr, pc, h)
 	}()
 
 	select {
@@ -163,7 +211,7 @@ func StartEval(expr *ast.Expr) bool {
 
 }
 
-func ParsePermissionAndEvaluate(permValue string) (bool, error) {
+func (h *Handler) ParsePermissionAndEvaluate(permValue string, pc *models.PermissionCheck) (bool, error) {
 	// fs := token.NewFileSet()
 
 	tr, err := parser.ParseExpr(permValue)
@@ -174,7 +222,7 @@ func ParsePermissionAndEvaluate(permValue string) (bool, error) {
 		return false, ErrParsing
 	}
 
-	hasPerm := StartEval(&tr)
+	hasPerm := StartEval(&tr, pc, h)
 
 	return hasPerm, nil
 }

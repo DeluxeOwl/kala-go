@@ -369,6 +369,10 @@ func (h *Handler) CreateTuple(ctx context.Context, tr *models.TupleReqRelation) 
 // TODO: add some depth, maybe add path taken (ident in a json and print graph?), goroutines
 func (h *Handler) CheckRelation(ctx context.Context, rc *models.RelationCheck, depth int) bool {
 
+	if ctx.Err() != nil {
+		return false
+	}
+
 	fmt.Println(strings.Repeat("\t", depth+1)+"• Checking relation:", rc)
 
 	subjTypeString := rc.Subj.QueryType().Select(typeconfig.FieldName).StringX(ctx)
@@ -378,6 +382,10 @@ func (h *Handler) CheckRelation(ctx context.Context, rc *models.RelationCheck, d
 
 		if rc.Rel.Value != subjTypeString {
 			fmt.Println("\t\t Type doesnt match with subject")
+			return false
+		}
+
+		if ctx.Err() != nil {
 			return false
 		}
 
@@ -403,6 +411,9 @@ func (h *Handler) CheckRelation(ctx context.Context, rc *models.RelationCheck, d
 	} else {
 		for _, referencedType := range strings.Split(rc.Rel.Value, refValueDelim) {
 
+			if ctx.Err() != nil {
+				return false
+			}
 			// if direct type
 			if referencedType == subjTypeString {
 				tupleExists, err := h.Client.Tuple.
@@ -446,6 +457,10 @@ func (h *Handler) CheckRelation(ctx context.Context, rc *models.RelationCheck, d
 					rc.Subj.Name,
 					refTypeRelation)
 
+				if ctx.Err() != nil {
+					return false
+				}
+
 				refTypeRelationObject, err := h.Client.TypeConfig.
 					Query().
 					Where(typeconfig.NameEQ(refTypeName)).
@@ -455,6 +470,10 @@ func (h *Handler) CheckRelation(ctx context.Context, rc *models.RelationCheck, d
 
 				if err != nil {
 					fmt.Println(err)
+					return false
+				}
+
+				if ctx.Err() != nil {
 					return false
 				}
 
@@ -470,6 +489,10 @@ func (h *Handler) CheckRelation(ctx context.Context, rc *models.RelationCheck, d
 
 				if err != nil {
 					fmt.Println(err)
+					return false
+				}
+
+				if ctx.Err() != nil {
 					return false
 				}
 
@@ -493,17 +516,6 @@ func (h *Handler) CheckRelation(ctx context.Context, rc *models.RelationCheck, d
 	return false
 }
 
-func (h *Handler) Subject(ctx context.Context, tfName string, name string) (*ent.Subject, error) {
-	subj, err := h.Client.Subject.
-		Query().
-		Where(
-			subject.And(
-				subject.NameEQ(name),
-				subject.HasTypeWith(typeconfig.NameEQ(tfName)))).
-		Only(ctx)
-	return subj, err
-}
-
 func (h *Handler) CheckPermission(ctx context.Context, tr *models.TupleReqPermission) (bool, error) {
 	fmt.Printf("====> Does `%s:%s` have `%s` permission on `%s:%s`?\n",
 		tr.Subject.TypeConfigName,
@@ -512,7 +524,7 @@ func (h *Handler) CheckPermission(ctx context.Context, tr *models.TupleReqPermis
 		tr.Resource.TypeConfigName,
 		tr.Resource.SubjectName)
 
-	subj, err := h.Subject(ctx, tr.Subject.TypeConfigName, tr.Subject.SubjectName)
+	subj, err := h.subject(ctx, tr.Subject.TypeConfigName, tr.Subject.SubjectName)
 
 	if err != nil {
 		return false, fmt.Errorf("error when querying subject: %w", err)
@@ -520,7 +532,7 @@ func (h *Handler) CheckPermission(ctx context.Context, tr *models.TupleReqPermis
 
 	fmt.Println("Checking if subject exists:", subj)
 
-	res, err := h.Subject(ctx, tr.Resource.TypeConfigName, tr.Resource.SubjectName)
+	res, err := h.subject(ctx, tr.Resource.TypeConfigName, tr.Resource.SubjectName)
 
 	if err != nil {
 		return false, fmt.Errorf("error when querying resource: %w", err)
@@ -543,83 +555,101 @@ func (h *Handler) CheckPermission(ctx context.Context, tr *models.TupleReqPermis
 	fmt.Println("Getting relations for perm:", perm)
 
 	// Getting the result from the check relations
-	hasPerm := false
 
-	// TODO: refactor this in its own function, same one as in CreateTypeConfig
-	// or you should probably parse it
-	// probably shouldnt return on all errors
-	for _, referencedRelation := range permDelim.Split(perm.Value, -1) {
-		if referencedRelation == "" {
-			continue
-		}
-
-		// check direct relations and indirect relations
-		if !strings.Contains(referencedRelation, parentRelDelim) {
-			rel, err := permQuery.
-				QueryRelations().
-				Where(relation.NameEQ(referencedRelation)).
-				Only(ctx)
-
-			if err != nil {
-				return false, fmt.Errorf("error when querying relation: %w", err)
-			}
-
-			hasPerm = hasPerm || h.CheckRelation(ctx, &models.RelationCheck{
-				Subj: subj,
-				Rel:  rel,
-				Res:  res,
-			}, 0)
-
-			if hasPerm {
-				return hasPerm, nil
-			}
-
-		} else {
-			s := strings.Split(referencedRelation, parentRelDelim)
-
-			refParent := s[0]
-			refParentRel := s[1]
-
-			// Get the relation, for this type of query
-			// it can only be one anyway
-			r, err := perm.QueryRelations().
-				Where(relation.NameEQ(refParent)).
-				QueryRelTypeconfigs().
-				QueryRelations().
-				Where(relation.NameEQ(refParentRel)).
-				Only(ctx)
-
-			if err != nil {
-				return false, fmt.Errorf("error when querying relation: %w", err)
-			}
-
-			// Get all referenced subjects
-			subjects, err := perm.QueryRelations().
-				Where(relation.NameEQ(refParent)).
-				QueryTuples().
-				QuerySubject().
-				All(ctx)
-
-			// if it doesn't have subjects, just move on
-			if err != nil {
-				fmt.Println(err)
-				continue
-			}
-
-			for _, s := range subjects {
-				hasPerm = hasPerm || h.CheckRelation(ctx, &models.RelationCheck{
-					Subj: subj,
-					Rel:  r,
-					Res:  s,
-				}, 0)
-
-				if hasPerm {
-					return hasPerm, nil
-				}
-			}
-		}
-
+	hasPerm, err := h.ParsePermissionAndEvaluate(perm.Value, &models.PermissionCheck{
+		Subj: subj,
+		Perm: perm,
+		Res:  res,
+	})
+	if err != nil {
+		return false, fmt.Errorf("error when parsing and evaluation permissions: %w", err)
 	}
 
+	// for _, referencedRelation := range permDelim.Split(perm.Value, -1) {
+	// 	if referencedRelation == "" {
+	// 		continue
+	// 	}
+
+	// 	// check direct relations and indirect relations
+	// if ident
+	// 	if !strings.Contains(referencedRelation, parentRelDelim) {
+	// 		rel, err := permQuery.
+	// 			QueryRelations().
+	// 			Where(relation.NameEQ(referencedRelation)).
+	// 			Only(ctx)
+
+	// 		if err != nil {
+	// 			return false, fmt.Errorf("error when querying relation: %w", err)
+	// 		}
+
+	// 		hasPerm = hasPerm || h.CheckRelation(ctx, &models.RelationCheck{
+	// 			Subj: subj,
+	// 			Rel:  rel,
+	// 			Res:  res,
+	// 		}, 0)
+
+	// 		if hasPerm {
+	// 			return hasPerm, nil
+	// 		}
+
+	// 	} else {
+	// if selector expr
+	// 		s := strings.Split(referencedRelation, parentRelDelim)
+
+	// 		refParent := s[0]
+	// 		refParentRel := s[1]
+
+	// 		// Get the relation, for this type of query
+	// 		// it can only be one anyway
+	// 		r, err := perm.QueryRelations().
+	// 			Where(relation.NameEQ(refParent)).
+	// 			QueryRelTypeconfigs().
+	// 			QueryRelations().
+	// 			Where(relation.NameEQ(refParentRel)).
+	// 			Only(ctx)
+
+	// 		if err != nil {
+	// 			return false, fmt.Errorf("error when querying relation: %w", err)
+	// 		}
+
+	// 		// Get all referenced subjects
+	// 		subjects, err := perm.QueryRelations().
+	// 			Where(relation.NameEQ(refParent)).
+	// 			QueryTuples().
+	// 			QuerySubject().
+	// 			All(ctx)
+
+	// 		// if it doesn't have subjects, just move on
+	// 		if err != nil {
+	// 			fmt.Println(err)
+	// 			continue
+	// 		}
+
+	// 		for _, s := range subjects {
+	// 			hasPerm = hasPerm || h.CheckRelation(ctx, &models.RelationCheck{
+	// 				Subj: subj,
+	// 				Rel:  r,
+	// 				Res:  s,
+	// 			}, 0)
+
+	// 			if hasPerm {
+	// 				return hasPerm, nil
+	// 			}
+	// 		}
+	// 	}
+
+	// }
+
 	return hasPerm, nil
+}
+
+func (h *Handler) subject(ctx context.Context, tfName string, name string) (*ent.Subject, error) {
+	subj, err := h.Client.Subject.
+		Query().
+		Where(
+			subject.And(
+				subject.NameEQ(name),
+				subject.HasTypeWith(typeconfig.NameEQ(tfName)))).
+		Only(ctx)
+	return subj, err
 }

@@ -63,7 +63,7 @@ func main() {
 			Permissions: map[string]string{
 				"read":           "reader | writer | parent_folder.reader",
 				"read_and_write": "reader & writer",
-				"read_only":      "reader | !writer",
+				"read_only":      "reader & !writer",
 			},
 		})
 	fmt.Println(tc, err)
@@ -203,9 +203,9 @@ func main() {
 	hasRead, err := h.CheckPermission(ctx, &models.TupleReqPermission{
 		Subject: &models.SubjectReq{
 			TypeConfigName: "user",
-			SubjectName:    "steve",
+			SubjectName:    "anna",
 		},
-		Permission: "read",
+		Permission: "read_only",
 		Resource: &models.SubjectReq{
 			TypeConfigName: "document",
 			SubjectName:    "report.csv",

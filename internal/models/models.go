@@ -25,6 +25,12 @@ type RelationCheck struct {
 	Res  *ent.Subject
 }
 
+type PermissionCheck struct {
+	Subj *ent.Subject
+	Perm *ent.Permission
+	Res  *ent.Subject
+}
+
 type TupleReqPermission struct {
 	Subject    *SubjectReq
 	Permission string
