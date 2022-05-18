@@ -7,101 +7,87 @@ import (
 	"go/token"
 )
 
-func shouldStop(node ast.Node) bool {
+func CheckRelation(rel string) bool {
+	fmt.Println("checking:", rel)
+	return true
+}
 
-	switch node.(type) {
+func EvalExpr(expr *ast.Expr) bool {
+
+	switch (*expr).(type) {
+	case *ast.ParenExpr:
+		return EvalParenExpr(expr)
 	case *ast.SelectorExpr:
-		return true
+		return EvalSelectorExpr(expr)
+	case *ast.Ident:
+		return EvalIdent(expr)
+	case *ast.UnaryExpr:
+		return EvalUnaryExpr(expr)
+	case *ast.BinaryExpr:
+		return EvalBinaryExpr(expr)
 	}
-
 	return false
 }
 
-func Walk(node ast.Node, f func(ast.Node)) {
+func EvalParenExpr(expr *ast.Expr) bool {
+	switch n := (*expr).(type) {
+	case *ast.ParenExpr:
+		return EvalExpr(&n.X)
+	}
+	return false
+}
+func EvalSelectorExpr(expr *ast.Expr) bool {
+	switch n := (*expr).(type) {
+	case *ast.SelectorExpr:
+		if ident, ok := n.X.(*ast.Ident); ok {
+			return CheckRelation(ident.Name + "." + n.Sel.Name)
+		}
+	}
+	return false
+}
 
-	queue := []ast.Node{node}
+func EvalIdent(expr *ast.Expr) bool {
+	switch n := (*expr).(type) {
+	case *ast.Ident:
+		return CheckRelation(n.Name)
+	}
+	return false
+}
 
-	for len(queue) > 0 {
+func EvalUnaryExpr(expr *ast.Expr) bool {
+	switch n := (*expr).(type) {
+	case *ast.UnaryExpr:
+		return !EvalExpr(&n.X)
+	}
+	return false
+}
 
-		current := queue[0]
-		queue = queue[1:]
-
-		// dont process children if signal is given
-		f(current)
-
-		if !shouldStop(current) {
-			switch n := current.(type) {
-
-			// Expressions
-			case *ast.BadExpr, *ast.Ident, *ast.BasicLit:
-				// nothing to do
-
-			case *ast.Ellipsis:
-				if n.Elt != nil {
-					queue = append(queue, n.Elt)
-				}
-
-			case *ast.FuncLit:
-				queue = append(queue, n.Type)
-				queue = append(queue, n.Body)
-
-			case *ast.ParenExpr:
-				queue = append(queue, n.X)
-
-			case *ast.SelectorExpr:
-				queue = append(queue, n.X)
-				queue = append(queue, n.Sel)
-
-			case *ast.CallExpr:
-				queue = append(queue, n.Fun)
-				for _, x := range n.Args {
-					queue = append(queue, x)
-				}
-
-			case *ast.UnaryExpr:
-				queue = append(queue, n.X)
-
-			case *ast.BinaryExpr:
-				queue = append(queue, n.X)
-				queue = append(queue, n.Y)
-
-			// Statements
-			case *ast.BadStmt:
-				// nothing to do
-
-			case *ast.DeclStmt:
-				queue = append(queue, n.Decl)
-
-			case *ast.EmptyStmt:
-				// nothing to do
-
-			case *ast.ExprStmt:
-				queue = append(queue, n.X)
-
-			default:
-				panic(fmt.Sprintf("ast.Walk: unexpected node type %T", n))
-			}
+// TODO: use values instead?
+func EvalBinaryExpr(expr *ast.Expr) bool {
+	switch n := (*expr).(type) {
+	case *ast.BinaryExpr:
+		if n.Op.String() == "|" {
+			return EvalExpr(&n.X) || EvalExpr(&n.Y)
+		} else if n.Op.String() == "&" {
+			return EvalExpr(&n.X) && EvalExpr(&n.Y)
 		}
 
 	}
-}
-
-func Inspect(node ast.Node, f func(ast.Node)) {
-	Walk(node, f)
+	return false
 }
 
 func main() {
 	fs := token.NewFileSet()
-	tr, _ := parser.ParseExpr("reader & !writer")
-	ast.Print(fs, tr)
-
-	// tr, _ := parser.ParseExpr("reader | writer | !parent_folder.reader")
+	// tr, _ := parser.ParseExpr("reader & !writer")
 	// ast.Print(fs, tr)
+
+	tr, _ := parser.ParseExpr("reader | writer | !parent_folder.reader")
+	ast.Print(fs, tr)
 
 	// tr, _ := parser.ParseExpr("!parent_folder.reader | reader | writer")
 	// ast.Print(fs, tr)
 
-	// tr, _ := parser.ParseExpr("(reader | writer) & !parent_folder.reader")
+	// tr, _ := parser.ParseExpr("(reader | writer | tester) & !parent_folder.reader")
 	// ast.Print(fs, tr)
 
 	// tr, _ := parser.ParseExpr("reader & writer")
@@ -113,31 +99,7 @@ func main() {
 	// tr, _ := parser.ParseExpr("!reader")
 	// ast.Print(fs, tr)
 
-	Inspect(tr, func(n ast.Node) {
-		var s string
+	hasPerm := EvalExpr(&tr)
+	fmt.Println(hasPerm)
 
-		switch node := n.(type) {
-		case *ast.BinaryExpr:
-			s = node.Op.String()
-			if s != "" {
-				fmt.Printf("operation: %s\n", s)
-			}
-		case *ast.Ident:
-			s = node.Name
-			if s != "" {
-				fmt.Printf("check relation: %s\n", s)
-			}
-		case *ast.UnaryExpr:
-			s = node.Op.String()
-			if s != "" {
-				fmt.Printf("negation: %s \n", s)
-			}
-
-		// continue if selector
-		case *ast.SelectorExpr:
-			left := node.X.(*ast.Ident).Name
-			right := node.Sel.Name
-			fmt.Printf("composed relation: %s.%s\n", left, right)
-		}
-	})
 }
