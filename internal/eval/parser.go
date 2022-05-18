@@ -1,14 +1,16 @@
-package main
+package eval
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"go/ast"
 	"go/parser"
 	"time"
 )
 
-func CheckRelation(ctx context.Context, done chan bool, rel string) bool {
+var ErrParsing = errors.New("error when parsing expression")
+
+func CheckRelation(ctx context.Context, rel string) bool {
 
 	if ctx.Err() != nil {
 		return false
@@ -20,7 +22,6 @@ func CheckRelation(ctx context.Context, done chan bool, rel string) bool {
 }
 
 func EvalExpr(ctx context.Context, done chan bool, expr *ast.Expr) bool {
-
 	if ctx.Err() != nil {
 		return false
 	}
@@ -54,6 +55,7 @@ func EvalParenExpr(ctx context.Context, done chan bool, expr *ast.Expr) bool {
 	}
 	return false
 }
+
 func EvalSelectorExpr(ctx context.Context, done chan bool, expr *ast.Expr) bool {
 	if ctx.Err() != nil {
 		return false
@@ -61,7 +63,7 @@ func EvalSelectorExpr(ctx context.Context, done chan bool, expr *ast.Expr) bool 
 	switch n := (*expr).(type) {
 	case *ast.SelectorExpr:
 		if ident, ok := n.X.(*ast.Ident); ok {
-			return CheckRelation(ctx, done, "!"+ident.Name+"."+n.Sel.Name)
+			return CheckRelation(ctx, "!"+ident.Name+"."+n.Sel.Name)
 		}
 	}
 	return false
@@ -74,7 +76,7 @@ func EvalIdent(ctx context.Context, done chan bool, expr *ast.Expr) bool {
 
 	switch n := (*expr).(type) {
 	case *ast.Ident:
-		return CheckRelation(ctx, done, n.Name)
+		return CheckRelation(ctx, n.Name)
 	}
 
 	return false
@@ -94,7 +96,9 @@ func EvalUnaryExpr(ctx context.Context, done chan bool, expr *ast.Expr) bool {
 	return false
 }
 
-// TODO: use values instead?
+// EvalBinaryExpr runs both sides of the binary tree concurrently
+// for a short circuit evaluation, if one branch in OR returns true, cancel all other goroutines
+// if one in AND returns false, cancel all other goroutines as well
 func EvalBinaryExpr(ctx context.Context, done chan bool, expr *ast.Expr) bool {
 
 	ctx, cancel := context.WithCancel(ctx)
@@ -167,48 +171,49 @@ func ParsePermissionAndEvaluate(permValue string) (bool, error) {
 	// ast.Print(fs, tr)
 
 	if err != nil {
-		return false, fmt.Errorf("error when parsing expression: %w", err)
+		return false, ErrParsing
 	}
+
 	hasPerm := StartEval(&tr)
 
 	return hasPerm, nil
 }
 
-func main() {
+// func main() {
 
-	// tr, _ := parser.ParseExpr("reader & !writer")
-	// ast.Print(fs, tr)
+// 	// tr, _ := parser.ParseExpr("reader & !writer")
+// 	// ast.Print(fs, tr)
 
-	// tr, _ := parser.ParseExpr("!parent_folder.reader | reader | writer")
-	// ast.Print(fs, tr)
+// 	// tr, _ := parser.ParseExpr("!parent_folder.reader | reader | writer")
+// 	// ast.Print(fs, tr)
 
-	// tr, _ := parser.ParseExpr("(reader | writer | tester) & !parent_folder.reader")
-	// ast.Print(fs, tr)
+// 	// tr, _ := parser.ParseExpr("(reader | writer | tester) & !parent_folder.reader")
+// 	// ast.Print(fs, tr)
 
-	// tr, _ := parser.ParseExpr("reader & writer")
-	// ast.Print(fs, tr)
+// 	// tr, _ := parser.ParseExpr("reader & writer")
+// 	// ast.Print(fs, tr)
 
-	// tr, _ := parser.ParseExpr("reader")
-	// ast.Print(fs, tr)
+// 	// tr, _ := parser.ParseExpr("reader")
+// 	// ast.Print(fs, tr)
 
-	// tr, _ := parser.ParseExpr("!reader")
-	// ast.Print(fs, tr)
+// 	// tr, _ := parser.ParseExpr("!reader")
+// 	// ast.Print(fs, tr)
 
-	permValues := []string{
-		"reader & !writer",
-		"!parent_folder.reader | reader | writer",
-		"(reader | writer | tester) & !parent_folder.reader",
-		"reader & writer",
-		"reader",
-		"!reader",
-	}
+// 	permValues := []string{
+// 		"reader & !writer",
+// 		"!parent_folder.reader | reader | writer",
+// 		"(reader | writer | tester) & !parent_folder.reader",
+// 		"reader & writer",
+// 		"reader",
+// 		"!reader",
+// 	}
 
-	for _, v := range permValues {
-		hasPerm, err := ParsePermissionAndEvaluate(v)
-		if err != nil {
-			fmt.Println(err)
-		}
-		fmt.Printf("has permission '%s'? %t\n", v, hasPerm)
-	}
+// 	for _, v := range permValues {
+// 		hasPerm, err := ParsePermissionAndEvaluate(v)
+// 		if err != nil {
+// 			fmt.Println(err)
+// 		}
+// 		fmt.Printf("has permission '%s'? %t\n", v, hasPerm)
+// 	}
 
-}
+// }

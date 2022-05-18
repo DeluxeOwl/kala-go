@@ -1,10 +1,10 @@
-package main
+package services
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
-	"regexp"
 	"strings"
 
 	"github.com/DeluxeOwl/kala-go/ent"
@@ -13,85 +13,9 @@ import (
 	"github.com/DeluxeOwl/kala-go/ent/subject"
 	"github.com/DeluxeOwl/kala-go/ent/tuple"
 	"github.com/DeluxeOwl/kala-go/ent/typeconfig"
-	_ "github.com/mattn/go-sqlite3"
-	"github.com/pkg/errors"
 	"golang.org/x/exp/maps"
 	"golang.org/x/exp/slices"
 )
-
-func (h *Handler) WithTx(ctx context.Context, fn func(tx *ent.Tx) error) error {
-	tx, err := h.client.Tx(ctx)
-	if err != nil {
-		return err
-	}
-	defer func() {
-		if v := recover(); v != nil {
-			tx.Rollback()
-			panic(v)
-		}
-	}()
-	if err := fn(tx); err != nil {
-		if rerr := tx.Rollback(); rerr != nil {
-			err = errors.Wrapf(err, "rolling back transaction: %v", rerr)
-		}
-		return err
-	}
-	if err := tx.Commit(); err != nil {
-		return errors.Wrapf(err, "committing transaction: %v", err)
-	}
-	return nil
-}
-
-// TODO: separate these methods in packages
-func (h *Handler) Do(ctx context.Context) {
-	// WithTx helper.
-	if err := h.WithTx(ctx, func(tx *ent.Tx) error {
-		h := Handler{
-			client: tx.Client(),
-		}
-		tuple, err := h.CreateTuple(ctx, &TupleReqRelation{
-			Subject: &SubjectReq{
-				TypeConfigName: "user",
-				SubjectName:    "anna",
-			},
-			Relation: "reader",
-			Resource: &SubjectReq{
-				TypeConfigName: "document",
-				SubjectName:    "secret",
-			},
-		})
-		fmt.Println(tuple, err)
-		return err
-	}); err != nil {
-		fmt.Println(err)
-	}
-}
-
-type TypeConfigReq struct {
-	Name        string
-	Relations   map[string]string
-	Permissions map[string]string
-}
-
-// valid regex for relations, permissions and type names
-var regexPropertyName = regexp.MustCompile(`^[a-zA-Z_]{1,64}$`)
-var regexTypeName = regexp.MustCompile(`^[a-zA-Z_]{1,64}$`)
-
-// valid regexes for relation, permission values
-var regexRelValue = regexp.MustCompile(`^[a-zA-Z_]{1,64}(#[a-zA-Z_]{1,64})?( \| [a-zA-Z_]{1,64}(#[a-zA-Z_]{1,64})?)*$`)
-var regexPermValue = regexp.MustCompile(`^((!)?[a-zA-Z_]{1,64}(\.[a-zA-Z_]{1,64})?)((( \| )|( & ))((!)?[a-zA-Z_]{1,64}(\.[a-zA-Z_]{1,64})?))*$`)
-
-// delimiter for the value of a relation
-var refValueDelim = " | "
-
-// delimiter for a subrelation
-var refSubrelationDelim = "#"
-
-// delimiter for parent relation in permission
-var parentRelDelim = "."
-
-// delimiter for permissions
-var permDelim = regexp.MustCompile(`(( \| )|( & )(!)?)|!`)
 
 // TODO: make the errors as variables?
 func (h *Handler) CreateTypeConfig(ctx context.Context, tcInput *TypeConfigReq) (*ent.TypeConfig, error) {
@@ -321,13 +245,6 @@ func (h *Handler) CreateTypeConfig(ctx context.Context, tcInput *TypeConfigReq) 
 	return tc, nil
 }
 
-var regexSubjName = regexp.MustCompile(`^[a-zA-Z0-9\._\/-]{1,64}$`)
-
-type SubjectReq struct {
-	TypeConfigName string
-	SubjectName    string
-}
-
 func (h *Handler) CreateSubject(ctx context.Context, s *SubjectReq) (*ent.Subject, error) {
 
 	if !regexSubjName.MatchString(s.SubjectName) {
@@ -361,12 +278,6 @@ func (h *Handler) CreateSubject(ctx context.Context, s *SubjectReq) (*ent.Subjec
 	}
 
 	return subj, nil
-}
-
-type TupleReqRelation struct {
-	Subject  *SubjectReq
-	Relation string
-	Resource *SubjectReq
 }
 
 // TODO handle group:* viewer on document
@@ -452,251 +363,6 @@ func (h *Handler) CreateTuple(ctx context.Context, tr *TupleReqRelation) (*ent.T
 	}
 
 	return tuple, nil
-}
-
-type Handler struct {
-	// the ent client
-	client *ent.Client
-}
-
-func main() {
-
-	// TODO: handler struct
-	client, err := ent.Open("sqlite3", "file:ent?mode=memory&cache=shared&_fk=1")
-	if err != nil {
-		log.Fatalf("failed opening connection to sqlite: %v", err)
-	}
-	defer client.Close()
-	// Run the auto migration tool.
-	if err := client.Schema.Create(context.Background()); err != nil {
-		log.Fatalf("failed creating schema resources: %v", err)
-	}
-	ctx := context.Background()
-
-	h := Handler{
-		client: client,
-	}
-
-	tc, err := h.CreateTypeConfig(ctx,
-		&TypeConfigReq{Name: "user"},
-	)
-	fmt.Println(tc, err)
-
-	tc, err = h.CreateTypeConfig(ctx,
-		&TypeConfigReq{
-			Name: "group",
-			Relations: map[string]string{
-				"member": "user",
-			},
-		})
-	fmt.Println(tc, err)
-
-	tc, err = h.CreateTypeConfig(ctx,
-		&TypeConfigReq{
-			Name: "folder",
-			Relations: map[string]string{
-				"reader": "user | group#member",
-			},
-		})
-	fmt.Println(tc, err)
-
-	tc, err = h.CreateTypeConfig(ctx,
-		&TypeConfigReq{
-			Name: "document",
-			Relations: map[string]string{
-				"parent_folder": "folder",
-				"writer":        "user",
-				"reader":        "user",
-			},
-			Permissions: map[string]string{
-				"read":           "reader | writer | parent_folder.reader",
-				"read_and_write": "reader & writer",
-				"read_only":      "reader | !writer",
-			},
-		})
-	fmt.Println(tc, err)
-
-	subjects := []SubjectReq{
-		{
-			TypeConfigName: "document",
-			SubjectName:    "report.csv",
-		},
-		{
-			TypeConfigName: "user",
-			SubjectName:    "anna",
-		},
-		{
-			TypeConfigName: "user",
-			SubjectName:    "john",
-		},
-		{
-			TypeConfigName: "user",
-			SubjectName:    "steve",
-		},
-		{
-			TypeConfigName: "folder",
-			SubjectName:    "secret_folder",
-		},
-		{
-			TypeConfigName: "group",
-			SubjectName:    "dev",
-		},
-		{
-			TypeConfigName: "group",
-			SubjectName:    "test_group",
-		},
-	}
-
-	for _, v := range subjects {
-		subj, err := h.CreateSubject(ctx, &v)
-		fmt.Println(subj, err)
-	}
-
-	tuples := []TupleReqRelation{
-		{
-			Subject: &SubjectReq{
-				TypeConfigName: "user",
-				SubjectName:    "anna",
-			},
-			Relation: "reader",
-			Resource: &SubjectReq{
-				TypeConfigName: "document",
-				SubjectName:    "report.csv",
-			},
-		},
-		{
-			Subject: &SubjectReq{
-				TypeConfigName: "user",
-				SubjectName:    "anna",
-			},
-			Relation: "writer",
-			Resource: &SubjectReq{
-				TypeConfigName: "document",
-				SubjectName:    "report.csv",
-			},
-		},
-		{
-			Subject: &SubjectReq{
-				TypeConfigName: "folder",
-				SubjectName:    "secret_folder",
-			},
-			Relation: "parent_folder",
-			Resource: &SubjectReq{
-				TypeConfigName: "document",
-				SubjectName:    "report.csv",
-			},
-		},
-		{
-			Subject: &SubjectReq{
-				TypeConfigName: "user",
-				SubjectName:    "john",
-			},
-			Relation: "reader",
-			Resource: &SubjectReq{
-				TypeConfigName: "folder",
-				SubjectName:    "secret_folder",
-			},
-		},
-		{
-			Subject: &SubjectReq{
-				TypeConfigName: "user",
-				SubjectName:    "john",
-			},
-			Relation: "member",
-			Resource: &SubjectReq{
-				TypeConfigName: "group",
-				SubjectName:    "dev",
-			},
-		},
-		{
-			Subject: &SubjectReq{
-				TypeConfigName: "group",
-				SubjectName:    "dev#member",
-			},
-			Relation: "reader",
-			Resource: &SubjectReq{
-				TypeConfigName: "folder",
-				SubjectName:    "secret_folder",
-			},
-		},
-		{
-			Subject: &SubjectReq{
-				TypeConfigName: "group",
-				SubjectName:    "test_group#member",
-			},
-			Relation: "reader",
-			Resource: &SubjectReq{
-				TypeConfigName: "folder",
-				SubjectName:    "secret_folder",
-			},
-		},
-		{
-			Subject: &SubjectReq{
-				TypeConfigName: "user",
-				SubjectName:    "steve",
-			},
-			Relation: "member",
-			Resource: &SubjectReq{
-				TypeConfigName: "group",
-				SubjectName:    "dev",
-			},
-		},
-	}
-
-	for _, v := range tuples {
-		tuple, err := h.CreateTuple(ctx, &v)
-		fmt.Println(tuple, err)
-	}
-
-	// h.Do(ctx)
-
-	hasRead, err := h.CheckPermission(ctx, &TupleReqPermission{
-		Subject: &SubjectReq{
-			TypeConfigName: "user",
-			SubjectName:    "steve",
-		},
-		Permission: "read",
-		Resource: &SubjectReq{
-			TypeConfigName: "document",
-			SubjectName:    "report.csv",
-		},
-	})
-	if err != nil {
-		fmt.Println(err)
-	}
-	fmt.Println("⟶\tPermission:", hasRead)
-
-	// TEST: empty permissions
-	// tc, err = h.CreateTypeConfig(ctx,
-	// 	&TypeConfig{
-	// 		Name: "test",
-	// 		Permissions: map[string]string{
-	// 			"read":           "reader | writer | parent_folder.reader",
-	// 			"read_and_write": "reader & writer",
-	// 			"read_only":      "reader & !writer",
-	// 		},
-	// 	})
-	// fmt.Println(tc, err)
-
-	// reader | writer | parent_folder.reader
-	// reader & writer
-	// reader | writer
-	// reader | !writer
-	// !writer
-	// reader
-	// reader & writer | !tester
-	// !tester & reader | writer
-
-	// reader |
-	// !writer |
-	// reader &
-	// writer & reader | !
-}
-
-type RelationCheck struct {
-	Subj *ent.Subject
-	Rel  *ent.Relation
-	Res  *ent.Subject
 }
 
 // TODO: add some depth, maybe add path taken (ident in a json and print graph?), goroutines
@@ -835,12 +501,6 @@ func (h *Handler) Subject(ctx context.Context, tfName string, name string) (*ent
 				subject.HasTypeWith(typeconfig.NameEQ(tfName)))).
 		Only(ctx)
 	return subj, err
-}
-
-type TupleReqPermission struct {
-	Subject    *SubjectReq
-	Permission string
-	Resource   *SubjectReq
 }
 
 func (h *Handler) CheckPermission(ctx context.Context, tr *TupleReqPermission) (bool, error) {
