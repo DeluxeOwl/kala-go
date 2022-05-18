@@ -8,110 +8,89 @@ import (
 	"go/token"
 )
 
-func CheckRelation(rel string) bool {
-	fmt.Println("checking:", rel)
+func CheckRelation(ctx context.Context, done chan bool, rel string) bool {
+
+	if ctx.Err() != nil {
+		return false
+	}
+
+	fmt.Printf("checking rel: %s\n", rel)
 	return true
 }
 
 func EvalExpr(ctx context.Context, done chan bool, expr *ast.Expr) bool {
 
-	returned := make(chan bool)
-
-	go func() {
-		switch (*expr).(type) {
-		case *ast.ParenExpr:
-			returned <- EvalParenExpr(ctx, done, expr)
-		case *ast.SelectorExpr:
-			returned <- EvalSelectorExpr(ctx, done, expr)
-		case *ast.Ident:
-			returned <- EvalIdent(ctx, done, expr)
-		case *ast.UnaryExpr:
-			returned <- EvalUnaryExpr(ctx, done, expr)
-		case *ast.BinaryExpr:
-			returned <- EvalBinaryExpr(ctx, done, expr)
-		}
-	}()
-
-	select {
-	case <-ctx.Done():
+	if ctx.Err() != nil {
 		return false
-	case returnValue := <-returned:
-		return returnValue
 	}
+
+	switch (*expr).(type) {
+	case *ast.ParenExpr:
+		return EvalParenExpr(ctx, done, expr)
+	case *ast.SelectorExpr:
+		return EvalSelectorExpr(ctx, done, expr)
+	case *ast.Ident:
+		return EvalIdent(ctx, done, expr)
+	case *ast.UnaryExpr:
+		return EvalUnaryExpr(ctx, done, expr)
+	case *ast.BinaryExpr:
+		return EvalBinaryExpr(ctx, done, expr)
+	}
+
+	return false
 
 }
 
 func EvalParenExpr(ctx context.Context, done chan bool, expr *ast.Expr) bool {
-	returned := make(chan bool)
-	go func() {
-		switch n := (*expr).(type) {
-		case *ast.ParenExpr:
-			returned <- EvalExpr(ctx, done, &n.X)
-		}
-	}()
-	select {
-	case <-ctx.Done():
-		return false
-	case returnValue := <-returned:
-		return returnValue
 
+	if ctx.Err() != nil {
+		return false
 	}
+
+	switch n := (*expr).(type) {
+	case *ast.ParenExpr:
+		return EvalExpr(ctx, done, &n.X)
+	}
+	return false
 }
 func EvalSelectorExpr(ctx context.Context, done chan bool, expr *ast.Expr) bool {
-	returned := make(chan bool)
-	go func() {
-		switch n := (*expr).(type) {
-		case *ast.SelectorExpr:
-			if ident, ok := n.X.(*ast.Ident); ok {
-				returned <- CheckRelation("!" + ident.Name + "." + n.Sel.Name)
-			}
-		}
-	}()
-
-	select {
-	case <-ctx.Done():
+	if ctx.Err() != nil {
 		return false
-	case returnValue := <-returned:
-		return returnValue
-
 	}
+	switch n := (*expr).(type) {
+	case *ast.SelectorExpr:
+		if ident, ok := n.X.(*ast.Ident); ok {
+			return CheckRelation(ctx, done, "!"+ident.Name+"."+n.Sel.Name)
+		}
+	}
+	return false
 }
 
 func EvalIdent(ctx context.Context, done chan bool, expr *ast.Expr) bool {
-	returned := make(chan bool)
-
-	go func() {
-		switch n := (*expr).(type) {
-		case *ast.Ident:
-			returned <- CheckRelation(n.Name)
-		}
-	}()
-
-	select {
-	case <-ctx.Done():
+	if ctx.Err() != nil {
 		return false
-	case returnValue := <-returned:
-		return returnValue
-
 	}
 
+	switch n := (*expr).(type) {
+	case *ast.Ident:
+		return CheckRelation(ctx, done, n.Name)
+	}
+
+	return false
 }
 
 func EvalUnaryExpr(ctx context.Context, done chan bool, expr *ast.Expr) bool {
-	returned := make(chan bool)
 
-	go func() {
-		switch n := (*expr).(type) {
-		case *ast.UnaryExpr:
-			returned <- !EvalExpr(ctx, done, &n.X)
-		}
-	}()
-	select {
-	case <-ctx.Done():
+	if ctx.Err() != nil {
 		return false
-	case returnValue := <-returned:
-		return returnValue
 	}
+
+	switch n := (*expr).(type) {
+	case *ast.UnaryExpr:
+		return !EvalExpr(ctx, done, &n.X)
+	}
+
+	return false
 }
 
 // TODO: use values instead?
@@ -134,6 +113,7 @@ func EvalBinaryExpr(ctx context.Context, done chan bool, expr *ast.Expr) bool {
 				select {
 				case isDone := <-done:
 					if isDone {
+						fmt.Println("cancel")
 						cancel()
 						return true
 					}
@@ -143,10 +123,10 @@ func EvalBinaryExpr(ctx context.Context, done chan bool, expr *ast.Expr) bool {
 
 		} else if n.Op.String() == "&" {
 			for i := 0; i < 2; i++ {
-
 				select {
 				case isDone := <-done:
 					if !isDone {
+						fmt.Println("cancel")
 						cancel()
 						return false
 					}
@@ -172,10 +152,10 @@ func StartEval(expr *ast.Expr) bool {
 	}()
 
 	select {
-	case <-ctx.Done():
-		return false
 	case returnValue := <-returned:
 		return returnValue
+	case <-ctx.Done():
+		return false
 	}
 
 }
@@ -191,8 +171,8 @@ func main() {
 	// tr, _ := parser.ParseExpr("!parent_folder.reader | reader | writer")
 	// ast.Print(fs, tr)
 
-	tr, _ := parser.ParseExpr("(reader | writer | tester) & !parent_folder.reader")
-	ast.Print(fs, tr)
+	// tr, _ := parser.ParseExpr("(reader | writer | tester) & !parent_folder.reader")
+	// ast.Print(fs, tr)
 
 	// tr, _ := parser.ParseExpr("reader & writer")
 	// ast.Print(fs, tr)
@@ -200,10 +180,11 @@ func main() {
 	// tr, _ := parser.ParseExpr("reader")
 	// ast.Print(fs, tr)
 
-	// tr, _ := parser.ParseExpr("!reader")
-	// ast.Print(fs, tr)
+	tr, _ := parser.ParseExpr("!reader")
+	ast.Print(fs, tr)
 
 	hasPerm := StartEval(&tr)
-	fmt.Println(hasPerm)
+	fmt.Println("has permission?", hasPerm)
+	// time.Sleep(5 * time.Second)
 
 }
