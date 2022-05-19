@@ -11,6 +11,9 @@ tasks:
     cmds:
       - go mod tidy
       - reflex -s go run ./cmd/kala.go
+  test:
+    cmds:
+      - go test $(go list ./... | grep -v '/kala-go/ent')
   tree:
     cmds:
       - go mod tidy
