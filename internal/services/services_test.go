@@ -1,0 +1,170 @@
+package services
+
+import (
+	"context"
+	"testing"
+
+	"github.com/DeluxeOwl/kala-go/ent/enttest"
+	"github.com/DeluxeOwl/kala-go/internal/models"
+
+	_ "github.com/mattn/go-sqlite3"
+)
+
+func TestTypeConfig(t *testing.T) {
+	client := enttest.Open(t, "sqlite3", "file:ent?mode=memory&cache=shared&_fk=1")
+	defer client.Close()
+
+	h := Handler{
+		Client: client,
+	}
+
+	ctx := context.Background()
+
+	tables := []struct {
+		m             *models.TypeConfigReq
+		name          string
+		nrRelations   int
+		nrPermissions int
+	}{
+		{&models.TypeConfigReq{Name: "user"}, "user", 0, 0},
+		{&models.TypeConfigReq{
+			Name: "group",
+			Relations: map[string]string{
+				"member": "user",
+			},
+		}, "group", 1, 0},
+		{&models.TypeConfigReq{
+			Name: "folder",
+			Relations: map[string]string{
+				"reader": "user | group#member",
+			},
+		}, "folder", 1, 0},
+		{&models.TypeConfigReq{
+			Name: "document",
+			Relations: map[string]string{
+				"parent_folder": "folder",
+				"writer":        "user",
+				"reader":        "user",
+			},
+			Permissions: map[string]string{
+				"read":           "reader | writer | parent_folder.reader",
+				"read_and_write": "reader & writer",
+				"read_only":      "reader & !writer",
+			},
+		}, "document", 3, 3},
+	}
+	for _, table := range tables {
+		tc, err := h.CreateTypeConfig(ctx, table.m)
+		if err != nil {
+			t.Fatalf("on type: %s, shouldn't error: %s", table.m.Name, err)
+		}
+		if tc.Name != table.m.Name {
+			t.Errorf("name %s is incorrect, wanted %s", tc.Name, table.m.Name)
+		}
+
+		nrRelations, err := tc.QueryRelations().Count(ctx)
+		if err != nil {
+			t.Fatalf("on type: %s, shouldn't error: %s", table.m.Name, err)
+		}
+		if nrRelations != table.nrRelations {
+			t.Errorf("on type: %s, number of relations %d is incorrect, wanted %d", table.m.Name, nrRelations, table.nrRelations)
+		}
+
+		nrPermissions, err := tc.QueryPermissions().Count(ctx)
+		if err != nil {
+			t.Fatalf("on type: %s, shouldn't error: %s", table.m.Name, err)
+		}
+		if nrPermissions != table.nrPermissions {
+			t.Errorf("on type: %s, number of permissions %d is incorrect, wanted %d", table.m.Name, nrPermissions, table.nrPermissions)
+		}
+
+	}
+}
+
+func TestSubjectCreation(t *testing.T) {
+	client := enttest.Open(t, "sqlite3", "file:ent?mode=memory&cache=shared&_fk=1")
+	defer client.Close()
+
+	h := Handler{
+		Client: client,
+	}
+
+	ctx := context.Background()
+	h.CreateTypeConfig(ctx,
+		&models.TypeConfigReq{Name: "user"},
+	)
+	h.CreateTypeConfig(ctx,
+		&models.TypeConfigReq{
+			Name: "group",
+			Relations: map[string]string{
+				"member": "user",
+			},
+		})
+
+	h.CreateTypeConfig(ctx,
+		&models.TypeConfigReq{
+			Name: "folder",
+			Relations: map[string]string{
+				"reader": "user | group#member",
+			},
+		})
+	h.CreateTypeConfig(ctx,
+		&models.TypeConfigReq{
+			Name: "document",
+			Relations: map[string]string{
+				"parent_folder": "folder",
+				"writer":        "user",
+				"reader":        "user",
+			},
+			Permissions: map[string]string{
+				"read":           "reader | writer | parent_folder.reader",
+				"read_and_write": "reader & writer",
+				"read_only":      "reader & !writer",
+			},
+		})
+
+	tables := []struct {
+		s    models.SubjectReq
+		name string
+	}{
+		{models.SubjectReq{
+			TypeConfigName: "document",
+			SubjectName:    "report.csv",
+		}, "report.csv"},
+		{models.SubjectReq{
+			TypeConfigName: "user",
+			SubjectName:    "anna",
+		}, "anna"},
+		{models.SubjectReq{
+			TypeConfigName: "user",
+			SubjectName:    "john",
+		}, "john"},
+		{models.SubjectReq{
+			TypeConfigName: "user",
+			SubjectName:    "steve",
+		}, "steve"},
+		{models.SubjectReq{
+			TypeConfigName: "folder",
+			SubjectName:    "secret_folder",
+		}, "secret_folder"},
+		{models.SubjectReq{
+			TypeConfigName: "group",
+			SubjectName:    "dev",
+		}, "dev"},
+		{models.SubjectReq{
+			TypeConfigName: "group",
+			SubjectName:    "test_group",
+		}, "test_group"},
+	}
+
+	for _, table := range tables {
+		subj, err := h.CreateSubject(ctx, &table.s)
+		if err != nil {
+			t.Fatalf("at subject %s, shouldn't get error %s", table.name, err)
+		}
+		if subj.Name != table.name {
+			t.Errorf("wanted %s, got %s", table.name, subj.Name)
+		}
+	}
+
+}
