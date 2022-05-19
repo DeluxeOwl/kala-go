@@ -62,7 +62,7 @@ func TestTypeConfig(t *testing.T) {
 			t.Errorf("name %s is incorrect, wanted %s", tc.Name, table.m.Name)
 		}
 
-		nrRelations, err := tc.QueryRelations().Count(ctx)
+		nrRelations, err := tc.Unwrap().QueryRelations().Count(ctx)
 		if err != nil {
 			t.Fatalf("on type: %s, shouldn't error: %s", table.m.Name, err)
 		}

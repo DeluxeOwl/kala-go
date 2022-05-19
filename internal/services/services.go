@@ -2,10 +2,11 @@ package services
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"log"
 	"strings"
+
+	"github.com/pkg/errors"
 
 	"github.com/DeluxeOwl/kala-go/ent"
 	"github.com/DeluxeOwl/kala-go/ent/permission"
@@ -18,8 +19,123 @@ import (
 	"golang.org/x/exp/slices"
 )
 
-// TODO: make the errors as variables?
+func (h *Handler) WithTx(ctx context.Context, fn func(tx *ent.Tx) error) error {
+	tx, err := h.Client.Tx(ctx)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if v := recover(); v != nil {
+			tx.Rollback()
+			panic(v)
+		}
+	}()
+	if err := fn(tx); err != nil {
+		if rerr := tx.Rollback(); rerr != nil {
+			err = errors.Wrapf(err, "rolling back transaction: %v", rerr)
+		}
+		return err
+	}
+	if err := tx.Commit(); err != nil {
+
+		return errors.Wrapf(err, "committing transaction: %v", err)
+	}
+	return nil
+}
+
 func (h *Handler) CreateTypeConfig(ctx context.Context, tcInput *models.TypeConfigReq) (*ent.TypeConfig, error) {
+	var tc *ent.TypeConfig
+
+	if err := h.WithTx(ctx, func(tx *ent.Tx) error {
+		newH := Handler{
+			Client: tx.Client(),
+		}
+		var err error
+		tc, err = newH.DoCreateTypeConfig(ctx, tcInput)
+
+		return err
+	}); err != nil {
+		return nil, err
+	}
+
+	return tc, nil
+}
+func (h *Handler) CreateSubject(ctx context.Context, s *models.SubjectReq) (*ent.Subject, error) {
+	var subj *ent.Subject
+
+	if err := h.WithTx(ctx, func(tx *ent.Tx) error {
+		newH := Handler{
+			Client: tx.Client(),
+		}
+		var err error
+		subj, err = newH.DoCreateSubject(ctx, s)
+
+		return err
+	}); err != nil {
+		return nil, err
+	}
+
+	return subj, nil
+}
+func (h *Handler) CreateTuple(ctx context.Context, tr *models.TupleReqRelation) (*ent.Tuple, error) {
+	var tuple *ent.Tuple
+
+	if err := h.WithTx(ctx, func(tx *ent.Tx) error {
+		newH := Handler{
+			Client: tx.Client(),
+		}
+		var err error
+		tuple, err = newH.DoCreateTuple(ctx, tr)
+
+		return err
+	}); err != nil {
+		return nil, err
+	}
+
+	return tuple, nil
+}
+
+// error: cannot start a transaction within a transaction
+// func (h *Handler) CheckRelation(ctx context.Context, rc *models.RelationCheck, depth int) bool {
+// 	hasRel := false
+
+// 	if err := h.WithTx(ctx, func(tx *ent.Tx) error {
+// 		newH := Handler{
+// 			Client: tx.Client(),
+// 		}
+
+// 		var err error
+// 		hasRel = newH.DoCheckRelation(ctx, rc, depth)
+
+// 		return err
+// 	}); err != nil {
+// 		fmt.Println(err)
+// 		return false
+// 	}
+
+// 	return hasRel
+// }
+
+func (h *Handler) CheckPermission(ctx context.Context, tr *models.TupleReqPermission) (bool, error) {
+	hasRel := false
+
+	if err := h.WithTx(ctx, func(tx *ent.Tx) error {
+		newH := Handler{
+			Client: tx.Client(),
+		}
+		var err error
+		hasRel, err = newH.DoCheckPermission(ctx, tr)
+
+		return err
+	}); err != nil {
+		return false, err
+	}
+
+	return hasRel, nil
+}
+
+// TODO: make the errors as variables?
+func (h *Handler) DoCreateTypeConfig(ctx context.Context, tcInput *models.TypeConfigReq) (*ent.TypeConfig, error) {
 
 	if !regexTypeName.MatchString(tcInput.Name) {
 		return nil, fmt.Errorf("malformed type name input: '%s'", tcInput.Name)
@@ -246,7 +362,7 @@ func (h *Handler) CreateTypeConfig(ctx context.Context, tcInput *models.TypeConf
 	return tc, nil
 }
 
-func (h *Handler) CreateSubject(ctx context.Context, s *models.SubjectReq) (*ent.Subject, error) {
+func (h *Handler) DoCreateSubject(ctx context.Context, s *models.SubjectReq) (*ent.Subject, error) {
 
 	if !regexSubjName.MatchString(s.SubjectName) {
 		return nil, fmt.Errorf("malformed subj name input: '%s'", s.SubjectName)
@@ -283,7 +399,7 @@ func (h *Handler) CreateSubject(ctx context.Context, s *models.SubjectReq) (*ent
 
 // TODO handle group:* viewer on document
 // create a default subject called '*' when creating the type?
-func (h *Handler) CreateTuple(ctx context.Context, tr *models.TupleReqRelation) (*ent.Tuple, error) {
+func (h *Handler) DoCreateTuple(ctx context.Context, tr *models.TupleReqRelation) (*ent.Tuple, error) {
 
 	var subjectName string
 	var subjectRelation string = ""
@@ -520,7 +636,7 @@ func (h *Handler) CheckRelation(ctx context.Context, rc *models.RelationCheck, d
 	return false
 }
 
-func (h *Handler) CheckPermission(ctx context.Context, tr *models.TupleReqPermission) (bool, error) {
+func (h *Handler) DoCheckPermission(ctx context.Context, tr *models.TupleReqPermission) (bool, error) {
 	fmt.Printf("====> Does `%s:%s` have `%s` permission on `%s:%s`?\n",
 		tr.Subject.TypeConfigName,
 		tr.Subject.SubjectName,
@@ -568,82 +684,6 @@ func (h *Handler) CheckPermission(ctx context.Context, tr *models.TupleReqPermis
 	if err != nil {
 		return false, fmt.Errorf("error when parsing and evaluation permissions: %w", err)
 	}
-
-	// for _, referencedRelation := range permDelim.Split(perm.Value, -1) {
-	// 	if referencedRelation == "" {
-	// 		continue
-	// 	}
-
-	// 	// check direct relations and indirect relations
-	// if ident
-	// 	if !strings.Contains(referencedRelation, parentRelDelim) {
-	// 		rel, err := permQuery.
-	// 			QueryRelations().
-	// 			Where(relation.NameEQ(referencedRelation)).
-	// 			Only(ctx)
-
-	// 		if err != nil {
-	// 			return false, fmt.Errorf("error when querying relation: %w", err)
-	// 		}
-
-	// 		hasPerm = hasPerm || h.CheckRelation(ctx, &models.RelationCheck{
-	// 			Subj: subj,
-	// 			Rel:  rel,
-	// 			Res:  res,
-	// 		}, 0)
-
-	// 		if hasPerm {
-	// 			return hasPerm, nil
-	// 		}
-
-	// 	} else {
-	// if selector expr
-	// 		s := strings.Split(referencedRelation, parentRelDelim)
-
-	// 		refParent := s[0]
-	// 		refParentRel := s[1]
-
-	// 		// Get the relation, for this type of query
-	// 		// it can only be one anyway
-	// 		r, err := perm.QueryRelations().
-	// 			Where(relation.NameEQ(refParent)).
-	// 			QueryRelTypeconfigs().
-	// 			QueryRelations().
-	// 			Where(relation.NameEQ(refParentRel)).
-	// 			Only(ctx)
-
-	// 		if err != nil {
-	// 			return false, fmt.Errorf("error when querying relation: %w", err)
-	// 		}
-
-	// 		// Get all referenced subjects
-	// 		subjects, err := perm.QueryRelations().
-	// 			Where(relation.NameEQ(refParent)).
-	// 			QueryTuples().
-	// 			QuerySubject().
-	// 			All(ctx)
-
-	// 		// if it doesn't have subjects, just move on
-	// 		if err != nil {
-	// 			fmt.Println(err)
-	// 			continue
-	// 		}
-
-	// 		for _, s := range subjects {
-	// 			hasPerm = hasPerm || h.CheckRelation(ctx, &models.RelationCheck{
-	// 				Subj: subj,
-	// 				Rel:  r,
-	// 				Res:  s,
-	// 			}, 0)
-
-	// 			if hasPerm {
-	// 				return hasPerm, nil
-	// 			}
-	// 		}
-	// 	}
-
-	// }
-
 	return hasPerm, nil
 }
 

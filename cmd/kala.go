@@ -203,7 +203,7 @@ func main() {
 	hasRead, err := h.CheckPermission(ctx, &models.TupleReqPermission{
 		Subject: &models.SubjectReq{
 			TypeConfigName: "user",
-			SubjectName:    "anna",
+			SubjectName:    "john",
 		},
 		Permission: "read",
 		Resource: &models.SubjectReq{
@@ -216,29 +216,4 @@ func main() {
 	}
 	fmt.Println("⟶\tPermission:", hasRead)
 
-	// TEST: empty permissions
-	// tc, err = h.CreateTypeConfig(ctx,
-	// 	&TypeConfig{
-	// 		Name: "test",
-	// 		Permissions: map[string]string{
-	// 			"read":           "reader | writer | parent_folder.reader",
-	// 			"read_and_write": "reader & writer",
-	// 			"read_only":      "reader & !writer",
-	// 		},
-	// 	})
-	// fmt.Println(tc, err)
-
-	// reader | writer | parent_folder.reader
-	// reader & writer
-	// reader | writer
-	// reader | !writer
-	// !writer
-	// reader
-	// reader & writer | !tester
-	// !tester & reader | writer
-
-	// reader |
-	// !writer |
-	// reader &
-	// writer & reader | !
 }
