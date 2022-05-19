@@ -65,7 +65,7 @@ func EvalSelectorExpr(ctx context.Context, done chan bool, expr *ast.Expr, pc *m
 				Only(ctx)
 
 			if err != nil {
-				fmt.Println(err)
+				fmt.Printf("check relation in eval expr: %s\n", err)
 				return false
 			}
 			// Get all referenced subjects
@@ -77,7 +77,7 @@ func EvalSelectorExpr(ctx context.Context, done chan bool, expr *ast.Expr, pc *m
 				All(ctx)
 
 			if err != nil {
-				fmt.Println(err)
+				fmt.Printf("get subjects in eval expr: %s\n", err)
 				return false
 			}
 
@@ -116,7 +116,7 @@ func EvalIdent(ctx context.Context, done chan bool, expr *ast.Expr, pc *models.P
 			Only(ctx)
 
 		if err != nil {
-			fmt.Println(err)
+			fmt.Printf("get relations in eval ident: %s\n", err)
 			return false
 		}
 

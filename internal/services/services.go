@@ -375,7 +375,11 @@ func (h *Handler) CheckRelation(ctx context.Context, rc *models.RelationCheck, d
 
 	fmt.Println(strings.Repeat("\t", depth+1)+"• Checking relation:", rc)
 
-	subjTypeString := rc.Subj.QueryType().Select(typeconfig.FieldName).StringX(ctx)
+	subjTypeString, err := rc.Subj.QueryType().Select(typeconfig.FieldName).String(ctx)
+	if err != nil {
+		fmt.Printf("getting type string in check relation: %s\n", err)
+		return false
+	}
 
 	// check if direct
 	if !strings.Contains(rc.Rel.Value, refValueDelim) {
@@ -403,7 +407,7 @@ func (h *Handler) CheckRelation(ctx context.Context, rc *models.RelationCheck, d
 		fmt.Printf("\t\tDirect relationship? %t\n", tupleExists)
 
 		if err != nil {
-			fmt.Println(err)
+			fmt.Printf("check if tuple exists in check relation: %s\n", err)
 		}
 
 		return tupleExists
@@ -430,7 +434,7 @@ func (h *Handler) CheckRelation(ctx context.Context, rc *models.RelationCheck, d
 				fmt.Printf("\t\tDirect relationship? %t\n", tupleExists)
 
 				if err != nil {
-					fmt.Println(err)
+					fmt.Printf("check if tuple exists in check relation: %s\n", err)
 				}
 
 				if tupleExists {
@@ -469,7 +473,7 @@ func (h *Handler) CheckRelation(ctx context.Context, rc *models.RelationCheck, d
 					Only(ctx)
 
 				if err != nil {
-					fmt.Println(err)
+					fmt.Printf("getting parent relation in check relation: %s\n", err)
 					return false
 				}
 
@@ -488,7 +492,7 @@ func (h *Handler) CheckRelation(ctx context.Context, rc *models.RelationCheck, d
 					All(ctx)
 
 				if err != nil {
-					fmt.Println(err)
+					fmt.Printf("getting subjects in check relation: %s\n", err)
 					return false
 				}
 

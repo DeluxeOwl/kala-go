@@ -54,11 +54,14 @@ permissions:
 ```js
 document:report.csv #reader @user:anna
 document:report.csv #writer @user:anna
+
 folder:secret_folder #parent_folder @document:report.csv
 folder:secret_folder #reader @user:john
 
 group:dev #member @user:steve
+
 folder:secret_folder #reader @group:dev#member
+
 folder:secret_folder #reader @group:test_group#member
 ```
 

@@ -203,7 +203,7 @@ func main() {
 	hasRead, err := h.CheckPermission(ctx, &models.TupleReqPermission{
 		Subject: &models.SubjectReq{
 			TypeConfigName: "user",
-			SubjectName:    "steve",
+			SubjectName:    "anna",
 		},
 		Permission: "read",
 		Resource: &models.SubjectReq{
@@ -212,7 +212,7 @@ func main() {
 		},
 	})
 	if err != nil {
-		fmt.Println(err)
+		fmt.Printf("check permission: %s", err)
 	}
 	fmt.Println("⟶\tPermission:", hasRead)
 
