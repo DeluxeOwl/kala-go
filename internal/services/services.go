@@ -373,8 +373,6 @@ func (h *Handler) CheckRelation(ctx context.Context, rc *models.RelationCheck, d
 		return false
 	}
 
-	fmt.Println(strings.Repeat("\t", depth+1)+"• Checking relation:", rc)
-
 	subjTypeString, err := rc.Subj.QueryType().Select(typeconfig.FieldName).String(ctx)
 	if err != nil {
 		fmt.Printf("getting type string in check relation: %s\n", err)
@@ -404,6 +402,7 @@ func (h *Handler) CheckRelation(ctx context.Context, rc *models.RelationCheck, d
 			).
 			Exist(ctx)
 
+		fmt.Printf("%s• Checking relation: %v\n", strings.Repeat("\t", depth+1), rc)
 		fmt.Printf("\t\tDirect relationship? %t\n", tupleExists)
 
 		if err != nil {
@@ -431,6 +430,7 @@ func (h *Handler) CheckRelation(ctx context.Context, rc *models.RelationCheck, d
 					).
 					Exist(ctx)
 
+				fmt.Printf("%s• Checking relation: %v\n", strings.Repeat("\t", depth+1), rc)
 				fmt.Printf("\t\tDirect relationship? %t\n", tupleExists)
 
 				if err != nil {
