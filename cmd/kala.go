@@ -203,9 +203,9 @@ func main() {
 	hasRead, err := h.CheckPermission(ctx, &models.TupleReqPermission{
 		Subject: &models.SubjectReq{
 			TypeConfigName: "user",
-			SubjectName:    "anna",
+			SubjectName:    "steve",
 		},
-		Permission: "read_only",
+		Permission: "read",
 		Resource: &models.SubjectReq{
 			TypeConfigName: "document",
 			SubjectName:    "report.csv",

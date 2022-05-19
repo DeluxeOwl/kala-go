@@ -14,6 +14,7 @@ An authorization and policy engine written in go.
   - `tr, _ := parser.ParseExpr("(reader | writer) & !parent_folder.reader")`
   - add binary expr type in ent
   - convert to breadth first search
+- check out race condition
 
 ```
 [00] operation: &
@@ -50,7 +51,7 @@ permissions:
   read_only: reader & !writer
 ```
 
-```
+```js
 document:report.csv #reader @user:anna
 document:report.csv #writer @user:anna
 folder:secret_folder #parent_folder @document:report.csv
