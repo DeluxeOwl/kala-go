@@ -277,10 +277,7 @@ func (h *Handler) DoCreateTypeConfig(ctx context.Context, tcInput *models.TypeCo
 		referencedTypeIDsSlice := make([]int, 0)
 
 		fmt.Printf("-> validating '%s: %s'\n", permName, permValue)
-		for _, referencedRelation := range permDelim.Split(permValue, -1) {
-			if referencedRelation == "" {
-				continue
-			}
+		for _, referencedRelation := range permDelim.FindAllString(permValue, -1) {
 			// check direct relations
 			if !strings.Contains(referencedRelation, parentRelDelim) {
 				if !slices.Contains(inputRelations, referencedRelation) {

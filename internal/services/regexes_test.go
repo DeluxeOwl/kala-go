@@ -80,6 +80,7 @@ func TestPermValue(t *testing.T) {
 
 	for _, table := range tables {
 		isMatch := regexPermValue.MatchString(table.permValue)
+
 		if isMatch != table.isValid {
 			t.Errorf("perm value %s, wanted %t, got %t", table.permValue, table.isValid, isMatch)
 		}
