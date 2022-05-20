@@ -9,6 +9,6 @@ RUN CGO_ENABLED=1 GOOS=linux go build -o /app -a -ldflags '-linkmode external -e
 FROM scratch
 COPY --from=builder /app /app
 
-EXPOSE 4000
+EXPOSE 1323
 
 ENTRYPOINT ["/app"]

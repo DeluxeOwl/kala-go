@@ -3,9 +3,9 @@ package models
 import "github.com/DeluxeOwl/kala-go/ent"
 
 type TypeConfigReq struct {
-	Name        string
-	Relations   map[string]string
-	Permissions map[string]string
+	Name        string            `json:"type"`
+	Relations   map[string]string `json:"relations"`
+	Permissions map[string]string `json:"permissions"`
 }
 
 type SubjectReq struct {
