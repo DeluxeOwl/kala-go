@@ -1,0 +1,26 @@
+[
+  {
+    "_id": "8bccd6fe-af3f-4e82-9347-4b866b01d8d1",
+    "colId": "6278c967-0c02-4015-b5b4-59c52bd5da41",
+    "containerId": "",
+    "name": "CreateTypeconfigBatch",
+    "url": "{{KALA_URL}}/typeconfig/batch",
+    "method": "POST",
+    "sortNum": 10000,
+    "created": "2022-05-20T18:54:35.767Z",
+    "modified": "2022-05-20T18:54:35.767Z",
+    "headers": [
+      {
+        "name": "Content-Type",
+        "value": "application/json"
+      }
+    ],
+    "params": [],
+    "body": {
+      "type": "json",
+      "raw": "[\n  {\n    \"type\": \"user\"\n  },\n  {\n    \"type\": \"group\",\n    \"relations\": {\n      \"member\": \"user\"\n    }\n  },\n  {\n    \"type\": \"folder\",\n    \"relations\": {\n      \"reader\": \"user | group#member\"\n    }\n  },\n  {\n    \"type\": \"document\",\n    \"relations\": {\n      \"parent_folder\": \"folder\",\n      \"writer\": \"user\",\n      \"reader\": \"user\"\n    },\n    \"permissions\": {\n      \"read\": \"reader | writer | parent_folder.reader\",\n      \"read_and_write\": \"reader & writer\",\n      \"read_only\": \"reader & !writer\"\n    }\n  }\n]",
+      "form": []
+    },
+    "tests": []
+  }
+]

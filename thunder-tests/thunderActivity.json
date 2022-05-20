@@ -1,0 +1,26 @@
+[
+  {
+    "_id": "bbebb118-0cb0-4de1-a333-4bf007a769e9",
+    "colId": "history",
+    "containerId": "",
+    "name": "{{KALA_URL}}/typeconfig/batch",
+    "url": "{{KALA_URL}}/typeconfig/batch",
+    "method": "POST",
+    "sortNum": 0,
+    "created": "2022-05-20T18:54:23.037Z",
+    "modified": "2022-05-20T18:54:24.502Z",
+    "headers": [
+      {
+        "name": "Content-Type",
+        "value": "application/json"
+      }
+    ],
+    "params": [],
+    "body": {
+      "type": "json",
+      "raw": "[\n  {\n    \"type\": \"user\"\n  },\n  {\n    \"type\": \"group\",\n    \"relations\": {\n      \"member\": \"user\"\n    }\n  },\n  {\n    \"type\": \"folder\",\n    \"relations\": {\n      \"reader\": \"user | group#member\"\n    }\n  },\n  {\n    \"type\": \"document\",\n    \"relations\": {\n      \"parent_folder\": \"folder\",\n      \"writer\": \"user\",\n      \"reader\": \"user\"\n    },\n    \"permissions\": {\n      \"read\": \"reader | writer | parent_folder.reader\",\n      \"read_and_write\": \"reader & writer\",\n      \"read_only\": \"reader & !writer\"\n    }\n  }\n]",
+      "form": []
+    },
+    "tests": []
+  }
+]

@@ -1,0 +1,28 @@
+[
+  {
+    "_id": "1d24103e-2587-46d0-91d2-f2a86aa9de08",
+    "name": "(Local Env)",
+    "default": false,
+    "global": true,
+    "local": true,
+    "sortNum": -2,
+    "created": "2022-05-20T18:51:23.803Z",
+    "modified": "2022-05-20T18:51:23.803Z",
+    "data": []
+  },
+  {
+    "_id": "602bb626-3ba6-45cb-b879-6b13ca361c47",
+    "name": "(Global Env)",
+    "default": false,
+    "global": true,
+    "sortNum": -1,
+    "created": "2022-05-20T18:52:28.623Z",
+    "modified": "2022-05-20T18:52:40.089Z",
+    "data": [
+      {
+        "name": "KALA_URL",
+        "value": "http://127.0.0.1:1323"
+      }
+    ]
+  }
+]

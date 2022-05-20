@@ -48,6 +48,32 @@ func main() {
 		return c.JSON(http.StatusCreated, tcReqs)
 	})
 
+	// TODO
+	h.Http.POST("/subject/batch", func(c echo.Context) error {
+
+		ctx := c.Request().Context()
+
+		subjReqs := new([]models.SubjectReq)
+
+		if err := c.Bind(subjReqs); err != nil {
+			return err
+		}
+
+		for _, tcReq := range *subjReqs {
+			tc, err := h.CreateSubject(ctx, &tcReq)
+
+			if err != nil {
+				return echo.NewHTTPError(http.StatusBadRequest, map[string]string{
+					"message": err.Error(),
+				})
+			}
+
+			fmt.Println(tc)
+		}
+
+		return c.JSON(http.StatusCreated, subjReqs)
+	})
+
 	h.Http.Logger.Fatal(h.Http.Start(":1323"))
 
 	// h.DeleteEverything(ctx)

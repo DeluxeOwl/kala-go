@@ -90,9 +90,11 @@ func TestSubjectCreation(t *testing.T) {
 	}
 
 	ctx := context.Background()
+
 	h.CreateTypeConfig(ctx,
 		&models.TypeConfigReq{Name: "user"},
 	)
+
 	h.CreateTypeConfig(ctx,
 		&models.TypeConfigReq{
 			Name: "group",
