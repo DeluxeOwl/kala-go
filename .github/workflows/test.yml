@@ -2,15 +2,11 @@ name: Test
 on: [push, pull_request]
 jobs:
   test:
-    strategy:
-      matrix:
-        go-version: [1.18.x]
-        os: [ubuntu-latest]
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/setup-go@v3
         with:
-          go-version: ${{ matrix.go-version }}
+          go-version: 1.18.x
 
       - uses: actions/checkout@v3
 
@@ -20,15 +16,11 @@ jobs:
       - run: task test
 
   build-and-scan-docker:
-    strategy:
-      matrix:
-        go-version: [1.18.x]
-        os: [ubuntu-latest]
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/setup-go@v3
         with:
-          go-version: ${{ matrix.go-version }}
+          go-version: 1.18.x
 
       - uses: actions/checkout@v3
 
