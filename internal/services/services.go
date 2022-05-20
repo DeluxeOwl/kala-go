@@ -694,3 +694,26 @@ func (h *Handler) subject(ctx context.Context, tfName string, name string) (*ent
 		Only(ctx)
 	return subj, err
 }
+
+func (h *Handler) DeleteEverything(ctx context.Context) {
+	_, err := h.Client.Tuple.Delete().Exec(ctx)
+	if err != nil {
+		fmt.Printf("error when deleting tuples: %s\n", err)
+	}
+	_, err = h.Client.Subject.Delete().Exec(ctx)
+	if err != nil {
+		fmt.Printf("error when deleting subjects: %s\n", err)
+	}
+	_, err = h.Client.Permission.Delete().Exec(ctx)
+	if err != nil {
+		fmt.Printf("error when deleting permissions: %s\n", err)
+	}
+	_, err = h.Client.Relation.Delete().Exec(ctx)
+	if err != nil {
+		fmt.Printf("error when deleting relations: %s\n", err)
+	}
+	_, err = h.Client.TypeConfig.Delete().Exec(ctx)
+	if err != nil {
+		fmt.Printf("error when deleting typeconfigs: %s\n", err)
+	}
+}

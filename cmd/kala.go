@@ -216,4 +216,6 @@ func main() {
 	}
 	fmt.Println("⟶\tPermission:", hasRead)
 
+	// h.DeleteEverything(ctx)
+
 }
