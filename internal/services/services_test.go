@@ -15,7 +15,7 @@ func TestTypeConfig(t *testing.T) {
 	defer client.Close()
 
 	h := Handler{
-		Client: client,
+		Db: client,
 	}
 
 	ctx := context.Background()
@@ -86,7 +86,7 @@ func TestSubjectCreation(t *testing.T) {
 	defer client.Close()
 
 	h := Handler{
-		Client: client,
+		Db: client,
 	}
 
 	ctx := context.Background()
@@ -174,7 +174,7 @@ func TestPermissionCheck(t *testing.T) {
 	defer client.Close()
 
 	h := Handler{
-		Client: client,
+		Db: client,
 	}
 
 	ctx := context.Background()

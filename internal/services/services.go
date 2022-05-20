@@ -20,7 +20,7 @@ import (
 )
 
 func (h *Handler) WithTx(ctx context.Context, fn func(tx *ent.Tx) error) error {
-	tx, err := h.Client.Tx(ctx)
+	tx, err := h.Db.Tx(ctx)
 	if err != nil {
 		return err
 	}
@@ -48,7 +48,7 @@ func (h *Handler) CreateTypeConfig(ctx context.Context, tcInput *models.TypeConf
 
 	if err := h.WithTx(ctx, func(tx *ent.Tx) error {
 		newH := Handler{
-			Client: tx.Client(),
+			Db: tx.Client(),
 		}
 		var err error
 		tc, err = newH.DoCreateTypeConfig(ctx, tcInput)
@@ -65,7 +65,7 @@ func (h *Handler) CreateSubject(ctx context.Context, s *models.SubjectReq) (*ent
 
 	if err := h.WithTx(ctx, func(tx *ent.Tx) error {
 		newH := Handler{
-			Client: tx.Client(),
+			Db: tx.Client(),
 		}
 		var err error
 		subj, err = newH.DoCreateSubject(ctx, s)
@@ -82,7 +82,7 @@ func (h *Handler) CreateTuple(ctx context.Context, tr *models.TupleReqRelation) 
 
 	if err := h.WithTx(ctx, func(tx *ent.Tx) error {
 		newH := Handler{
-			Client: tx.Client(),
+			Db: tx.Client(),
 		}
 		var err error
 		tuple, err = newH.DoCreateTuple(ctx, tr)
@@ -121,7 +121,7 @@ func (h *Handler) CheckPermission(ctx context.Context, tr *models.TupleReqPermis
 
 	if err := h.WithTx(ctx, func(tx *ent.Tx) error {
 		newH := Handler{
-			Client: tx.Client(),
+			Db: tx.Client(),
 		}
 		var err error
 		hasRel, err = newH.DoCheckPermission(ctx, tr)
@@ -141,7 +141,7 @@ func (h *Handler) DoCreateTypeConfig(ctx context.Context, tcInput *models.TypeCo
 		return nil, fmt.Errorf("malformed type name input: '%s'", tcInput.Name)
 	}
 
-	tc, err := h.Client.TypeConfig.Create().
+	tc, err := h.Db.TypeConfig.Create().
 		SetName(tcInput.Name).
 		Save(ctx)
 
@@ -180,7 +180,7 @@ func (h *Handler) DoCreateTypeConfig(ctx context.Context, tcInput *models.TypeCo
 
 			if !strings.Contains(referencedType, refSubrelationDelim) {
 
-				id, err := h.Client.TypeConfig.
+				id, err := h.Db.TypeConfig.
 					Query().
 					Where(typeconfig.Name(referencedType)).
 					OnlyID(ctx)
@@ -200,7 +200,7 @@ func (h *Handler) DoCreateTypeConfig(ctx context.Context, tcInput *models.TypeCo
 				refTypeName := s[0]
 				refTypeRelation := s[1]
 
-				id, err := h.Client.TypeConfig.
+				id, err := h.Db.TypeConfig.
 					Query().
 					Where(typeconfig.Name(refTypeName)).
 					OnlyID(ctx)
@@ -209,7 +209,7 @@ func (h *Handler) DoCreateTypeConfig(ctx context.Context, tcInput *models.TypeCo
 					return nil, fmt.Errorf("referenced type does not exist: '%s'", refTypeName)
 				}
 
-				hasRelation, err := h.Client.TypeConfig.
+				hasRelation, err := h.Db.TypeConfig.
 					Query().
 					Where(typeconfig.IDEQ(id)).
 					QueryRelations().
@@ -226,7 +226,7 @@ func (h *Handler) DoCreateTypeConfig(ctx context.Context, tcInput *models.TypeCo
 			}
 		}
 
-		relSlice[cnt] = h.Client.Relation.
+		relSlice[cnt] = h.Db.Relation.
 			Create().
 			SetName(relName).
 			SetValue(relValue).
@@ -236,7 +236,7 @@ func (h *Handler) DoCreateTypeConfig(ctx context.Context, tcInput *models.TypeCo
 	}
 
 	// save relations and permissions in db
-	relBulk, err := h.Client.Relation.CreateBulk(relSlice...).Save(ctx)
+	relBulk, err := h.Db.Relation.CreateBulk(relSlice...).Save(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed when creating relations: %w", err)
 	}
@@ -309,7 +309,7 @@ func (h *Handler) DoCreateTypeConfig(ctx context.Context, tcInput *models.TypeCo
 					return nil, fmt.Errorf("referenced relation '%s' can't contain a composed value: '%s'", refParent, referencedType)
 				}
 
-				hasRelation, err := h.Client.TypeConfig.
+				hasRelation, err := h.Db.TypeConfig.
 					Query().
 					Where(typeconfig.NameEQ(referencedType)).
 					QueryRelations().
@@ -335,7 +335,7 @@ func (h *Handler) DoCreateTypeConfig(ctx context.Context, tcInput *models.TypeCo
 
 		}
 
-		permSlice[cnt] = h.Client.Permission.
+		permSlice[cnt] = h.Db.Permission.
 			Create().
 			SetName(permName).
 			SetValue(permValue).
@@ -346,7 +346,7 @@ func (h *Handler) DoCreateTypeConfig(ctx context.Context, tcInput *models.TypeCo
 	}
 
 	// save relations and permissions in db
-	permBulk, err := h.Client.Permission.CreateBulk(permSlice...).Save(ctx)
+	permBulk, err := h.Db.Permission.CreateBulk(permSlice...).Save(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed when creating permissions: %w", err)
 	}
@@ -365,7 +365,7 @@ func (h *Handler) DoCreateSubject(ctx context.Context, s *models.SubjectReq) (*e
 		return nil, fmt.Errorf("malformed subj name input: '%s'", s.SubjectName)
 	}
 
-	exists, err := h.Client.TypeConfig.
+	exists, err := h.Db.TypeConfig.
 		Query().
 		Where(typeconfig.NameEQ(s.TypeConfigName)).
 		Exist(ctx)
@@ -377,12 +377,12 @@ func (h *Handler) DoCreateSubject(ctx context.Context, s *models.SubjectReq) (*e
 		return nil, fmt.Errorf("failed when creating subject, type '%s' does not exist", s.TypeConfigName)
 	}
 
-	subj, err := h.Client.Subject.Create().SetName(s.SubjectName).Save(ctx)
+	subj, err := h.Db.Subject.Create().SetName(s.SubjectName).Save(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed creating subject: %w", err)
 	}
 
-	_, err = h.Client.TypeConfig.Update().
+	_, err = h.Db.TypeConfig.Update().
 		Where(typeconfig.NameEQ(s.TypeConfigName)).
 		AddSubjects(subj).
 		Save(ctx)
@@ -410,7 +410,7 @@ func (h *Handler) DoCreateTuple(ctx context.Context, tr *models.TupleReqRelation
 
 	// handling cases like group:dev#member and group:dev#*
 	if subjectRelation != "" {
-		hasRelation, err := h.Client.TypeConfig.
+		hasRelation, err := h.Db.TypeConfig.
 			Query().
 			Where(typeconfig.NameEQ(tr.Subject.TypeConfigName)).
 			QueryRelations().
@@ -421,7 +421,7 @@ func (h *Handler) DoCreateTuple(ctx context.Context, tr *models.TupleReqRelation
 		}
 	}
 
-	subj, err := h.Client.Subject.
+	subj, err := h.Db.Subject.
 		Query().
 		Where(
 			subject.And(
@@ -434,7 +434,7 @@ func (h *Handler) DoCreateTuple(ctx context.Context, tr *models.TupleReqRelation
 		return nil, fmt.Errorf("error when getting subject: %w", err)
 	}
 
-	res, err := h.Client.Subject.
+	res, err := h.Db.Subject.
 		Query().
 		Where(
 			subject.And(
@@ -447,7 +447,7 @@ func (h *Handler) DoCreateTuple(ctx context.Context, tr *models.TupleReqRelation
 		return nil, fmt.Errorf("error when getting resource: %w", err)
 	}
 
-	rel, err := h.Client.Relation.
+	rel, err := h.Db.Relation.
 		Query().
 		Where(
 			relation.And(
@@ -460,7 +460,7 @@ func (h *Handler) DoCreateTuple(ctx context.Context, tr *models.TupleReqRelation
 		return nil, fmt.Errorf("error when getting relation for resource: %w", err)
 	}
 
-	tupleCreate := h.Client.Tuple.
+	tupleCreate := h.Db.Tuple.
 		Create().
 		SetSubject(subj).
 		SetRelation(rel).
@@ -504,7 +504,7 @@ func (h *Handler) CheckRelation(ctx context.Context, rc *models.RelationCheck, d
 			return false
 		}
 
-		tupleExists, err := h.Client.Tuple.
+		tupleExists, err := h.Db.Tuple.
 			Query().
 			Where(
 				tuple.And(
@@ -532,7 +532,7 @@ func (h *Handler) CheckRelation(ctx context.Context, rc *models.RelationCheck, d
 			}
 			// if direct type
 			if referencedType == subjTypeString {
-				tupleExists, err := h.Client.Tuple.
+				tupleExists, err := h.Db.Tuple.
 					Query().
 					Where(
 						tuple.And(
@@ -578,7 +578,7 @@ func (h *Handler) CheckRelation(ctx context.Context, rc *models.RelationCheck, d
 					return false
 				}
 
-				refTypeRelationObject, err := h.Client.TypeConfig.
+				refTypeRelationObject, err := h.Db.TypeConfig.
 					Query().
 					Where(typeconfig.NameEQ(refTypeName)).
 					QueryRelations().
@@ -594,7 +594,7 @@ func (h *Handler) CheckRelation(ctx context.Context, rc *models.RelationCheck, d
 					return false
 				}
 
-				subjects, err := h.Client.Tuple.
+				subjects, err := h.Db.Tuple.
 					Query().
 					Where(tuple.And(
 						tuple.SubjectRelEQ(refTypeRelation),
@@ -685,7 +685,7 @@ func (h *Handler) DoCheckPermission(ctx context.Context, tr *models.TupleReqPerm
 }
 
 func (h *Handler) subject(ctx context.Context, tfName string, name string) (*ent.Subject, error) {
-	subj, err := h.Client.Subject.
+	subj, err := h.Db.Subject.
 		Query().
 		Where(
 			subject.And(
@@ -696,23 +696,23 @@ func (h *Handler) subject(ctx context.Context, tfName string, name string) (*ent
 }
 
 func (h *Handler) DeleteEverything(ctx context.Context) {
-	_, err := h.Client.Tuple.Delete().Exec(ctx)
+	_, err := h.Db.Tuple.Delete().Exec(ctx)
 	if err != nil {
 		fmt.Printf("error when deleting tuples: %s\n", err)
 	}
-	_, err = h.Client.Subject.Delete().Exec(ctx)
+	_, err = h.Db.Subject.Delete().Exec(ctx)
 	if err != nil {
 		fmt.Printf("error when deleting subjects: %s\n", err)
 	}
-	_, err = h.Client.Permission.Delete().Exec(ctx)
+	_, err = h.Db.Permission.Delete().Exec(ctx)
 	if err != nil {
 		fmt.Printf("error when deleting permissions: %s\n", err)
 	}
-	_, err = h.Client.Relation.Delete().Exec(ctx)
+	_, err = h.Db.Relation.Delete().Exec(ctx)
 	if err != nil {
 		fmt.Printf("error when deleting relations: %s\n", err)
 	}
-	_, err = h.Client.TypeConfig.Delete().Exec(ctx)
+	_, err = h.Db.TypeConfig.Delete().Exec(ctx)
 	if err != nil {
 		fmt.Printf("error when deleting typeconfigs: %s\n", err)
 	}
