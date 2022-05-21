@@ -15,6 +15,7 @@ An authorization and policy engine written in go.
   - add binary expr type in ent
   - convert to breadth first search
 - **Check structured logging across goroutines**
+- Run on `fly.io` automatically, deploy using GH actions
 
 ```
 [00] operation: &
