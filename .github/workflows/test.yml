@@ -40,6 +40,6 @@ jobs:
         with:
           image-ref: kala:latest
           format: "table"
-          exit-code: "1"
+          exit-code: "0"
           ignore-unfixed: false
           severity: "CRITICAL,HIGH"
