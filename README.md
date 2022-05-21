@@ -1,4 +1,4 @@
-# https://kala-go.vercel.app/
+# https://kala.andreisurugiu.com/
 
 An authorization and policy engine written in go.
 
