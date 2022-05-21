@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/DeluxeOwl/kala-go/ent"
 	"github.com/DeluxeOwl/kala-go/internal/models"
 	"github.com/DeluxeOwl/kala-go/internal/services"
 	"github.com/labstack/echo/v4"
@@ -185,6 +186,30 @@ func main() {
 		}
 
 		return c.JSON(http.StatusCreated, response)
+	})
+
+	h.Http.GET("/v0/graph", func(c echo.Context) error {
+		ctx := c.Request().Context()
+
+		graph, err := h.Db.TypeConfig.
+			Query().
+			WithRelations(func(rq *ent.RelationQuery) {
+				rq.WithRelTypeconfigs()
+				rq.WithPermissions()
+			}).
+			WithPermissions(func(pq *ent.PermissionQuery) {
+				pq.WithRelations()
+			}).
+			WithSubjects().
+			All(ctx)
+
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, map[string]string{
+				"message": err.Error(),
+			})
+		}
+
+		return c.JSON(http.StatusOK, graph)
 	})
 
 	h.Http.Logger.Fatal(h.Http.Start(":1323"))

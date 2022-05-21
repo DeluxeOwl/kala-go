@@ -22,5 +22,19 @@
       "form": []
     },
     "tests": []
+  },
+  {
+    "_id": "ba1ff854-4b06-4f5a-b122-4957864bf926",
+    "colId": "history",
+    "containerId": "",
+    "name": "{{KALA_URL}}/graph",
+    "url": "{{KALA_URL}}/graph",
+    "method": "GET",
+    "sortNum": 0,
+    "created": "2022-05-21T15:27:28.034Z",
+    "modified": "2022-05-21T15:28:24.935Z",
+    "headers": [],
+    "params": [],
+    "tests": []
   }
 ]

@@ -118,5 +118,19 @@
       "form": []
     },
     "tests": []
+  },
+  {
+    "_id": "f0fc8dcd-b0a0-498d-8521-c6be7a0bf726",
+    "colId": "6278c967-0c02-4015-b5b4-59c52bd5da41",
+    "containerId": "",
+    "name": "GetGraph",
+    "url": "{{KALA_URL}}/graph",
+    "method": "GET",
+    "sortNum": 60000,
+    "created": "2022-05-21T15:28:23.093Z",
+    "modified": "2022-05-21T15:28:23.093Z",
+    "headers": [],
+    "params": [],
+    "tests": []
   }
 ]
