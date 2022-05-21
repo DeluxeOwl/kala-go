@@ -1,0 +1,5 @@
+{
+  "dependencies": {
+    "react-resizable-layout": "^0.2.4"
+  }
+}
