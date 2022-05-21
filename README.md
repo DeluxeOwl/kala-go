@@ -14,7 +14,7 @@ An authorization and policy engine written in go.
   - `tr, _ := parser.ParseExpr("(reader | writer) & !parent_folder.reader")`
   - add binary expr type in ent
   - convert to breadth first search
-- check out race condition
+- **Check structured logging across goroutines**
 
 ```
 [00] operation: &

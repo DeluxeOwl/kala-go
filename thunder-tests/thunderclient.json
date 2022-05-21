@@ -70,5 +70,53 @@
       "form": []
     },
     "tests": []
+  },
+  {
+    "_id": "72115bec-23b7-454c-af2a-443a70b68ddc",
+    "colId": "6278c967-0c02-4015-b5b4-59c52bd5da41",
+    "containerId": "",
+    "name": "PermissionCheckBatch",
+    "url": "{{KALA_URL}}/permission-check/batch",
+    "method": "POST",
+    "sortNum": 40000,
+    "created": "2022-05-21T14:51:53.812Z",
+    "modified": "2022-05-21T14:58:55.310Z",
+    "headers": [
+      {
+        "name": "Content-Type",
+        "value": "application/json"
+      }
+    ],
+    "params": [],
+    "body": {
+      "type": "json",
+      "raw": "[\n  {\n    \"subject\": {\n      \"type\": \"user\",\n      \"name\": \"john\"\n    },\n    \"permission\": \"read\",\n    \"resource\": {\n      \"type\": \"document\",\n      \"name\": \"report.csv\"\n    }\n  },\n  {\n    \"subject\": {\n      \"type\": \"user\",\n      \"name\": \"anna\"\n    },\n    \"permission\": \"read\",\n    \"resource\": {\n      \"type\": \"document\",\n      \"name\": \"report.csv\"\n    }\n  },\n  {\n    \"subject\": {\n      \"type\": \"user\",\n      \"name\": \"steve\"\n    },\n    \"permission\": \"read\",\n    \"resource\": {\n      \"type\": \"document\",\n      \"name\": \"report.csv\"\n    }\n  },\n  {\n    \"subject\": {\n      \"type\": \"user\",\n      \"name\": \"anna\"\n    },\n    \"permission\": \"read_only\",\n    \"resource\": {\n      \"type\": \"document\",\n      \"name\": \"report.csv\"\n    }\n  },\n  {\n    \"subject\": {\n      \"type\": \"user\",\n      \"name\": \"anna\"\n    },\n    \"permission\": \"read_and_write\",\n    \"resource\": {\n      \"type\": \"document\",\n      \"name\": \"report.csv\"\n    }\n  },\n  {\n    \"subject\": {\n      \"type\": \"user\",\n      \"name\": \"steve\"\n    },\n    \"permission\": \"read_and_write\",\n    \"resource\": {\n      \"type\": \"document\",\n      \"name\": \"report.csv\"\n    }\n  },\n  {\n    \"subject\": {\n      \"type\": \"user\",\n      \"name\": \"john\"\n    },\n    \"permission\": \"read_and_write\",\n    \"resource\": {\n      \"type\": \"document\",\n      \"name\": \"report.csv\"\n    }\n  }\n]",
+      "form": []
+    },
+    "tests": []
+  },
+  {
+    "_id": "acf8465c-f215-4657-ab70-b8b21881c66f",
+    "colId": "6278c967-0c02-4015-b5b4-59c52bd5da41",
+    "containerId": "",
+    "name": "PermissionCheck",
+    "url": "{{KALA_URL}}/permission-check",
+    "method": "POST",
+    "sortNum": 50000,
+    "created": "2022-05-21T15:05:46.225Z",
+    "modified": "2022-05-21T15:06:13.161Z",
+    "headers": [
+      {
+        "name": "Content-Type",
+        "value": "application/json"
+      }
+    ],
+    "params": [],
+    "body": {
+      "type": "json",
+      "raw": "{\n  \"subject\": {\n    \"type\": \"user\",\n    \"name\": \"john\"\n  },\n  \"permission\": \"read\",\n  \"resource\": {\n    \"type\": \"document\",\n    \"name\": \"report.csv\"\n  }\n}",
+      "form": []
+    },
+    "tests": []
   }
 ]

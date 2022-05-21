@@ -104,6 +104,89 @@ func main() {
 		return c.JSON(http.StatusCreated, tupleReqs)
 	})
 
+	h.Http.POST("/v0/permission-check/batch", func(c echo.Context) error {
+		permReqs := new([]models.TupleReqPermission)
+
+		if err := c.Bind(permReqs); err != nil {
+			return err
+		}
+
+		response := []map[string]any{}
+
+		for _, permReq := range *permReqs {
+
+			permCtx := context.Background()
+			hasPerm, err := h.CheckPermission(permCtx, &permReq)
+
+			if err != nil {
+				response = append(response, map[string]any{
+					"permission": false,
+					"message":    err.Error(),
+				})
+			} else {
+				var msgFormat string
+
+				if hasPerm {
+					msgFormat = "`%s:%s` has permission `%s` on `%s:%s`"
+				} else {
+					msgFormat = "`%s:%s` doesn't have permission `%s` on `%s:%s`"
+				}
+
+				response = append(response, map[string]any{
+					"permission": hasPerm,
+					"message": fmt.Sprintf(msgFormat,
+						permReq.Subject.TypeConfigName,
+						permReq.Subject.SubjectName,
+						permReq.Permission,
+						permReq.Resource.TypeConfigName,
+						permReq.Resource.SubjectName),
+				})
+			}
+		}
+
+		return c.JSON(http.StatusCreated, response)
+	})
+
+	h.Http.POST("/v0/permission-check", func(c echo.Context) error {
+		permReq := new(models.TupleReqPermission)
+
+		if err := c.Bind(permReq); err != nil {
+			return err
+		}
+
+		var response map[string]any
+
+		permCtx := c.Request().Context()
+		hasPerm, err := h.CheckPermission(permCtx, permReq)
+
+		if err != nil {
+			response = map[string]any{
+				"permission": false,
+				"message":    err.Error(),
+			}
+		} else {
+			var msgFormat string
+
+			if hasPerm {
+				msgFormat = "`%s:%s` has permission `%s` on `%s:%s`"
+			} else {
+				msgFormat = "`%s:%s` doesn't have permission `%s` on `%s:%s`"
+			}
+
+			response = map[string]any{
+				"permission": hasPerm,
+				"message": fmt.Sprintf(msgFormat,
+					permReq.Subject.TypeConfigName,
+					permReq.Subject.SubjectName,
+					permReq.Permission,
+					permReq.Resource.TypeConfigName,
+					permReq.Resource.SubjectName),
+			}
+		}
+
+		return c.JSON(http.StatusCreated, response)
+	})
+
 	h.Http.Logger.Fatal(h.Http.Start(":1323"))
 
 	// h.DeleteEverything(ctx)

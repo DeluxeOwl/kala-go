@@ -32,7 +32,7 @@ type PermissionCheck struct {
 }
 
 type TupleReqPermission struct {
-	Subject    *SubjectReq
-	Permission string
-	Resource   *SubjectReq
+	Subject    *SubjectReq `json:"subject"`
+	Permission string      `json:"permission"`
+	Resource   *SubjectReq `json:"resource"`
 }
