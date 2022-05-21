@@ -1,5 +1,13 @@
 name: Test
-on: [push, pull_request]
+on:
+  push:
+    paths:
+      - "**.go"
+      - "Dockerfile"
+      - "**.yml"
+      - "go.mod"
+      - "go.sum"
+
 jobs:
   test:
     runs-on: ubuntu-latest
