@@ -17,11 +17,11 @@
     "global": true,
     "sortNum": -1,
     "created": "2022-05-20T18:52:28.623Z",
-    "modified": "2022-05-20T18:52:40.089Z",
+    "modified": "2022-05-21T14:20:22.192Z",
     "data": [
       {
         "name": "KALA_URL",
-        "value": "http://127.0.0.1:1323"
+        "value": "http://127.0.0.1:1323/v0"
       }
     ]
   }

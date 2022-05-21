@@ -21,7 +21,7 @@ func main() {
 		log.Fatalf("failed creating schema resources: %v", err)
 	}
 
-	h.Http.POST("/typeconfig/batch", func(c echo.Context) error {
+	h.Http.POST("/v0/typeconfig/batch", func(c echo.Context) error {
 
 		ctx := c.Request().Context()
 		h.DeleteEverything(ctx)
@@ -48,7 +48,7 @@ func main() {
 		return c.JSON(http.StatusCreated, tcReqs)
 	})
 
-	h.Http.POST("/subject/batch", func(c echo.Context) error {
+	h.Http.POST("/v0/subject/batch", func(c echo.Context) error {
 
 		ctx := c.Request().Context()
 		h.DeleteSubjects(ctx)
@@ -76,7 +76,7 @@ func main() {
 		return c.JSON(http.StatusCreated, subjReqs)
 	})
 
-	h.Http.POST("/tuple/batch", func(c echo.Context) error {
+	h.Http.POST("/v0/tuple/batch", func(c echo.Context) error {
 
 		ctx := c.Request().Context()
 		h.DeleteTuples(ctx)
