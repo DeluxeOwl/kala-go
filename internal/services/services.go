@@ -431,7 +431,7 @@ func (h *Handler) DoCreateTuple(ctx context.Context, tr *models.TupleReqRelation
 		Only(ctx)
 
 	if err != nil {
-		return nil, fmt.Errorf("error when getting subject: %w", err)
+		return nil, fmt.Errorf("error when getting subject `%s:%s`: %w", tr.Subject.TypeConfigName, subjectName, err)
 	}
 
 	res, err := h.Db.Subject.
@@ -444,7 +444,10 @@ func (h *Handler) DoCreateTuple(ctx context.Context, tr *models.TupleReqRelation
 		Only(ctx)
 
 	if err != nil {
-		return nil, fmt.Errorf("error when getting resource: %w", err)
+		return nil, fmt.Errorf("error when getting resource `%s:%s`: %w",
+			tr.Resource.TypeConfigName,
+			tr.Resource.SubjectName,
+			err)
 	}
 
 	rel, err := h.Db.Relation.
@@ -457,7 +460,11 @@ func (h *Handler) DoCreateTuple(ctx context.Context, tr *models.TupleReqRelation
 		Only(ctx)
 
 	if err != nil {
-		return nil, fmt.Errorf("error when getting relation for resource: %w", err)
+		return nil, fmt.Errorf("error when getting relation `%s` for resource `%s:%s: %w",
+			tr.Relation,
+			tr.Resource.TypeConfigName,
+			tr.Resource.SubjectName,
+			err)
 	}
 
 	tupleCreate := h.Db.Tuple.
@@ -715,5 +722,17 @@ func (h *Handler) DeleteEverything(ctx context.Context) {
 	_, err = h.Db.TypeConfig.Delete().Exec(ctx)
 	if err != nil {
 		fmt.Printf("error when deleting typeconfigs: %s\n", err)
+	}
+}
+func (h *Handler) DeleteSubjects(ctx context.Context) {
+	_, err := h.Db.Subject.Delete().Exec(ctx)
+	if err != nil {
+		fmt.Printf("error when deleting subjects: %s\n", err)
+	}
+}
+func (h *Handler) DeleteTuples(ctx context.Context) {
+	_, err := h.Db.Tuple.Delete().Exec(ctx)
+	if err != nil {
+		fmt.Printf("error when deleting subjects: %s\n", err)
 	}
 }

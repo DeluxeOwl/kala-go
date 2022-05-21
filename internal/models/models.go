@@ -9,14 +9,14 @@ type TypeConfigReq struct {
 }
 
 type SubjectReq struct {
-	TypeConfigName string
-	SubjectName    string
+	TypeConfigName string `json:"type"`
+	SubjectName    string `json:"name"`
 }
 
 type TupleReqRelation struct {
-	Subject  *SubjectReq
-	Relation string
-	Resource *SubjectReq
+	Subject  *SubjectReq `json:"subject"`
+	Relation string      `json:"relation"`
+	Resource *SubjectReq `json:"resource"`
 }
 
 type RelationCheck struct {

@@ -8,7 +8,7 @@
     "method": "POST",
     "sortNum": 10000,
     "created": "2022-05-20T18:54:35.767Z",
-    "modified": "2022-05-20T18:54:35.767Z",
+    "modified": "2022-05-21T13:49:34.919Z",
     "headers": [
       {
         "name": "Content-Type",
@@ -19,6 +19,54 @@
     "body": {
       "type": "json",
       "raw": "[\n  {\n    \"type\": \"user\"\n  },\n  {\n    \"type\": \"group\",\n    \"relations\": {\n      \"member\": \"user\"\n    }\n  },\n  {\n    \"type\": \"folder\",\n    \"relations\": {\n      \"reader\": \"user | group#member\"\n    }\n  },\n  {\n    \"type\": \"document\",\n    \"relations\": {\n      \"parent_folder\": \"folder\",\n      \"writer\": \"user\",\n      \"reader\": \"user\"\n    },\n    \"permissions\": {\n      \"read\": \"reader | writer | parent_folder.reader\",\n      \"read_and_write\": \"reader & writer\",\n      \"read_only\": \"reader & !writer\"\n    }\n  }\n]",
+      "form": []
+    },
+    "tests": []
+  },
+  {
+    "_id": "62e977da-1b38-4b99-ac19-667cf385606a",
+    "colId": "6278c967-0c02-4015-b5b4-59c52bd5da41",
+    "containerId": "",
+    "name": "CreateSubjectBatch",
+    "url": "{{KALA_URL}}/subject/batch",
+    "method": "POST",
+    "sortNum": 20000,
+    "created": "2022-05-21T13:51:04.366Z",
+    "modified": "2022-05-21T14:00:29.885Z",
+    "headers": [
+      {
+        "name": "Content-Type",
+        "value": "application/json"
+      }
+    ],
+    "params": [],
+    "body": {
+      "type": "json",
+      "raw": "[\n  {\n    \"type\": \"document\",\n    \"name\": \"report.csv\"\n  },\n  {\n    \"type\": \"user\",\n    \"name\": \"anna\"\n  },\n  {\n    \"type\": \"user\",\n    \"name\": \"john\"\n  },\n  {\n    \"type\": \"user\",\n    \"name\": \"steve\"\n  },\n  {\n    \"type\": \"folder\",\n    \"name\": \"secret_folder\"\n  },\n  {\n    \"type\": \"group\",\n    \"name\": \"dev\"\n  },\n  {\n    \"type\": \"group\",\n    \"name\": \"test_group\"\n  }\n]",
+      "form": []
+    },
+    "tests": []
+  },
+  {
+    "_id": "b183607d-bbff-4807-bc05-028998900234",
+    "colId": "6278c967-0c02-4015-b5b4-59c52bd5da41",
+    "containerId": "",
+    "name": "CreateTupleBatch",
+    "url": "{{KALA_URL}}/tuple/batch",
+    "method": "POST",
+    "sortNum": 30000,
+    "created": "2022-05-21T14:03:48.912Z",
+    "modified": "2022-05-21T14:13:06.405Z",
+    "headers": [
+      {
+        "name": "Content-Type",
+        "value": "application/json"
+      }
+    ],
+    "params": [],
+    "body": {
+      "type": "json",
+      "raw": "[\n  {\n    \"subject\": {\n      \"type\": \"user\",\n      \"name\": \"anna\"\n    },\n    \"relation\": \"reader\",\n    \"resource\": {\n      \"type\": \"document\",\n      \"name\": \"report.csv\"\n    }\n  },\n  {\n    \"subject\": {\n      \"type\": \"user\",\n      \"name\": \"anna\"\n    },\n    \"relation\": \"writer\",\n    \"resource\": {\n      \"type\": \"document\",\n      \"name\": \"report.csv\"\n    }\n  },\n  {\n    \"subject\": {\n      \"type\": \"folder\",\n      \"name\": \"secret_folder\"\n    },\n    \"relation\": \"parent_folder\",\n    \"resource\": {\n      \"type\": \"document\",\n      \"name\": \"report.csv\"\n    }\n  },\n  {\n    \"subject\": {\n      \"type\": \"user\",\n      \"name\": \"john\"\n    },\n    \"relation\": \"reader\",\n    \"resource\": {\n      \"type\": \"folder\",\n      \"name\": \"secret_folder\"\n    }\n  },\n  {\n    \"subject\": {\n      \"type\": \"user\",\n      \"name\": \"john\"\n    },\n    \"relation\": \"member\",\n    \"resource\": {\n      \"type\": \"group\",\n      \"name\": \"dev\"\n    }\n  },\n  {\n    \"subject\": {\n      \"type\": \"group\",\n      \"name\": \"dev#member\"\n    },\n    \"relation\": \"reader\",\n    \"resource\": {\n      \"type\": \"folder\",\n      \"name\": \"secret_folder\"\n    }\n  },\n  {\n    \"subject\": {\n      \"type\": \"group\",\n      \"name\": \"test_group#member\"\n    },\n    \"relation\": \"reader\",\n    \"resource\": {\n      \"type\": \"folder\",\n      \"name\": \"secret_folder\"\n    }\n  },\n  {\n    \"subject\": {\n      \"type\": \"user\",\n      \"name\": \"steve\"\n    },\n    \"relation\": \"member\",\n    \"resource\": {\n      \"type\": \"group\",\n      \"name\": \"dev\"\n    }\n  }\n]",
       "form": []
     },
     "tests": []

@@ -48,10 +48,10 @@ func main() {
 		return c.JSON(http.StatusCreated, tcReqs)
 	})
 
-	// TODO
 	h.Http.POST("/subject/batch", func(c echo.Context) error {
 
 		ctx := c.Request().Context()
+		h.DeleteSubjects(ctx)
 
 		subjReqs := new([]models.SubjectReq)
 
@@ -59,19 +59,49 @@ func main() {
 			return err
 		}
 
-		for _, tcReq := range *subjReqs {
-			tc, err := h.CreateSubject(ctx, &tcReq)
+		for _, subjReq := range *subjReqs {
+			subj, err := h.CreateSubject(ctx, &subjReq)
 
 			if err != nil {
+				h.DeleteSubjects(ctx)
+
 				return echo.NewHTTPError(http.StatusBadRequest, map[string]string{
 					"message": err.Error(),
 				})
 			}
 
-			fmt.Println(tc)
+			fmt.Println(subj)
 		}
 
 		return c.JSON(http.StatusCreated, subjReqs)
+	})
+
+	h.Http.POST("/tuple/batch", func(c echo.Context) error {
+
+		ctx := c.Request().Context()
+		h.DeleteTuples(ctx)
+
+		tupleReqs := new([]models.TupleReqRelation)
+
+		if err := c.Bind(tupleReqs); err != nil {
+			return err
+		}
+
+		for _, tupleReq := range *tupleReqs {
+			tuple, err := h.CreateTuple(ctx, &tupleReq)
+
+			if err != nil {
+				h.DeleteTuples(ctx)
+
+				return echo.NewHTTPError(http.StatusBadRequest, map[string]string{
+					"message": err.Error(),
+				})
+			}
+
+			fmt.Println(tuple)
+		}
+
+		return c.JSON(http.StatusCreated, tupleReqs)
 	})
 
 	h.Http.Logger.Fatal(h.Http.Start(":1323"))
