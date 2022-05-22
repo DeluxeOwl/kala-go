@@ -5,6 +5,7 @@ import (
 
 	"github.com/DeluxeOwl/kala-go/ent"
 	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
 )
 
 type Handler struct {
@@ -21,8 +22,14 @@ func NewHandler() *Handler {
 		log.Fatalf("failed opening connection to sqlite: %v", err)
 	}
 
+	e := echo.New()
+	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
+		AllowOrigins: []string{"http://localhost:3000"},
+		AllowHeaders: []string{echo.HeaderOrigin, echo.HeaderContentType, echo.HeaderAccept},
+	}))
+
 	return &Handler{
 		Db:   client,
-		Http: echo.New(),
+		Http: e,
 	}
 }

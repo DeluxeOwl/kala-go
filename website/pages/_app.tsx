@@ -1,12 +1,14 @@
-import { AppProps } from "next/app";
-import Head from "next/head";
-
 import {
-  MantineProvider,
-  ColorSchemeProvider,
   ColorScheme,
+  ColorSchemeProvider,
+  MantineProvider,
 } from "@mantine/core";
 import { useHotkeys, useLocalStorage } from "@mantine/hooks";
+import { AppProps } from "next/app";
+import Head from "next/head";
+import { QueryClient, QueryClientProvider } from "react-query";
+
+const queryClient = new QueryClient();
 
 export default function App(props: AppProps) {
   const [colorScheme, setColorScheme] = useLocalStorage<ColorScheme>({
@@ -31,22 +33,24 @@ export default function App(props: AppProps) {
         />
       </Head>
 
-      <ColorSchemeProvider
-        colorScheme={colorScheme}
-        toggleColorScheme={toggleColorScheme}
-      >
-        <MantineProvider
-          withGlobalStyles
-          withNormalizeCSS
-          theme={{
-            fontFamily: "Poppins",
-            /** Put your mantine theme override here */
-            colorScheme: colorScheme,
-          }}
+      <QueryClientProvider client={queryClient}>
+        <ColorSchemeProvider
+          colorScheme={colorScheme}
+          toggleColorScheme={toggleColorScheme}
         >
-          <Component {...pageProps} />
-        </MantineProvider>
-      </ColorSchemeProvider>
+          <MantineProvider
+            withGlobalStyles
+            withNormalizeCSS
+            theme={{
+              fontFamily: "Poppins",
+              /** Put your mantine theme override here */
+              colorScheme: colorScheme,
+            }}
+          >
+            <Component {...pageProps} />
+          </MantineProvider>
+        </ColorSchemeProvider>
+      </QueryClientProvider>
     </>
   );
 }

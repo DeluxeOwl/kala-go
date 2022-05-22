@@ -1,4 +1,4 @@
-import { Box } from "@mantine/core";
+import { Box, useMantineColorScheme } from "@mantine/core";
 import Editor, { useMonaco } from "@monaco-editor/react";
 import { useEffect } from "react";
 
@@ -31,6 +31,7 @@ permissions:
 `;
 
 const EditorArea = ({ children }: EditorAreaProps) => {
+  const { colorScheme } = useMantineColorScheme();
   const monaco = useMonaco();
 
   useEffect(() => {
@@ -48,7 +49,7 @@ const EditorArea = ({ children }: EditorAreaProps) => {
       <Editor
         defaultLanguage="yaml"
         defaultValue={defaultExample}
-        theme="vs-dark"
+        theme={colorScheme === "dark" ? "vs-dark" : "vs-light"}
       />
     </Box>
   );
