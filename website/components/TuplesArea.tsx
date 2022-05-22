@@ -8,7 +8,6 @@ const TuplesArea = ({ children }: TuplesAreaProps) => {
   return (
     <Box
       style={{
-        border: "1px solid red",
         flex: 1,
       }}
     >

@@ -5,11 +5,7 @@ type GraphAreaProps = {
 };
 
 const GraphArea = ({ children }: GraphAreaProps) => {
-  return (
-    <Box style={{ border: "1px solid red", flex: 2, height: "100%" }}>
-      {children}
-    </Box>
-  );
+  return <Box style={{ flex: 4, height: "100%" }}>{children}</Box>;
 };
 
 export default GraphArea;
