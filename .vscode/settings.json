@@ -1,3 +1,6 @@
 {
-  "thunder-client.saveToWorkspace": true
+  "thunder-client.saveToWorkspace": true,
+  "editor.codeActionsOnSave": {
+    "source.organizeImports": true
+  }
 }
