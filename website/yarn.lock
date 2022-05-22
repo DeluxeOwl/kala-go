@@ -1822,11 +1822,6 @@ react-property@2.0.0:
   resolved "https://registry.yarnpkg.com/react-property/-/react-property-2.0.0.tgz#2156ba9d85fa4741faf1918b38efc1eae3c6a136"
   integrity sha512-kzmNjIgU32mO4mmH5+iUyrqlpFQhF8K2k7eZ4fdLSOPFrD1XgEuSBv9LDEgxRXTMBqMd8ppT0x6TIzqE5pdGdw==
 
-react-resizable-layout@^0.2.4:
-  version "0.2.4"
-  resolved "https://registry.yarnpkg.com/react-resizable-layout/-/react-resizable-layout-0.2.4.tgz#7e3834c41cda62006229b0412f481e55ab0b89ba"
-  integrity sha512-k+SJMeAebxALKoNs+CiJFj5Z1YNyHXdALs8ZNF7zrsxwuR5JAIpg9xFmHPAuMECnl/axl9PKgfdHs9J2IC+jtQ==
-
 react-textarea-autosize@^8.3.2:
   version "8.3.4"
   resolved "https://registry.yarnpkg.com/react-textarea-autosize/-/react-textarea-autosize-8.3.4.tgz#270a343de7ad350534141b02c9cb78903e553524"
