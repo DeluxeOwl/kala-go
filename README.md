@@ -17,6 +17,8 @@ An authorization and policy engine written in go.
 - **Check structured logging across goroutines**
 - Run on `fly.io` automatically, deploy using GH actions
 - add header to UI
+- Add fullscreen option to graph
+- Add toggles for different things
 
 ```
 [00] operation: &
