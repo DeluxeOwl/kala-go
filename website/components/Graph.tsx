@@ -21,12 +21,11 @@ type NodesAndEdges = {
   edges: Edge[];
 };
 
-function randomIntFromInterval(min, max) {
-  // min and max included
-  return Math.floor(Math.random() * (max - min + 1) + min);
-}
+const refValueDelim = " | ";
+const refSubrelationDelim = "#";
+const parentRelDelim = ".";
 
-const getNodes = (data: any): Node[] => {
+const getNodes = (graph: any): Node[] => {
   let nodes: Node[] = [];
   let edges: Edge[] = [];
 
@@ -35,7 +34,7 @@ const getNodes = (data: any): Node[] => {
     y: 0,
   };
 
-  data.forEach((tc, i) => {
+  graph.forEach((tc, i) => {
     const tcId = `tc/${tc.name}`;
     const tcLabel = tc.name;
     const tcPosition: Point = {
@@ -63,6 +62,7 @@ const getNodes = (data: any): Node[] => {
 
         relations.forEach((rel, i) => {
           const relId = `${tcId}/rel/${rel.name}`;
+          const edgeId = `${tcId}-${relId}`;
           const relLabel = rel.name;
           const relPosition: Point = {
             x: relPoint.x,
@@ -72,7 +72,7 @@ const getNodes = (data: any): Node[] => {
           relPoint.x += 250;
 
           edges.push({
-            id: `${tcId}-${relId}`,
+            id: edgeId,
             source: tcId,
             label: "relation",
             labelBgPadding: [8, 4],
@@ -82,6 +82,9 @@ const getNodes = (data: any): Node[] => {
               type: MarkerType.ArrowClosed,
             },
             target: relId,
+            style: {
+              stroke: "yellow",
+            },
           });
 
           nodes.push({
@@ -89,6 +92,32 @@ const getNodes = (data: any): Node[] => {
             data: { label: relLabel },
             position: relPosition,
           });
+
+          // Composed relation
+          const relValue: string = rel?.value;
+          if (relValue.includes(refValueDelim)) {
+            console.log(true, relValue);
+          } else {
+            edges.push({
+              id: `${tcId}-${relId}-${relValue}`,
+              source: relId,
+              label: "includes",
+              labelBgPadding: [8, 4],
+              labelBgBorderRadius: 4,
+              labelBgStyle: {
+                fill: "green",
+                color: "#fff",
+                fillOpacity: 0.7,
+              },
+              style: {
+                stroke: "green",
+              },
+              markerEnd: {
+                type: MarkerType.ArrowClosed,
+              },
+              target: `tc/${relValue}`,
+            });
+          }
         });
       }
       if (prop === "permissions") {
