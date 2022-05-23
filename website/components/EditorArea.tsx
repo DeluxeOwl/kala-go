@@ -1,7 +1,7 @@
 import { Box, useMantineColorScheme } from "@mantine/core";
-import Editor, { useMonaco } from "@monaco-editor/react";
-import { useEffect } from "react";
-
+import { useViewportSize } from "@mantine/hooks";
+import Editor from "@monaco-editor/react";
+import { useEffect, useRef } from "react";
 type EditorAreaProps = {
   children?: React.ReactNode;
 };
@@ -32,13 +32,32 @@ permissions:
 
 const EditorArea = ({ children }: EditorAreaProps) => {
   const { colorScheme } = useMantineColorScheme();
-  const monaco = useMonaco();
+  const monacoRef = useRef(null);
+  // Font for larger screens
+  const { width } = useViewportSize();
 
   useEffect(() => {
-    if (monaco) {
-      console.log("here is the monaco instance:", monaco);
+    if (monacoRef) {
+      // @ts-ignore
+      monacoRef?.current?.layout({});
     }
-  }, [monaco]);
+  }, [width]);
+
+  function handleEditorWillMount(monaco: any) {
+    // define custom theme
+    monaco.editor.defineTheme("vs-dark-custom", {
+      base: "vs-dark",
+      inherit: true,
+      rules: [],
+      colors: {
+        "editor.background": "#1a1b1e",
+      },
+    });
+  }
+
+  function handleEditorDidMount(editor: any, monaco: any) {
+    monacoRef.current = editor;
+  }
 
   return (
     <Box
@@ -49,7 +68,16 @@ const EditorArea = ({ children }: EditorAreaProps) => {
       <Editor
         defaultLanguage="yaml"
         defaultValue={defaultExample}
-        theme={colorScheme === "dark" ? "vs-dark" : "vs-light"}
+        options={{
+          minimap: {
+            enabled: false,
+          },
+          fontSize: width > 2000 ? 20 : 16,
+          wordWrap: "on",
+        }}
+        theme={colorScheme === "dark" ? "vs-dark-custom" : "vs-light"}
+        beforeMount={handleEditorWillMount}
+        onMount={handleEditorDidMount}
       />
     </Box>
   );

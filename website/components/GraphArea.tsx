@@ -7,13 +7,12 @@ type GraphAreaProps = {
 const GraphArea = ({ children }: GraphAreaProps) => {
   const { isLoading, isError, data, error, refetch } = useGraph();
 
-  console.log(data);
-
   if (isLoading) {
     return <Box style={{ flex: 4, height: "100%" }}>{"Loading ..."}</Box>;
   }
 
   if (isError) {
+    // @ts-ignore
     return <Box style={{ flex: 4, height: "100%" }}>{error?.message}</Box>;
   }
 
