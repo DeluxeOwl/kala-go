@@ -12,11 +12,14 @@
     "@mantine/core": "^4.2.6",
     "@mantine/hooks": "^4.2.6",
     "@mantine/next": "^4.2.6",
+    "@mantine/notifications": "^4.2.6",
     "@monaco-editor/react": "^4.4.5",
     "next": "12.1.6",
     "react": "18.1.0",
     "react-dom": "18.1.0",
-    "react-query": "^3.39.0"
+    "react-query": "^3.39.0",
+    "tabler-icons-react": "^1.48.0",
+    "yaml": "^2.1.0"
   },
   "devDependencies": {
     "@types/node": "17.0.35",

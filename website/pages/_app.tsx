@@ -4,10 +4,10 @@ import {
   MantineProvider,
 } from "@mantine/core";
 import { useHotkeys, useLocalStorage } from "@mantine/hooks";
+import { NotificationsProvider } from "@mantine/notifications";
 import { AppProps } from "next/app";
 import Head from "next/head";
 import { QueryClient, QueryClientProvider } from "react-query";
-
 const queryClient = new QueryClient();
 
 export default function App(props: AppProps) {
@@ -47,7 +47,9 @@ export default function App(props: AppProps) {
               colorScheme: colorScheme,
             }}
           >
-            <Component {...pageProps} />
+            <NotificationsProvider position="top-center">
+              <Component {...pageProps} />
+            </NotificationsProvider>
           </MantineProvider>
         </ColorSchemeProvider>
       </QueryClientProvider>

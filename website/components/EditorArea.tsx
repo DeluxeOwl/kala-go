@@ -1,7 +1,10 @@
 import { Box, useMantineColorScheme } from "@mantine/core";
-import { useViewportSize } from "@mantine/hooks";
+import { useHotkeys, useViewportSize } from "@mantine/hooks";
 import Editor from "@monaco-editor/react";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import YAML from "yaml";
+import { showError } from "../util/notifications";
+
 type EditorAreaProps = {
   children?: React.ReactNode;
 };
@@ -31,10 +34,16 @@ permissions:
 `;
 
 const EditorArea = ({ children }: EditorAreaProps) => {
+  const [requestPayload, setRequestPayload] = useState<string>("");
   const { colorScheme } = useMantineColorScheme();
   const monacoRef = useRef(null);
   // Font for larger screens
   const { width } = useViewportSize();
+
+  // Triggered each time I press Ctrl+K
+  useEffect(() => {
+    console.log(requestPayload);
+  }, [requestPayload]);
 
   useEffect(() => {
     if (monacoRef) {
@@ -42,6 +51,32 @@ const EditorArea = ({ children }: EditorAreaProps) => {
       monacoRef?.current?.layout({});
     }
   }, [width]);
+
+  // For getting the value
+  useHotkeys([["mod+K", () => handleEditorValue()]]);
+
+  function handleEditorValue() {
+    if (!monacoRef) {
+      return;
+    }
+    // @ts-ignore
+    const value: string = monacoRef?.current?.getValue()?.split("---");
+
+    let requestPayload = new Array();
+    for (const val of value) {
+      try {
+        requestPayload.push(YAML.parse(val));
+      } catch (YAMLParseError) {
+        // @ts-ignore
+        const errorMessage = YAMLParseError?.toString();
+        showError(errorMessage);
+
+        return;
+      }
+    }
+
+    setRequestPayload(JSON.stringify(requestPayload, null, 2));
+  }
 
   function handleEditorWillMount(monaco: any) {
     // define custom theme
