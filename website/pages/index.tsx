@@ -45,6 +45,9 @@ const Home: NextPage = () => {
           <List.Item>
             <Kbd>Ctrl</Kbd> + <Kbd>M</Kbd> - make graph fullscreen
           </List.Item>
+          <List.Item>
+            <Kbd>Ctrl</Kbd> + <Kbd>J</Kbd> - toggle dark mode
+          </List.Item>
         </List>
       </Modal>
       <Ide>
