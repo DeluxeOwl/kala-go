@@ -28,3 +28,6 @@ tasks:
   describe:
     cmds:
       - ent describe ./ent/schema > schema_desc.txt && code schema_desc.txt
+  build:
+    cmds:
+      - go build -o kala ./cmd/kala.go
