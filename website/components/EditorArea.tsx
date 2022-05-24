@@ -3,6 +3,7 @@ import { useHotkeys, useViewportSize } from "@mantine/hooks";
 import Editor from "@monaco-editor/react";
 import { useEffect, useRef } from "react";
 import YAML from "yaml";
+import useGraph from "../hooks/useGraph";
 import { fetchAll } from "../util/fetchAll";
 import { showError } from "../util/notifications";
 
@@ -39,6 +40,7 @@ const EditorArea = ({ children }: EditorAreaProps) => {
   const monacoRef = useRef(null);
   // Font for larger screens
   const { width } = useViewportSize();
+  const { refetch } = useGraph();
 
   useEffect(() => {
     if (monacoRef) {
@@ -70,6 +72,7 @@ const EditorArea = ({ children }: EditorAreaProps) => {
     }
     try {
       await fetchAll([requestPayload]);
+      await refetch();
     } catch (error) {
       // @ts-ignore
       showError(`in editor: ${error.message}`);

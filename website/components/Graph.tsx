@@ -142,13 +142,14 @@ type GraphProps = {
 };
 
 const Graph = ({ data }: GraphProps) => {
-  const parsedData = getNodes(data);
-
-  const [nodes, setNodes, onNodesChange] = useNodesState(parsedData.nodes);
-  const [edges, setEdges, onEdgesChange] = useEdgesState(parsedData.edges);
+  const [nodes, setNodes, onNodesChange] = useNodesState([]);
+  const [edges, setEdges, onEdgesChange] = useEdgesState([]);
 
   useEffect(() => {
-    getNodes(data);
+    const parsedData = getNodes(data);
+    setNodes(parsedData.nodes);
+    setEdges(parsedData.edges);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data]);
 
   return (
