@@ -25,6 +25,13 @@ const refValueDelim = " | ";
 const refSubrelationDelim = "#";
 const parentRelDelim = ".";
 
+function sinDegrees(angleDegrees) {
+  return Math.sin((angleDegrees * Math.PI) / 180);
+}
+function cosDegrees(angleDegrees) {
+  return Math.cos((angleDegrees * Math.PI) / 180);
+}
+
 // TODO: calculate some stuff here to look good
 const getNodes = (graph: any): Node[] => {
   let nodes: Node[] = [];
@@ -32,17 +39,20 @@ const getNodes = (graph: any): Node[] => {
 
   // https://stackoverflow.com/questions/5300938/calculating-the-position-of-points-in-a-circle
   let radius = 500;
-  let degrees: number = 6.28319;
+  let degrees: number = 360;
   if (graph.length > 0) {
-    degrees = 6.28319 / graph.length;
+    degrees = 360 / graph.length;
   }
 
   graph.forEach((tc, i) => {
     const tcId = `tc/${tc.name}`;
     const tcLabel = tc.name;
+
+    const computedDgTc = degrees * (i + 1);
+
     const tcPosition: Point = {
-      x: radius * Math.cos(degrees * (i + 1)) + 50,
-      y: radius * Math.sin(degrees * (i + 1)) + 50,
+      x: radius * cosDegrees(computedDgTc),
+      y: radius * sinDegrees(computedDgTc),
     };
 
     // tcPoint.x += 250;
@@ -58,9 +68,12 @@ const getNodes = (graph: any): Node[] => {
     for (const prop in tcEdges) {
       if (prop === "relations") {
         const relations = tcEdges[prop];
+
+        const computedDgRel = degrees * (i + 1);
+
         let relPoint: Point = {
-          x: tcPosition.x,
-          y: tcPosition.y + 250,
+          x: tcPosition.x + radius * cosDegrees(computedDgRel),
+          y: tcPosition.y + radius * sinDegrees(computedDgRel),
         };
 
         relations.forEach((rel, i) => {
@@ -72,6 +85,7 @@ const getNodes = (graph: any): Node[] => {
             y: relPoint.y,
           };
 
+          relPoint.y += 250;
           relPoint.x += 250;
 
           edges.push({
