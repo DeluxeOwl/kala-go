@@ -1,20 +1,24 @@
 import { Box } from "@mantine/core";
 import useGraph from "../hooks/useGraph";
+import ErrorGraph from "./ErrorGraph";
 import Graph from "./Graph";
+import LoadingGraph from "./LoadingGraph";
+
 type GraphAreaProps = {
   children?: React.ReactNode;
 };
 
 const GraphArea = ({ children }: GraphAreaProps) => {
   const { isLoading, isError, data, error, refetch } = useGraph();
+  // @ts-ignore
+  const errorMessage: string = error?.message;
 
   if (isLoading) {
-    return <Box style={{ flex: 4, height: "100%" }}>{"Loading ..."}</Box>;
+    return <LoadingGraph />;
   }
 
   if (isError) {
-    // @ts-ignore
-    return <Box style={{ flex: 4, height: "100%" }}>{error?.message}</Box>;
+    return <ErrorGraph errorMessage={errorMessage} />;
   }
 
   return (
