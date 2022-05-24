@@ -10,8 +10,6 @@ type GraphAreaProps = {
 
 const GraphArea = ({ children }: GraphAreaProps) => {
   const { isLoading, isError, data, error } = useGraph();
-  console.log(data);
-
   // @ts-ignore
   const errorMessage: string = error?.message;
 

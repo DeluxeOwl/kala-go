@@ -25,24 +25,27 @@ const refValueDelim = " | ";
 const refSubrelationDelim = "#";
 const parentRelDelim = ".";
 
+// TODO: calculate some stuff here to look good
 const getNodes = (graph: any): Node[] => {
   let nodes: Node[] = [];
   let edges: Edge[] = [];
 
-  let tcPoint: Point = {
-    x: 0,
-    y: 0,
-  };
+  // https://stackoverflow.com/questions/5300938/calculating-the-position-of-points-in-a-circle
+  let radius = 500;
+  let degrees: number = 6.28319;
+  if (graph.length > 0) {
+    degrees = 6.28319 / graph.length;
+  }
 
   graph.forEach((tc, i) => {
     const tcId = `tc/${tc.name}`;
     const tcLabel = tc.name;
     const tcPosition: Point = {
-      x: tcPoint.x,
-      y: tcPoint.y,
+      x: radius * Math.cos(degrees * (i + 1)) + 50,
+      y: radius * Math.sin(degrees * (i + 1)) + 50,
     };
 
-    tcPoint.x += 250;
+    // tcPoint.x += 250;
 
     nodes.push({
       id: tcId,
@@ -56,8 +59,8 @@ const getNodes = (graph: any): Node[] => {
       if (prop === "relations") {
         const relations = tcEdges[prop];
         let relPoint: Point = {
-          x: tcPoint.x - 250,
-          y: tcPoint.y + 250,
+          x: tcPosition.x,
+          y: tcPosition.y + 250,
         };
 
         relations.forEach((rel, i) => {
@@ -96,7 +99,7 @@ const getNodes = (graph: any): Node[] => {
           // Composed relation
           const relValue: string = rel?.value;
           if (relValue.includes(refValueDelim)) {
-            console.log(true, relValue);
+            // console.log(true, relValue);
           } else {
             edges.push({
               id: `${tcId}-${relId}-${relValue}`,

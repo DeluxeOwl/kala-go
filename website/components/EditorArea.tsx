@@ -5,7 +5,7 @@ import { useEffect, useRef } from "react";
 import YAML from "yaml";
 import useGraph from "../hooks/useGraph";
 import { fetchAll } from "../util/fetchAll";
-import { showError } from "../util/notifications";
+import { showError, showSuccess } from "../util/notifications";
 
 type EditorAreaProps = {
   children?: React.ReactNode;
@@ -73,6 +73,7 @@ const EditorArea = ({ children }: EditorAreaProps) => {
     try {
       await fetchAll([requestPayload]);
       await refetch();
+      showSuccess("Reloaded config");
     } catch (error) {
       // @ts-ignore
       showError(`in editor: ${error.message}`);
