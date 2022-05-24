@@ -1,8 +1,9 @@
 import { Box, useMantineColorScheme } from "@mantine/core";
 import { useHotkeys, useViewportSize } from "@mantine/hooks";
 import Editor from "@monaco-editor/react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import YAML from "yaml";
+import { fetchAll } from "../util/fetchAll";
 import { showError } from "../util/notifications";
 
 type EditorAreaProps = {
@@ -34,16 +35,10 @@ permissions:
 `;
 
 const EditorArea = ({ children }: EditorAreaProps) => {
-  const [requestPayload, setRequestPayload] = useState<string>("");
   const { colorScheme } = useMantineColorScheme();
   const monacoRef = useRef(null);
   // Font for larger screens
   const { width } = useViewportSize();
-
-  // Triggered each time I press Ctrl+K
-  useEffect(() => {
-    console.log(requestPayload);
-  }, [requestPayload]);
 
   useEffect(() => {
     if (monacoRef) {
@@ -55,7 +50,7 @@ const EditorArea = ({ children }: EditorAreaProps) => {
   // For getting the value
   useHotkeys([["mod+K", () => handleEditorValue()]]);
 
-  function handleEditorValue() {
+  const handleEditorValue = async () => {
     if (!monacoRef) {
       return;
     }
@@ -70,15 +65,18 @@ const EditorArea = ({ children }: EditorAreaProps) => {
         // @ts-ignore
         const errorMessage = YAMLParseError?.toString();
         showError(errorMessage);
-
         return;
       }
     }
+    try {
+      await fetchAll([requestPayload]);
+    } catch (error) {
+      // @ts-ignore
+      showError(`in editor: ${error.message}`);
+    }
+  };
 
-    setRequestPayload(JSON.stringify(requestPayload, null, 2));
-  }
-
-  function handleEditorWillMount(monaco: any) {
+  const handleEditorWillMount = (monaco: any) => {
     // define custom theme
     monaco.editor.defineTheme("vs-dark-custom", {
       base: "vs-dark",
@@ -88,11 +86,11 @@ const EditorArea = ({ children }: EditorAreaProps) => {
         "editor.background": "#1a1b1e",
       },
     });
-  }
+  };
 
-  function handleEditorDidMount(editor: any, monaco: any) {
+  const handleEditorDidMount = (editor: any, monaco: any) => {
     monacoRef.current = editor;
-  }
+  };
 
   return (
     <Box

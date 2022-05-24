@@ -138,7 +138,7 @@ func (h *Handler) CheckPermission(ctx context.Context, tr *models.TupleReqPermis
 func (h *Handler) DoCreateTypeConfig(ctx context.Context, tcInput *models.TypeConfigReq) (*ent.TypeConfig, error) {
 
 	if !regexTypeName.MatchString(tcInput.Name) {
-		return nil, fmt.Errorf("malformed type name input: '%s'", tcInput.Name)
+		return nil, fmt.Errorf("malformed type name input: `%s`", tcInput.Name)
 	}
 
 	tc, err := h.Db.TypeConfig.Create().
@@ -166,11 +166,11 @@ func (h *Handler) DoCreateTypeConfig(ctx context.Context, tcInput *models.TypeCo
 		log.Printf("-> validating '%s: %s'\n", relName, relValue)
 
 		if !regexPropertyName.MatchString(relName) {
-			return nil, fmt.Errorf("malformed relation name input: '%s'", relName)
+			return nil, fmt.Errorf("malformed relation name input: `%s`", relName)
 		}
 
 		if !regexRelValue.MatchString(relValue) {
-			return nil, fmt.Errorf("malformed relation reference input: '%s'", relValue)
+			return nil, fmt.Errorf("malformed relation reference input: `%s`", relValue)
 		}
 
 		referencedTypeIDsSlice := make([]int, 0)
@@ -186,7 +186,7 @@ func (h *Handler) DoCreateTypeConfig(ctx context.Context, tcInput *models.TypeCo
 					OnlyID(ctx)
 
 				if err != nil {
-					return nil, fmt.Errorf("referenced type does not exist: '%s'", referencedType)
+					return nil, fmt.Errorf("in type `%s`,\n referenced type does not exist: `%s`", tcInput.Name, referencedType)
 				}
 
 				log.Printf("---> found id %d for %s\n", id, referencedType)
@@ -206,7 +206,7 @@ func (h *Handler) DoCreateTypeConfig(ctx context.Context, tcInput *models.TypeCo
 					OnlyID(ctx)
 
 				if err != nil {
-					return nil, fmt.Errorf("referenced type does not exist: '%s'", refTypeName)
+					return nil, fmt.Errorf("in type `%s`,\n referenced type does not exist: `%s`", tcInput.Name, refTypeName)
 				}
 
 				hasRelation, err := h.Db.TypeConfig.
@@ -217,7 +217,7 @@ func (h *Handler) DoCreateTypeConfig(ctx context.Context, tcInput *models.TypeCo
 					Exist(ctx)
 
 				if !hasRelation || err != nil {
-					return nil, fmt.Errorf("referenced relation does not exist: '%s#%s'", refTypeName, refTypeRelation)
+					return nil, fmt.Errorf("in type `%s`,\n referenced relation does not exist: `%s#%s`", tcInput.Name, refTypeName, refTypeRelation)
 				}
 
 				log.Printf("---> found id %d for %s\n", id, refTypeName)
@@ -261,17 +261,17 @@ func (h *Handler) DoCreateTypeConfig(ctx context.Context, tcInput *models.TypeCo
 			}
 		}
 
-		return -1, fmt.Errorf("adding relation: couldn't get id for relation '%s'", name)
+		return -1, fmt.Errorf("adding relation: couldn't get id for relation `%s`", name)
 	}
 
 	for permName, permValue := range tcInput.Permissions {
 
 		if !regexPropertyName.MatchString(permName) {
-			return nil, fmt.Errorf("malformed permission name input: '%s'", permName)
+			return nil, fmt.Errorf("in type `%s`,\n malformed permission name input: `%s`", tcInput.Name, permName)
 		}
 
 		if !regexPermValue.MatchString(permValue) {
-			return nil, fmt.Errorf("malformed permission reference input: '%s'", permValue)
+			return nil, fmt.Errorf("in type `%s`,\n malformed permission reference input: `%s`", tcInput.Name, permValue)
 		}
 
 		referencedTypeIDsSlice := make([]int, 0)
@@ -281,7 +281,10 @@ func (h *Handler) DoCreateTypeConfig(ctx context.Context, tcInput *models.TypeCo
 			// check direct relations
 			if !strings.Contains(referencedRelation, parentRelDelim) {
 				if !slices.Contains(inputRelations, referencedRelation) {
-					return nil, fmt.Errorf("referenced relation '%s' in permission '%s' not found", referencedRelation, permName)
+					return nil, fmt.Errorf("in type `%s`,\n referenced relation `%s` in permission `%s` not found",
+						tcInput.Name,
+						referencedRelation,
+						permName)
 				}
 
 				relID, err := getIdForRelationName(referencedRelation)
@@ -291,7 +294,7 @@ func (h *Handler) DoCreateTypeConfig(ctx context.Context, tcInput *models.TypeCo
 
 				referencedTypeIDsSlice = append(referencedTypeIDsSlice, relID)
 
-				fmt.Printf("--> found relation '%s' with id %d \n", referencedRelation, relID)
+				fmt.Printf("--> found relation `%s` with id %d \n", referencedRelation, relID)
 			} else {
 				// check parent relations
 				s := strings.Split(referencedRelation, parentRelDelim)
@@ -300,13 +303,13 @@ func (h *Handler) DoCreateTypeConfig(ctx context.Context, tcInput *models.TypeCo
 				refParentRel := s[1]
 
 				if !slices.Contains(inputRelations, refParent) {
-					return nil, fmt.Errorf("referenced relation '%s' in permission '%s' not found", referencedRelation, permName)
+					return nil, fmt.Errorf("in type `%s`,\n referenced relation `%s` in permission `%s` not found", tcInput.Name, referencedRelation, permName)
 				}
 				// error if composed relation: user | group#member
 				referencedType := tcInput.Relations[refParent]
 
 				if strings.Contains(referencedType, refValueDelim) {
-					return nil, fmt.Errorf("referenced relation '%s' can't contain a composed value: '%s'", refParent, referencedType)
+					return nil, fmt.Errorf("in type `%s`,\n referenced relation `%s` can't contain a composed value: `%s`", tcInput.Name, refParent, referencedType)
 				}
 
 				hasRelation, err := h.Db.TypeConfig.
@@ -317,7 +320,8 @@ func (h *Handler) DoCreateTypeConfig(ctx context.Context, tcInput *models.TypeCo
 					Exist(ctx)
 
 				if !hasRelation || err != nil {
-					return nil, fmt.Errorf("referenced type '%s' in relation '%s' doesn't have a '%s' relation",
+					return nil, fmt.Errorf("in type `%s`,\n referenced type `%s` in relation `%s` doesn't have a `%s` relation",
+						tcInput.Name,
 						referencedType,
 						refParent,
 						refParentRel)
@@ -330,7 +334,7 @@ func (h *Handler) DoCreateTypeConfig(ctx context.Context, tcInput *models.TypeCo
 
 				referencedTypeIDsSlice = append(referencedTypeIDsSlice, relID)
 
-				fmt.Printf("--> found parent relation '%s' with relation '%s' with id %d\n", refParent, refParentRel, relID)
+				fmt.Printf("--> found parent relation `%s` with relation `%s` with id %d\n", refParent, refParentRel, relID)
 			}
 
 		}
@@ -362,7 +366,7 @@ func (h *Handler) DoCreateTypeConfig(ctx context.Context, tcInput *models.TypeCo
 func (h *Handler) DoCreateSubject(ctx context.Context, s *models.SubjectReq) (*ent.Subject, error) {
 
 	if !regexSubjName.MatchString(s.SubjectName) {
-		return nil, fmt.Errorf("malformed subj name input: '%s'", s.SubjectName)
+		return nil, fmt.Errorf("malformed subj name input: `%s`", s.SubjectName)
 	}
 
 	exists, err := h.Db.TypeConfig.
@@ -374,7 +378,7 @@ func (h *Handler) DoCreateSubject(ctx context.Context, s *models.SubjectReq) (*e
 		return nil, fmt.Errorf("failed querying type config: %w", err)
 	}
 	if !exists {
-		return nil, fmt.Errorf("failed when creating subject, type '%s' does not exist", s.TypeConfigName)
+		return nil, fmt.Errorf("failed when creating subject, type `%s` does not exist", s.TypeConfigName)
 	}
 
 	subj, err := h.Db.Subject.Create().SetName(s.SubjectName).Save(ctx)

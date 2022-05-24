@@ -261,7 +261,7 @@ func (h *Handler) ParsePermissionAndEvaluate(permValue string, pc *models.Permis
 // 		if err != nil {
 // 			fmt.Println(err)
 // 		}
-// 		fmt.Printf("has permission '%s'? %t\n", v, hasPerm)
+// 		fmt.Printf("has permission `%s`? %t\n", v, hasPerm)
 // 	}
 
 // }
