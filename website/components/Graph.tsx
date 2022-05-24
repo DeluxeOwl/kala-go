@@ -113,7 +113,75 @@ const getNodes = (graph: any): Node[] => {
           // Composed relation
           const relValue: string = rel?.value;
           if (relValue.includes(refValueDelim)) {
-            // console.log(true, relValue);
+            nodes.push({
+              id: `${relId}/or`,
+              data: { label: "|" },
+              position: { x: relPosition.x + 250, y: relPosition.y + 250 },
+            });
+            edges.push({
+              id: `${edgeId}/or`,
+              source: relId,
+              label: "includes",
+              labelBgPadding: [8, 4],
+              labelBgStyle: {
+                fill: "green",
+                color: "#fff",
+                fillOpacity: 0.7,
+              },
+              style: {
+                stroke: "green",
+              },
+              markerEnd: {
+                type: MarkerType.ArrowClosed,
+              },
+              target: `${relId}/or`,
+            });
+            for (const [i, composedRel] of relValue
+              .split(refValueDelim)
+              .entries()) {
+              if (composedRel.includes(refSubrelationDelim)) {
+                const s: string = composedRel.split(refSubrelationDelim);
+                edges.push({
+                  id: `${edgeId}/or/${composedRel}/${i}`,
+                  source: `${relId}/or`,
+                  label: "OR",
+                  labelBgPadding: [8, 4],
+                  labelBgBorderRadius: 4,
+                  labelBgStyle: {
+                    fill: "#0000FF",
+                    color: "#fff",
+                    fillOpacity: 0.7,
+                  },
+                  markerEnd: {
+                    type: MarkerType.ArrowClosed,
+                  },
+                  target: `tc/${s[0]}/rel/${s[1]}`,
+                  style: {
+                    stroke: "blue",
+                  },
+                });
+              } else {
+                edges.push({
+                  id: `${edgeId}/or/${composedRel}/${i}`,
+                  source: `${relId}/or`,
+                  label: "OR",
+                  labelBgPadding: [8, 4],
+                  labelBgBorderRadius: 4,
+                  labelBgStyle: {
+                    fill: "#0000FF",
+                    color: "#fff",
+                    fillOpacity: 0.7,
+                  },
+                  markerEnd: {
+                    type: MarkerType.ArrowClosed,
+                  },
+                  target: `tc/${composedRel}`,
+                  style: {
+                    stroke: "blue",
+                  },
+                });
+              }
+            }
           } else {
             edges.push({
               id: `${tcId}-${relId}-${relValue}`,
