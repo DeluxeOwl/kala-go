@@ -1,6 +1,5 @@
-import { Box, List, ScrollArea, Tabs } from "@mantine/core";
+import { Box, Tabs } from "@mantine/core";
 import { LockAccess, ThreeDCubeSphere } from "tabler-icons-react";
-import Tuple from "./Tuple";
 
 const tuples = [
   {
@@ -103,7 +102,7 @@ const TuplesArea = () => {
     >
       <Tabs style={{ marginTop: "0.5rem" }} variant="default">
         <Tabs.Tab label="Tuples" icon={<ThreeDCubeSphere size={14} />}>
-          <ScrollArea>
+          {/* <ScrollArea>
             <List listStyleType={"none"}>
               {tuples.map((t) => (
                 <List.Item>
@@ -115,7 +114,7 @@ const TuplesArea = () => {
                 </List.Item>
               ))}
             </List>
-          </ScrollArea>
+          </ScrollArea> */}
         </Tabs.Tab>
         <Tabs.Tab label="PermissionCheck" icon={<LockAccess size={14} />}>
           PermissionCheck
