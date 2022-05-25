@@ -54,7 +54,7 @@ const Home: NextPage = () => {
         {editorOpen && (
           <EditorTuplesArea>
             <EditorArea>Editor</EditorArea>
-            <TuplesArea>Tuples</TuplesArea>
+            <TuplesArea />
           </EditorTuplesArea>
         )}
         <GraphArea>Graph</GraphArea>

@@ -22,7 +22,13 @@ const GraphArea = ({ children }: GraphAreaProps) => {
   }
 
   return (
-    <Box style={{ flex: 4, height: "100%", overflow: "auto" }}>
+    <Box
+      style={{
+        flex: 4,
+        height: "100%",
+        overflow: "auto",
+      }}
+    >
       <Graph data={data} />
     </Box>
   );

@@ -6,7 +6,10 @@ type EditorTuplesAreaProps = {
 
 const EditorTuplesArea = ({ children }: EditorTuplesAreaProps) => {
   return (
-    <Stack style={{ flex: 4, height: "100%" }} spacing={0}>
+    <Stack
+      style={{ flex: 4, height: "100%", borderRight: "1px solid gray" }}
+      spacing={0}
+    >
       {children}
     </Stack>
   );
