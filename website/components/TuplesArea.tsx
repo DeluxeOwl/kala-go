@@ -1,8 +1,9 @@
 import { Box, Container, List, Tabs } from "@mantine/core";
+import { useState } from "react";
 import { LockAccess, ThreeDCubeSphere } from "tabler-icons-react";
 import Tuple from "./Tuple";
 
-const tuples = [
+const initialTuples = [
   {
     subject: {
       type: "user",
@@ -94,6 +95,10 @@ const tuples = [
 ];
 
 const TuplesArea = () => {
+  const [tuples, setTuples] = useState(initialTuples);
+
+  console.log(tuples);
+
   return (
     <Box
       style={{
@@ -117,6 +122,7 @@ const TuplesArea = () => {
                     subject={{ type: t.subject.type, name: t.subject.name }}
                     relation={t.relation}
                     resource={{ type: t.resource.type, name: t.resource.name }}
+                    setTuples={setTuples}
                   />
                 </List.Item>
               ))}
