@@ -109,7 +109,7 @@ const TuplesArea = () => {
         variant="default"
       >
         <Tabs.Tab label="Tuples" icon={<ThreeDCubeSphere size={14} />}>
-          <Container style={{ overflow: "auto", height: "100%" }}>
+          <Container style={{ overflow: "auto", height: "90%" }}>
             <List listStyleType={"none"}>
               {tuples.map((t) => (
                 <List.Item>

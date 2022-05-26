@@ -1,8 +1,10 @@
 import {
+  Box,
   Container,
   Group,
   Kbd,
   Stack,
+  Text,
   ThemeIcon,
   Tooltip,
 } from "@mantine/core";
@@ -25,25 +27,25 @@ export default function Tuple(props: TupleProps) {
       }}
     >
       <Group>
-        <Container>
-          <Stack>
-            <Container>SUBJECT</Container>
-            <Container>RELATION</Container>
-            <Container>RESOURCE</Container>
-          </Stack>
-        </Container>
-        <Container>
-          <Stack align={"flex-start"}>
-            <Container>
-              {`${props.subject.type}:${props.subject.name}`}
-            </Container>
-            <Container>{`${props.relation}`}</Container>
-            <Container>
-              {`${props.resource.type}:${props.resource.name}`}
-            </Container>
-          </Stack>
-        </Container>
-        <Container>
+        <Stack style={{ flex: 1 }}>
+          <Container>
+            <Text weight={700}>SUBJECT</Text>
+          </Container>
+          <Container>
+            <Text weight={700}>RELATION</Text>
+          </Container>
+          <Container>
+            <Text weight={700}>RESOURCE</Text>
+          </Container>
+        </Stack>
+
+        <Stack style={{ flex: 6 }}>
+          <Box>{`${props.subject.type}:${props.subject.name}`}</Box>
+          <Box>{`${props.relation}`}</Box>
+          <Box>{`${props.resource.type}:${props.resource.name}`}</Box>
+        </Stack>
+
+        <Stack style={{ flex: 1 }}>
           <Tooltip
             label={
               <>
@@ -64,7 +66,7 @@ export default function Tuple(props: TupleProps) {
               <QuestionMark />
             </ThemeIcon>
           </Tooltip>
-        </Container>
+        </Stack>
       </Group>
     </Container>
   );
