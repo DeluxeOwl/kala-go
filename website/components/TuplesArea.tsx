@@ -95,10 +95,17 @@ const initialTuples = [
   },
 ];
 
+const getUniqueSubjects = (tuples: any) => {
+  const subjects = new Set();
+  tuples.forEach((t: any) => subjects.add(JSON.stringify(t.subject)));
+
+  return Array.from(subjects).map((s: any) => JSON.parse(s));
+};
+
 const TuplesArea = () => {
   const [tuples, setTuples] = useState(initialTuples);
 
-  console.log(tuples);
+  const subjects = getUniqueSubjects(tuples);
 
   return (
     <Box
@@ -120,8 +127,8 @@ const TuplesArea = () => {
               <List.Item>
                 <TupleAdd setTuples={setTuples} />
               </List.Item>
-              {tuples.map((t) => (
-                <List.Item>
+              {tuples.map((t, i) => (
+                <List.Item key={i}>
                   <Tuple
                     subject={{ type: t.subject.type, name: t.subject.name }}
                     relation={t.relation}
