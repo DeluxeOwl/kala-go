@@ -46,26 +46,26 @@ export default function Tuple(props: TupleProps) {
         </Stack>
 
         <Stack style={{ flex: 1 }}>
-          <Tooltip
-            label={
-              <>
-                <Kbd>{`${props.subject.type}:${props.subject.name}`}</Kbd>
-                &nbsp;is a&nbsp;<Kbd>{`${props.relation}`}</Kbd>
-                &nbsp;of&nbsp;
-                <Kbd>{`${props.resource.type}:${props.resource.name}`}</Kbd>
-              </>
-            }
-            withArrow
-            arrowSize={3}
+          <ThemeIcon
+            radius={"lg"}
+            variant="gradient"
+            gradient={{ from: "teal", to: "blue", deg: 60 }}
           >
-            <ThemeIcon
-              radius={"lg"}
-              variant="gradient"
-              gradient={{ from: "teal", to: "blue", deg: 60 }}
+            <Tooltip
+              label={
+                <>
+                  <Kbd>{`${props.subject.type}:${props.subject.name}`}</Kbd>
+                  &nbsp;is a&nbsp;<Kbd>{`${props.relation}`}</Kbd>
+                  &nbsp;of&nbsp;
+                  <Kbd>{`${props.resource.type}:${props.resource.name}`}</Kbd>
+                </>
+              }
+              withArrow
+              arrowSize={3}
             >
               <QuestionMark />
-            </ThemeIcon>
-          </Tooltip>
+            </Tooltip>
+          </ThemeIcon>
         </Stack>
       </Group>
     </Container>
