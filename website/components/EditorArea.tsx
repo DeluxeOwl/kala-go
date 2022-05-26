@@ -100,6 +100,7 @@ const EditorArea = ({ children }: EditorAreaProps) => {
     <Box
       style={{
         flex: 1,
+        minHeight: "50%",
       }}
     >
       <Editor
