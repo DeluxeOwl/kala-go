@@ -2,6 +2,7 @@ import { Box, Container, List, Tabs } from "@mantine/core";
 import { useState } from "react";
 import { LockAccess, ThreeDCubeSphere } from "tabler-icons-react";
 import Tuple from "./Tuple";
+import TupleAdd from "./TupleAdd";
 
 const initialTuples = [
   {
@@ -116,6 +117,9 @@ const TuplesArea = () => {
         <Tabs.Tab label="Tuples" icon={<ThreeDCubeSphere size={14} />}>
           <Container style={{ overflow: "auto", height: "90%" }}>
             <List listStyleType={"none"}>
+              <List.Item>
+                <TupleAdd setTuples={setTuples} />
+              </List.Item>
               {tuples.map((t) => (
                 <List.Item>
                   <Tuple
