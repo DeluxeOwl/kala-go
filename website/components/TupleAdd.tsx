@@ -1,20 +1,38 @@
 import {
+  Box,
   Button,
   Container,
   Group,
   Input,
-  Select,
   Stack,
   Text,
 } from "@mantine/core";
+import { useInputState } from "@mantine/hooks";
 import { Plus } from "tabler-icons-react";
+import useTuples from "../hooks/useTuples";
 
-type TupleAddProps = {
-  setTuples: CallableFunction;
-};
+export default function TupleAdd() {
+  const addTuple = useTuples((s) => s.addTuple);
 
-export default function TupleAdd(props: TupleAddProps) {
-  const handleTupleAdd = () => {};
+  const [subjectType, setSubjectType] = useInputState("");
+  const [subjectName, setSubjectName] = useInputState("");
+  const [relation, setRelation] = useInputState("");
+  const [resourceType, setResourceType] = useInputState("");
+  const [resourceName, setResourceName] = useInputState("");
+
+  const handleTupleAdd = () => {
+    addTuple({
+      subject: {
+        type: subjectType,
+        name: subjectName,
+      },
+      relation: relation,
+      resource: {
+        type: resourceType,
+        name: resourceName,
+      },
+    });
+  };
 
   return (
     <Container
@@ -22,10 +40,10 @@ export default function TupleAdd(props: TupleAddProps) {
         border: "2px solid gray",
         margin: "1rem",
         borderRadius: "10px",
-        padding: "5px",
+        padding: "10px",
       }}
     >
-      <Group grow>
+      <Group style={{ height: "100%" }}>
         <Stack style={{ flex: 1 }}>
           <Container>
             <Text weight={700}>SUBJECT</Text>
@@ -38,19 +56,33 @@ export default function TupleAdd(props: TupleAddProps) {
           </Container>
         </Stack>
 
-        <Stack style={{ flex: 6 }}>
-          <Select data={[]} />
-          <Select data={[]} />
-          <Select data={[]} />
+        <Stack style={{ flex: 3 }}>
+          <Input value={subjectType} onChange={setSubjectType} />
+          <Input value={relation} onChange={setRelation} />
+          <Input value={resourceType} onChange={setResourceType} />
         </Stack>
 
-        <Group style={{ flex: 1 }}>
-          <Stack>
-            <Input />
-            <Input />
-            <Input />
+        <Group style={{ flex: 4, height: "100%" }}>
+          <Stack style={{ flex: 2, height: "100%" }}>
+            <Input
+              value={subjectName}
+              onChange={setSubjectName}
+              style={{ margin: "auto" }}
+            />
+            <Box style={{ height: "36px" }} />
+            <Input
+              value={resourceName}
+              onChange={setResourceName}
+              style={{ margin: "auto" }}
+            />
           </Stack>
-          <Button variant="filled" color="green" rightIcon={<Plus size={16} />}>
+          <Button
+            style={{ flex: 1 }}
+            variant="filled"
+            color="green"
+            rightIcon={<Plus size={16} />}
+            onClick={handleTupleAdd}
+          >
             Add tuple
           </Button>
         </Group>

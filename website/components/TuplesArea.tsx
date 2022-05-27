@@ -1,111 +1,26 @@
-import { Box, Container, List, Tabs } from "@mantine/core";
-import { useState } from "react";
+import { Box, List, Tabs } from "@mantine/core";
 import { LockAccess, ThreeDCubeSphere } from "tabler-icons-react";
+import useTuples from "../hooks/useTuples";
 import Tuple from "./Tuple";
 import TupleAdd from "./TupleAdd";
 
-const initialTuples = [
-  {
-    subject: {
-      type: "user",
-      name: "anna",
-    },
-    relation: "reader",
-    resource: {
-      type: "document",
-      name: "report.csv",
-    },
-  },
-  {
-    subject: {
-      type: "user",
-      name: "anna",
-    },
-    relation: "writer",
-    resource: {
-      type: "document",
-      name: "report.csv",
-    },
-  },
-  {
-    subject: {
-      type: "folder",
-      name: "secret_folder",
-    },
-    relation: "parent_folder",
-    resource: {
-      type: "document",
-      name: "report.csv",
-    },
-  },
-  {
-    subject: {
-      type: "user",
-      name: "john",
-    },
-    relation: "reader",
-    resource: {
-      type: "folder",
-      name: "secret_folder",
-    },
-  },
-  {
-    subject: {
-      type: "user",
-      name: "john",
-    },
-    relation: "member",
-    resource: {
-      type: "group",
-      name: "dev",
-    },
-  },
-  {
-    subject: {
-      type: "group",
-      name: "dev#member",
-    },
-    relation: "reader",
-    resource: {
-      type: "folder",
-      name: "secret_folder",
-    },
-  },
-  {
-    subject: {
-      type: "group",
-      name: "test_group#member",
-    },
-    relation: "reader",
-    resource: {
-      type: "folder",
-      name: "secret_folder",
-    },
-  },
-  {
-    subject: {
-      type: "user",
-      name: "steve",
-    },
-    relation: "member",
-    resource: {
-      type: "group",
-      name: "dev",
-    },
-  },
-];
-
-const getUniqueSubjects = (tuples: any) => {
-  const subjects = new Set();
-  tuples.forEach((t: any) => subjects.add(JSON.stringify(t.subject)));
-
-  return Array.from(subjects).map((s: any) => JSON.parse(s));
-};
+interface Tuple {
+  subject: {
+    type: string;
+    name: string;
+  };
+  relation: string;
+  resource: {
+    type: string;
+    name: string;
+  };
+}
 
 const TuplesArea = () => {
-  const [tuples, setTuples] = useState(initialTuples);
-
-  const subjects = getUniqueSubjects(tuples);
+  const tuples = useTuples((s) => s.tuples);
+  const subjects = useTuples((s) => s.getUniqueSubjects)();
+  console.log(subjects);
+  console.log(tuples);
 
   return (
     <Box
@@ -122,23 +37,18 @@ const TuplesArea = () => {
         variant="default"
       >
         <Tabs.Tab label="Tuples" icon={<ThreeDCubeSphere size={14} />}>
-          <Container style={{ overflow: "auto", height: "90%" }}>
+          <Box style={{ overflow: "auto", height: "90%" }}>
             <List listStyleType={"none"}>
               <List.Item>
-                <TupleAdd setTuples={setTuples} />
+                <TupleAdd />
               </List.Item>
               {tuples.map((t, i) => (
                 <List.Item key={i}>
-                  <Tuple
-                    subject={{ type: t.subject.type, name: t.subject.name }}
-                    relation={t.relation}
-                    resource={{ type: t.resource.type, name: t.resource.name }}
-                    setTuples={setTuples}
-                  />
+                  <Tuple tuple={t} />
                 </List.Item>
               ))}
             </List>
-          </Container>
+          </Box>
         </Tabs.Tab>
         <Tabs.Tab label="PermissionCheck" icon={<LockAccess size={14} />}>
           PermissionCheck

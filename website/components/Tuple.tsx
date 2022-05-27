@@ -12,28 +12,18 @@ import {
   Tooltip,
 } from "@mantine/core";
 import { QuestionMark } from "tabler-icons-react";
+import useTuples from "../hooks/useTuples";
+import { default as ITuple } from "../types/tuple";
 
-type TupleProps = {
-  subject: { type: string; name: string };
-  relation: string;
-  resource: { type: string; name: string };
-  setTuples: CallableFunction;
+type Tupletuple = {
+  tuple: ITuple;
 };
 
-export default function Tuple(props: TupleProps) {
+export default function Tuple({ tuple }: Tupletuple) {
+  const removeTuple = useTuples((s) => s.removeTuple);
+
   const handleTupleDelete = () => {
-    props.setTuples((tuples: any) =>
-      tuples.filter(
-        (t: any) =>
-          !(
-            t.subject.name === props.subject.name &&
-            t.subject.type === props.subject.type &&
-            t.relation === props.relation &&
-            t.resource.name === props.resource.name &&
-            t.resource.type === props.resource.type
-          )
-      )
-    );
+    removeTuple(tuple);
   };
 
   return (
@@ -42,7 +32,7 @@ export default function Tuple(props: TupleProps) {
         border: "2px solid gray",
         margin: "1rem",
         borderRadius: "10px",
-        padding: "5px",
+        padding: "10px",
       }}
     >
       <Group>
@@ -60,17 +50,17 @@ export default function Tuple(props: TupleProps) {
 
         <Stack style={{ flex: 6 }}>
           <Box>
-            <Mark color="indigo">{`${props.subject.type}: `}</Mark>
+            <Mark color="indigo">{`${tuple.subject.type}: `}</Mark>
             &nbsp;
-            <Mark color="teal">{`${props.subject.name}`}</Mark>
+            <Mark color="teal">{`${tuple.subject.name}`}</Mark>
           </Box>
           <Box>
-            <Badge color="cyan" size="md">{`${props.relation}`}</Badge>
+            <Badge color="cyan" size="md">{`${tuple.relation}`}</Badge>
           </Box>
           <Box>
-            <Mark color="indigo">{`${props.resource.type}: `}</Mark>
+            <Mark color="indigo">{`${tuple.resource.type}: `}</Mark>
             &nbsp;
-            <Mark color="teal">{`${props.resource.name}`}</Mark>
+            <Mark color="teal">{`${tuple.resource.name}`}</Mark>
           </Box>
         </Stack>
 
@@ -78,10 +68,10 @@ export default function Tuple(props: TupleProps) {
           <Tooltip
             label={
               <>
-                <Kbd>{`${props.subject.type}:${props.subject.name}`}</Kbd>
-                &nbsp;is a&nbsp;<Kbd>{`${props.relation}`}</Kbd>
+                <Kbd>{`${tuple.subject.type}:${tuple.subject.name}`}</Kbd>
+                &nbsp;is a&nbsp;<Kbd>{`${tuple.relation}`}</Kbd>
                 &nbsp;of&nbsp;
-                <Kbd>{`${props.resource.type}:${props.resource.name}`}</Kbd>
+                <Kbd>{`${tuple.resource.type}:${tuple.resource.name}`}</Kbd>
               </>
             }
             withArrow
