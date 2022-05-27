@@ -4,6 +4,7 @@ import Editor from "@monaco-editor/react";
 import { useEffect, useRef } from "react";
 import YAML from "yaml";
 import useGraph from "../hooks/useGraph";
+import useTuples from "../hooks/useTuples";
 import { fetchAll } from "../util/fetchAll";
 import { showError, showSuccess } from "../util/notifications";
 
@@ -41,6 +42,8 @@ const EditorArea = ({ children }: EditorAreaProps) => {
   // Font for larger screens
   const { width } = useViewportSize();
   const { refetch } = useGraph();
+  const tuples = useTuples((s) => s.tuples);
+  const subjects = useTuples((s) => s.getUniqueSubjects)();
 
   useEffect(() => {
     if (monacoRef) {
@@ -71,7 +74,7 @@ const EditorArea = ({ children }: EditorAreaProps) => {
       }
     }
     try {
-      await fetchAll([requestPayload]);
+      await fetchAll([requestPayload, subjects, tuples]);
       await refetch();
       showSuccess("Reloaded config");
     } catch (error) {

@@ -19,8 +19,6 @@ interface Tuple {
 const TuplesArea = () => {
   const tuples = useTuples((s) => s.tuples);
   const subjects = useTuples((s) => s.getUniqueSubjects)();
-  console.log(subjects);
-  console.log(tuples);
 
   return (
     <Box

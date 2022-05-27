@@ -3,8 +3,8 @@ import { BACKEND_URL } from "../url";
 
 const URLS = [
   `${BACKEND_URL}/typeconfig/batch`,
-  // `${BACKEND_URL}/subject/batch`,
-  //   `${BACKEND_URL}/tuple/batch`,
+  `${BACKEND_URL}/subject/batch`,
+  `${BACKEND_URL}/tuple/batch`,
   //   `${BACKEND_URL}/permission-check/batch`,
 ];
 
