@@ -1581,6 +1581,11 @@ js-yaml@^4.1.0:
   dependencies:
     argparse "^2.0.1"
 
+jsep@^1.3.6:
+  version "1.3.6"
+  resolved "https://registry.yarnpkg.com/jsep/-/jsep-1.3.6.tgz#23fbf8c9479891611a237362e9e25d7746fac9d5"
+  integrity sha512-o7fP1eZVROIChADx7HKiwGRVI0tUqgUUGhaok6DP7cMxpDeparuooREDBDeNk2G5KIB49MBSkRYsCOu4PmZ+1w==
+
 json-schema-traverse@^0.4.1:
   version "0.4.1"
   resolved "https://registry.yarnpkg.com/json-schema-traverse/-/json-schema-traverse-0.4.1.tgz#69f6a87d9513ab8bb8fe63bdb0979c448e684660"

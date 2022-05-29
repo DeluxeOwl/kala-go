@@ -1,4 +1,5 @@
 import { Checkbox, CheckboxGroup, Stack } from "@mantine/core";
+import jsep from "jsep";
 import { useEffect, useRef, useState } from "react";
 import ReactFlow, {
   Background,
@@ -10,6 +11,7 @@ import ReactFlow, {
 } from "react-flow-renderer";
 import {
   cosDegrees,
+  permDirectEdge,
   permEdge,
   permNode,
   relComposedEdge,
@@ -36,7 +38,6 @@ type NodesAndEdges = {
 
 const refValueDelim = " | ";
 const refSubrelationDelim = "#";
-const parentRelDelim = ".";
 
 // TODO: calculate some stuff here to look good
 const getNodes = (graph: any): NodesAndEdges => {
@@ -167,6 +168,26 @@ const getNodes = (graph: any): NodesAndEdges => {
 
           nodes.push(permNode(permId, permLabel, permPosition));
           edges.push(permEdge(edgeId, tcId, permId));
+
+          const treeRoot = jsep(perm.value);
+
+          console.log(treeRoot);
+
+          switch (treeRoot.type) {
+            case "Identifier":
+              edges.push(
+                permDirectEdge(permId, permId, `${tcId}/rel/${treeRoot.name}`)
+              );
+              break;
+            case "UnaryExpression":
+              break;
+            case "BinaryExpression":
+              console.log("binary exp");
+              break;
+
+            default:
+              break;
+          }
         });
       }
       if (prop === "subjects") {

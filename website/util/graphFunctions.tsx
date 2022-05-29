@@ -102,6 +102,44 @@ const relComposedEdge = (
     target: `${targetId}/or`,
   };
 };
+const permNotEdge = (id: string, sourceId: string, targetId: string): Edge => {
+  return {
+    id: `${id}/not`,
+    source: sourceId,
+    style: {
+      stroke: "red",
+    },
+    markerEnd: {
+      type: MarkerType.ArrowClosed,
+    },
+    target: `${targetId}`,
+  };
+};
+const permDirectEdge = (
+  id: string,
+  sourceId: string,
+  targetId: string
+): Edge => {
+  return {
+    id: `${id}/direct`,
+    source: sourceId,
+    label: "includes",
+    labelBgPadding: [8, 4],
+    labelBgStyle: {
+      fill: "green",
+      color: "#fff",
+      fillOpacity: 0.7,
+    },
+    style: {
+      stroke: "green",
+    },
+    markerEnd: {
+      type: MarkerType.ArrowClosed,
+    },
+    target: `${targetId}/not`,
+  };
+};
+
 const relComposedSubrelEdge = (
   id: string,
   sourceId: string,
@@ -181,5 +219,7 @@ export {
   subjectNode,
   subjectEdge,
   permNode,
-  permEdge
+  permEdge,
+  permDirectEdge,
+  permNotEdge,
 };
