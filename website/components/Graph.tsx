@@ -1,5 +1,6 @@
 import { Checkbox, CheckboxGroup, Stack } from "@mantine/core";
 import jsep from "jsep";
+import { nanoid } from "nanoid";
 import { useEffect, useRef, useState } from "react";
 import ReactFlow, {
   Background,
@@ -11,7 +12,6 @@ import ReactFlow, {
 } from "react-flow-renderer";
 import {
   cosDegrees,
-  permDirectEdge,
   permEdge,
   permNode,
   relComposedEdge,
@@ -143,7 +143,6 @@ const getNodes = (graph: any): NodesAndEdges => {
       }
       if (prop === "permissions") {
         const permissions = tcEdges[prop];
-        console.log("Permissions:", permissions);
 
         const computedDgRel = degrees * (i + 1);
 
@@ -153,6 +152,8 @@ const getNodes = (graph: any): NodesAndEdges => {
         };
 
         permissions.forEach((perm: any, i: number) => {
+          console.log("Permission:", perm);
+
           const permId = `${tcId}/perm/${perm.name}`;
           const edgeId = `${tcId}-${permId}`;
           const permLabel = perm.name;
@@ -173,21 +174,77 @@ const getNodes = (graph: any): NodesAndEdges => {
 
           console.log(treeRoot);
 
-          switch (treeRoot.type) {
-            case "Identifier":
-              edges.push(
-                permDirectEdge(permId, permId, `${tcId}/rel/${treeRoot.name}`)
-              );
-              break;
-            case "UnaryExpression":
-              break;
-            case "BinaryExpression":
-              console.log("binary exp");
-              break;
+          const recursivePermCreation = (
+            node: jsep.Expression,
+            sourceId: string
+          ) => {
+            switch (node.type) {
+              case "Identifier":
+                // Means direct relation
+                edges.push({
+                  id: `${permId}/computedTree/${nanoid(6)}`,
+                  source: sourceId,
+                  target: `${tcId}/rel/${node.name}`,
+                });
+                break;
+              case "UnaryExpression":
+                const notNodeId = `${permId}/computedTree/${nanoid(6)}`;
+                nodes.push({
+                  id: notNodeId,
+                  data: { label: "!" },
+                  position: {
+                    x: permPoint.x + 500,
+                    y: permPoint.y + 250,
+                  },
+                });
 
-            default:
-              break;
-          }
+                edges.push({
+                  id: `${permId}/computedTree/${nanoid(6)}`,
+                  source: sourceId,
+                  target: notNodeId,
+                });
+
+                edges.push({
+                  id: `${permId}/computedTree/${nanoid(6)}`,
+                  source: notNodeId,
+                  // @ts-ignore
+                  target: `${tcId}/rel/${node?.argument?.name}`,
+                });
+
+                break;
+              case "BinaryExpression":
+                // Insert Operator node, recurse
+                console.log("binary exp");
+                break;
+              case "MemberExpression":
+                // To current relation
+                edges.push({
+                  id: `${permId}/computedTree/${nanoid(6)}`,
+                  source: sourceId,
+                  // @ts-ignore
+                  target: `${tcId}/rel/${node?.object?.name}`,
+                });
+
+                const referencedType = perm.edges.relations.find(
+                  // @ts-ignore
+                  (rel) => rel.name === node?.object?.name
+                ).value;
+                // from current relation to the specified permission
+                edges.push({
+                  id: `${permId}/computedTree/${nanoid(6)}`,
+                  // @ts-ignore
+                  source: `${tcId}/rel/${node?.object?.name}`,
+                  // @ts-ignore
+                  target: `tc/${referencedType}/rel/${node?.property?.name}`,
+                });
+
+                break;
+              default:
+                break;
+            }
+          };
+
+          recursivePermCreation(treeRoot, `${tcId}/perm/${perm.name}`);
         });
       }
       if (prop === "subjects") {
