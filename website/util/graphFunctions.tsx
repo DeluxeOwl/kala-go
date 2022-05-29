@@ -28,6 +28,31 @@ const relNode = (id: string, label: string, position: Point): Node => {
   };
 };
 
+const permNode = (id: string, label: string, position: Point): Node => {
+  return {
+    id: id,
+    data: { label: label },
+    position: position,
+  };
+};
+
+const permEdge = (id: string, sourceId: string, targetId: string): Edge => {
+  return {
+    id: id,
+    source: sourceId,
+    label: "permission",
+    labelBgPadding: [8, 4],
+    labelBgBorderRadius: 4,
+    labelBgStyle: { fill: "#7F00FF ", color: "#fff", fillOpacity: 0.7 },
+    markerEnd: {
+      type: MarkerType.ArrowClosed,
+    },
+    target: targetId,
+    style: {
+      stroke: "violet",
+    },
+  };
+};
 const relEdge = (id: string, sourceId: string, targetId: string): Edge => {
   return {
     id: id,
@@ -155,4 +180,6 @@ export {
   relEdge,
   subjectNode,
   subjectEdge,
+  permNode,
+  permEdge
 };

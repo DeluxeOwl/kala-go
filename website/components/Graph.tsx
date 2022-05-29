@@ -10,6 +10,8 @@ import ReactFlow, {
 } from "react-flow-renderer";
 import {
   cosDegrees,
+  permEdge,
+  permNode,
   relComposedEdge,
   relComposedNode,
   relComposedSubrelEdge,
@@ -140,15 +142,40 @@ const getNodes = (graph: any): NodesAndEdges => {
       }
       if (prop === "permissions") {
         const permissions = tcEdges[prop];
-        // console.log(permissions);
+        console.log("Permissions:", permissions);
+
+        const computedDgRel = degrees * (i + 1);
+
+        let permPoint: Point = {
+          x: tcPosition.x + 1.5 * radius * cosDegrees(computedDgRel),
+          y: tcPosition.y + 1.5 * radius * sinDegrees(computedDgRel),
+        };
+
+        permissions.forEach((perm: any, i: number) => {
+          const permId = `${tcId}/perm/${perm.name}`;
+          const edgeId = `${tcId}-${permId}`;
+          const permLabel = perm.name;
+          const permPosition: Point = {
+            x: permPoint.x,
+            y: permPoint.y,
+          };
+
+          permPoint.y -= 350;
+          permPoint.x -= 350;
+
+          // edges.push(permEdge(edgeId, tcId, permId));
+
+          nodes.push(permNode(permId, permLabel, permPosition));
+          edges.push(permEdge(edgeId, tcId, permId));
+        });
       }
       if (prop === "subjects") {
         const subjects = tcEdges[prop];
         const computedDgRel = degrees * (i + 1);
 
         let subjPoint: Point = {
-          x: tcPosition.x + 1.3 * radius * cosDegrees(computedDgRel),
-          y: tcPosition.y + 1.3 * radius * sinDegrees(computedDgRel),
+          x: tcPosition.x + 2 * radius * cosDegrees(computedDgRel),
+          y: tcPosition.y + 2 * radius * sinDegrees(computedDgRel),
         };
 
         subjects.forEach((subj: any, i: number) => {
@@ -221,7 +248,7 @@ const Graph = ({ data }: GraphProps) => {
       setNodes((no) => no.filter((n) => !n.id.includes("/subj/")));
       setEdges((ed) => ed.filter((e) => !e.id.includes("/subj/")));
     }
-  }, [checkboxValues, setNodes, setEdges]);
+  }, [checkboxValues, setNodes, setEdges, data]);
 
   return (
     <ReactFlow
@@ -244,7 +271,10 @@ const Graph = ({ data }: GraphProps) => {
           label="Select which nodes to show or hide"
           size="md"
         >
-          <Checkbox value="includesRelEdges" label="Includes relations edges" />
+          <Checkbox
+            value="includesRelEdges"
+            label="Includes relations to type edges"
+          />
           <Checkbox value="includesSubjects" label="Includes subject nodes" />
         </CheckboxGroup>
       </Stack>
