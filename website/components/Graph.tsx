@@ -1,6 +1,5 @@
-// @ts-nocheck
-
-import { useEffect } from "react";
+import { Checkbox, CheckboxGroup, Stack } from "@mantine/core";
+import { useEffect, useRef, useState } from "react";
 import ReactFlow, {
   Background,
   Controls,
@@ -36,7 +35,7 @@ const refSubrelationDelim = "#";
 const parentRelDelim = ".";
 
 // TODO: calculate some stuff here to look good
-const getNodes = (graph: any): Node[] => {
+const getNodes = (graph: any): NodesAndEdges => {
   let nodes: Node[] = [];
   let edges: Edge[] = [];
 
@@ -47,7 +46,7 @@ const getNodes = (graph: any): Node[] => {
     degrees = 360 / graph.length;
   }
 
-  graph.forEach((tc, i) => {
+  graph.forEach((tc: any, i: number) => {
     const tcId = `tc/${tc.name}`;
     const tcLabel = tc.name;
 
@@ -75,7 +74,7 @@ const getNodes = (graph: any): Node[] => {
           y: tcPosition.y + radius * sinDegrees(computedDgRel),
         };
 
-        relations.forEach((rel, i) => {
+        relations.forEach((rel: any, i: number) => {
           const relId = `${tcId}/rel/${rel.name}`;
           const edgeId = `${tcId}-${relId}`;
           const relLabel = rel.name;
@@ -103,6 +102,7 @@ const getNodes = (graph: any): Node[] => {
 
             edges.push(relComposedEdge(edgeId, relId, relId));
 
+            // @ts-ignore
             for (const [i, composedRel] of relValue
               .split(refValueDelim)
               .entries()) {
@@ -150,6 +150,7 @@ const getNodes = (graph: any): Node[] => {
     edges: edges,
   };
 
+  // @ts-ignore
   return ne;
 };
 
@@ -161,12 +162,33 @@ const Graph = ({ data }: GraphProps) => {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
 
+  const initialNodes = useRef<Node[]>([]);
+  const initialEdges = useRef<Edge[]>([]);
+
+  const [checkboxValues, setCheckboxValues] = useState<string[]>([
+    "includesRelEdges",
+  ]);
+
   useEffect(() => {
     const parsedData = getNodes(data);
     setNodes(parsedData.nodes);
     setEdges(parsedData.edges);
+    initialNodes.current = parsedData.nodes;
+    initialEdges.current = parsedData.edges;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data]);
+
+  useEffect(() => {
+    if (!checkboxValues.includes("includesRelEdges")) {
+      setNodes((no) => no.filter((n) => !(n.data.label === "|")));
+      setEdges((ed) =>
+        ed.filter((e) => !(e.label === "includes" || e.label === "OR"))
+      );
+    } else {
+      setNodes(initialNodes.current);
+      setEdges(initialEdges.current);
+    }
+  }, [checkboxValues, setNodes, setEdges]);
 
   return (
     <ReactFlow
@@ -175,11 +197,23 @@ const Graph = ({ data }: GraphProps) => {
       edges={edges}
       onEdgesChange={onEdgesChange}
       nodesConnectable={false}
+      // @ts-ignore
       connectionMode={"loose"}
       fitView
     >
       <Controls />
       <Background />
+      <Stack style={{ position: "absolute", left: 10, right: 10, zIndex: 4 }}>
+        <CheckboxGroup
+          value={checkboxValues}
+          onChange={setCheckboxValues}
+          orientation="vertical"
+          label="Select which nodes to show or hide"
+          size="md"
+        >
+          <Checkbox value="includesRelEdges" label="Includes relations edges" />
+        </CheckboxGroup>
+      </Stack>
     </ReactFlow>
   );
 };
