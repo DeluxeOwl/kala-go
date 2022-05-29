@@ -11,9 +11,13 @@ import ReactFlow, {
   useNodesState,
 } from "react-flow-renderer";
 import {
+  binaryExprOperatorEdge,
+  binaryExprOperatorNode,
   cosDegrees,
+  memberExprEdge,
   permEdge,
   permNode,
+  randomIntFromInterval,
   relComposedEdge,
   relComposedNode,
   relComposedSubrelEdge,
@@ -152,8 +156,6 @@ const getNodes = (graph: any): NodesAndEdges => {
         };
 
         permissions.forEach((perm: any, i: number) => {
-          console.log("Permission:", perm);
-
           const permId = `${tcId}/perm/${perm.name}`;
           const edgeId = `${tcId}-${permId}`;
           const permLabel = perm.name;
@@ -172,8 +174,6 @@ const getNodes = (graph: any): NodesAndEdges => {
 
           const treeRoot = jsep(perm.value);
 
-          console.log(treeRoot);
-
           const recursivePermCreation = (
             node: jsep.Expression,
             sourceId: string
@@ -189,54 +189,83 @@ const getNodes = (graph: any): NodesAndEdges => {
                 break;
               case "UnaryExpression":
                 const notNodeId = `${permId}/computedTree/${nanoid(6)}`;
-                nodes.push({
-                  id: notNodeId,
-                  data: { label: "!" },
-                  position: {
+
+                nodes.push(
+                  binaryExprOperatorNode(notNodeId, "!", {
                     x: permPoint.x + 500,
                     y: permPoint.y + 250,
-                  },
-                });
+                  })
+                );
 
-                edges.push({
-                  id: `${permId}/computedTree/${nanoid(6)}`,
-                  source: sourceId,
-                  target: notNodeId,
-                });
-
-                edges.push({
-                  id: `${permId}/computedTree/${nanoid(6)}`,
-                  source: notNodeId,
-                  // @ts-ignore
-                  target: `${tcId}/rel/${node?.argument?.name}`,
-                });
+                edges.push(
+                  binaryExprOperatorEdge(
+                    `${permId}/computedTree/${nanoid(6)}`,
+                    sourceId,
+                    notNodeId
+                  )
+                );
+                edges.push(
+                  binaryExprOperatorEdge(
+                    `${permId}/computedTree/${nanoid(6)}`,
+                    notNodeId,
+                    // @ts-ignore
+                    `${tcId}/rel/${node?.argument?.name}`
+                  )
+                );
 
                 break;
               case "BinaryExpression":
                 // Insert Operator node, recurse
-                console.log("binary exp");
+                const operatorNodeId = `${permId}/computedTree/${nanoid(6)}`;
+
+                nodes.push(
+                  // @ts-ignore
+                  binaryExprOperatorNode(operatorNodeId, node.operator, {
+                    x: permPoint.x + randomIntFromInterval(100, 350),
+                    y: permPoint.y + randomIntFromInterval(100, 550),
+                  })
+                );
+
+                edges.push(
+                  binaryExprOperatorEdge(
+                    `${permId}/computedTree/${nanoid(6)}`,
+                    sourceId,
+                    operatorNodeId
+                  )
+                );
+
+                // @ts-ignore
+                recursivePermCreation(node.left, operatorNodeId);
+                // @ts-ignore
+                recursivePermCreation(node.right, operatorNodeId);
                 break;
               case "MemberExpression":
                 // To current relation
-                edges.push({
-                  id: `${permId}/computedTree/${nanoid(6)}`,
-                  source: sourceId,
-                  // @ts-ignore
-                  target: `${tcId}/rel/${node?.object?.name}`,
-                });
+
+                edges.push(
+                  memberExprEdge(
+                    `${permId}/computedTree/${nanoid(6)}`,
+                    sourceId,
+                    // @ts-ignore
+                    `${tcId}/rel/${node?.object?.name}`
+                  )
+                );
 
                 const referencedType = perm.edges.relations.find(
                   // @ts-ignore
                   (rel) => rel.name === node?.object?.name
                 ).value;
+
                 // from current relation to the specified permission
-                edges.push({
-                  id: `${permId}/computedTree/${nanoid(6)}`,
-                  // @ts-ignore
-                  source: `${tcId}/rel/${node?.object?.name}`,
-                  // @ts-ignore
-                  target: `tc/${referencedType}/rel/${node?.property?.name}`,
-                });
+                edges.push(
+                  memberExprEdge(
+                    `${permId}/computedTree/${nanoid(6)}`,
+                    // @ts-ignore
+                    `${tcId}/rel/${node?.object?.name}`,
+                    // @ts-ignore
+                    `tc/${referencedType}/rel/${node?.property?.name}`
+                  )
+                );
 
                 break;
               default:
@@ -317,7 +346,9 @@ const Graph = ({ data }: GraphProps) => {
 
   useEffect(() => {
     if (!checkboxValues.includes("includesRelEdges")) {
-      setNodes((no) => no.filter((n) => !(n.data.label === "|")));
+      setNodes((no) =>
+        no.filter((n) => !(n.data.label === "|" && n.id.includes("/or")))
+      );
       setEdges((ed) =>
         ed.filter((e) => !(e.label === "includes" || e.label === "OR"))
       );
@@ -325,6 +356,10 @@ const Graph = ({ data }: GraphProps) => {
     if (!checkboxValues.includes("includesSubjects")) {
       setNodes((no) => no.filter((n) => !n.id.includes("/subj/")));
       setEdges((ed) => ed.filter((e) => !e.id.includes("/subj/")));
+    }
+    if (!checkboxValues.includes("includesPermEdges")) {
+      setNodes((no) => no.filter((n) => !n.id.includes("/computedTree/")));
+      setEdges((ed) => ed.filter((e) => !e.id.includes("/computedTree/")));
     }
   }, [checkboxValues, setNodes, setEdges, data]);
 
@@ -354,6 +389,10 @@ const Graph = ({ data }: GraphProps) => {
             label="Includes relations to type edges"
           />
           <Checkbox value="includesSubjects" label="Includes subject nodes" />
+          <Checkbox
+            value="includesPermEdges"
+            label="Includes permission edges"
+          />
         </CheckboxGroup>
       </Stack>
     </ReactFlow>

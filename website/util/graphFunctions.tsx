@@ -206,6 +206,55 @@ const subjectEdge = (id: string, sourceId: string, targetId: string): Edge => {
   };
 };
 
+const memberExprEdge = (
+  id: string,
+  sourceId: string,
+  targetId: string
+): Edge => {
+  return {
+    id: id,
+    source: sourceId,
+    target: targetId,
+    style: {
+      stroke: "cyan",
+    },
+    animated: true,
+  };
+};
+
+const binaryExprOperatorEdge = (
+  id: string,
+  sourceId: string,
+  targetId: string
+): Edge => {
+  return {
+    id: id,
+    source: sourceId,
+    target: targetId,
+    style: {
+      stroke: "cyan",
+    },
+    animated: true,
+  };
+};
+
+// change depending on label !, &, |
+const binaryExprOperatorNode = (
+  id: string,
+  label: string,
+  position: Point
+): Node => {
+  return {
+    id: id,
+    data: { label: label },
+    position: position,
+  };
+};
+
+function randomIntFromInterval(min: number, max: number) {
+  // min and max included
+  return Math.floor(Math.random() * (max - min + 1) + min);
+}
 export {
   sinDegrees,
   cosDegrees,
@@ -218,8 +267,12 @@ export {
   relEdge,
   subjectNode,
   subjectEdge,
+  binaryExprOperatorEdge,
   permNode,
   permEdge,
   permDirectEdge,
   permNotEdge,
+  randomIntFromInterval,
+  memberExprEdge,
+  binaryExprOperatorNode,
 };
