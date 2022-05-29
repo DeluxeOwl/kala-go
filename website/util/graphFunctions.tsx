@@ -124,6 +124,25 @@ const relToTcEdge = (id: string, sourceId: string, targetId: string): Edge => {
   };
 };
 
+const subjectNode = (id: string, label: string, position: Point): Node => {
+  return {
+    id: id,
+    data: { label: label },
+    position: position,
+  };
+};
+
+const subjectEdge = (id: string, sourceId: string, targetId: string): Edge => {
+  return {
+    id: id,
+    source: sourceId,
+    target: targetId,
+    style: {
+      stroke: "red",
+    },
+  };
+};
+
 export {
   sinDegrees,
   cosDegrees,
@@ -134,4 +153,6 @@ export {
   tcNode,
   relNode,
   relEdge,
+  subjectNode,
+  subjectEdge,
 };

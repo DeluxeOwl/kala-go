@@ -17,6 +17,8 @@ import {
   relNode,
   relToTcEdge,
   sinDegrees,
+  subjectEdge,
+  subjectNode,
   tcNode,
 } from "../util/graphFunctions";
 
@@ -138,9 +140,32 @@ const getNodes = (graph: any): NodesAndEdges => {
       }
       if (prop === "permissions") {
         const permissions = tcEdges[prop];
+        // console.log(permissions);
       }
       if (prop === "subjects") {
         const subjects = tcEdges[prop];
+        const computedDgRel = degrees * (i + 1);
+
+        let subjPoint: Point = {
+          x: tcPosition.x + 1.3 * radius * cosDegrees(computedDgRel),
+          y: tcPosition.y + 1.3 * radius * sinDegrees(computedDgRel),
+        };
+
+        subjects.forEach((subj: any, i: number) => {
+          const subjId = `${tcId}/subj/${subj.name}`;
+          const edgeId = `${tcId}-${subjId}`;
+
+          const subjPosition: Point = {
+            x: subjPoint.x,
+            y: subjPoint.y,
+          };
+
+          subjPoint.y += 250;
+          subjPoint.x += 250;
+
+          nodes.push(subjectNode(subjId, subj.name, subjPosition));
+          edges.push(subjectEdge(edgeId, tcId, subjId));
+        });
       }
     }
   });
@@ -173,10 +198,17 @@ const Graph = ({ data }: GraphProps) => {
     const parsedData = getNodes(data);
     setNodes(parsedData.nodes);
     setEdges(parsedData.edges);
+
     initialNodes.current = parsedData.nodes;
     initialEdges.current = parsedData.edges;
+
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data]);
+
+  useEffect(() => {
+    setNodes(initialNodes.current);
+    setEdges(initialEdges.current);
+  }, [checkboxValues, setNodes, setEdges]);
 
   useEffect(() => {
     if (!checkboxValues.includes("includesRelEdges")) {
@@ -184,9 +216,10 @@ const Graph = ({ data }: GraphProps) => {
       setEdges((ed) =>
         ed.filter((e) => !(e.label === "includes" || e.label === "OR"))
       );
-    } else {
-      setNodes(initialNodes.current);
-      setEdges(initialEdges.current);
+    }
+    if (!checkboxValues.includes("includesSubjects")) {
+      setNodes((no) => no.filter((n) => !n.id.includes("/subj/")));
+      setEdges((ed) => ed.filter((e) => !e.id.includes("/subj/")));
     }
   }, [checkboxValues, setNodes, setEdges]);
 
@@ -212,6 +245,7 @@ const Graph = ({ data }: GraphProps) => {
           size="md"
         >
           <Checkbox value="includesRelEdges" label="Includes relations edges" />
+          <Checkbox value="includesSubjects" label="Includes subject nodes" />
         </CheckboxGroup>
       </Stack>
     </ReactFlow>
