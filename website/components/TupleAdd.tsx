@@ -38,7 +38,7 @@ export default function TupleAdd() {
     <Container
       style={{
         border: "2px solid gray",
-        margin: "1rem",
+        margin: "auto",
         borderRadius: "10px",
         padding: "10px",
       }}

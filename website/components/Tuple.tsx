@@ -30,7 +30,7 @@ export default function Tuple({ tuple }: Tupletuple) {
     <Container
       style={{
         border: "2px solid gray",
-        margin: "1rem",
+        marginTop: "1rem",
         borderRadius: "10px",
         padding: "10px",
       }}
