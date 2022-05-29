@@ -28,4 +28,4 @@ const fetchAll = async (data) => {
   }
 };
 
-export { fetchAll };
+export { fetchAll, postReq };

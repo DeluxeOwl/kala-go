@@ -180,6 +180,7 @@ interface TuplesState {
   permissionChecks: PermissionCheck[];
   addPermissionCheck: (pc: PermissionCheck) => void;
   removePermissionCheck: (pc: PermissionCheck) => void;
+  updatePermissionStatus: (pc: PermissionCheck, permission: boolean) => void;
   addTuple: (tuple: Tuple) => void;
   removeTuple: (tuple: Tuple) => void;
   getUniqueSubjects: () => Subject[];
@@ -218,6 +219,21 @@ const useTuples = create<TuplesState>((set, get) => ({
           )
       ),
     })),
+  updatePermissionStatus: (pc: PermissionCheck, permission: boolean) => {
+    set((state) => {
+      return {
+        permissionChecks: state.permissionChecks.map((p) =>
+          p.subject.name === pc.subject.name &&
+          p.subject.type === pc.subject.type &&
+          p.permission === pc.permission &&
+          p.resource.name === pc.resource.name &&
+          p.resource.type === pc.resource.type
+            ? { ...p, hasPermission: permission }
+            : p
+        ),
+      };
+    });
+  },
   addPermissionCheck: (pc) =>
     set((state) => {
       const pcExists = state.permissionChecks.some(

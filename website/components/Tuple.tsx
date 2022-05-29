@@ -55,7 +55,11 @@ export default function Tuple({ tuple }: Tupletuple) {
             <Mark color="teal">{`${tuple.subject.name}`}</Mark>
           </Box>
           <Box>
-            <Badge color="cyan" size="md">{`${tuple.relation}`}</Badge>
+            <Badge
+              color="cyan"
+              size="md"
+              variant="filled"
+            >{`${tuple.relation}`}</Badge>
           </Box>
           <Box>
             <Mark color="indigo">{`${tuple.resource.type}: `}</Mark>
