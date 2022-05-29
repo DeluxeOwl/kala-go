@@ -1,4 +1,5 @@
 import create from "zustand";
+import PermissionCheck from "../types/permissionCheck";
 import Subject from "../types/subject";
 import Tuple from "../types/tuple";
 import { showError } from "../util/notifications";
@@ -94,8 +95,91 @@ const initialTuples: Tuple[] = [
   },
 ];
 
+const initialPc: PermissionCheck[] = [
+  {
+    subject: {
+      type: "user",
+      name: "john",
+    },
+    permission: "read",
+    resource: {
+      type: "document",
+      name: "report.csv",
+    },
+  },
+  {
+    subject: {
+      type: "user",
+      name: "anna",
+    },
+    permission: "read",
+    resource: {
+      type: "document",
+      name: "report.csv",
+    },
+  },
+  {
+    subject: {
+      type: "user",
+      name: "steve",
+    },
+    permission: "read",
+    resource: {
+      type: "document",
+      name: "report.csv",
+    },
+  },
+  {
+    subject: {
+      type: "user",
+      name: "anna",
+    },
+    permission: "read_only",
+    resource: {
+      type: "document",
+      name: "report.csv",
+    },
+  },
+  {
+    subject: {
+      type: "user",
+      name: "anna",
+    },
+    permission: "read_and_write",
+    resource: {
+      type: "document",
+      name: "report.csv",
+    },
+  },
+  {
+    subject: {
+      type: "user",
+      name: "steve",
+    },
+    permission: "read_and_write",
+    resource: {
+      type: "document",
+      name: "report.csv",
+    },
+  },
+  {
+    subject: {
+      type: "user",
+      name: "john",
+    },
+    permission: "read_and_write",
+    resource: {
+      type: "document",
+      name: "report.csv",
+    },
+  },
+];
+
 interface TuplesState {
   tuples: Tuple[];
+  permissionChecks: PermissionCheck[];
+  addPermissionCheck: (pc: PermissionCheck) => void;
+  removePermissionCheck: (pc: PermissionCheck) => void;
   addTuple: (tuple: Tuple) => void;
   removeTuple: (tuple: Tuple) => void;
   getUniqueSubjects: () => Subject[];
@@ -103,6 +187,7 @@ interface TuplesState {
 
 const useTuples = create<TuplesState>((set, get) => ({
   tuples: initialTuples,
+  permissionChecks: initialPc,
   addTuple: (tuple) =>
     set((state) => {
       const tupleExists = state.tuples.some(
@@ -130,6 +215,36 @@ const useTuples = create<TuplesState>((set, get) => ({
             t.relation === tuple.relation &&
             t.resource.name === tuple.resource.name &&
             t.resource.type === tuple.resource.type
+          )
+      ),
+    })),
+  addPermissionCheck: (pc) =>
+    set((state) => {
+      const pcExists = state.permissionChecks.some(
+        (p) =>
+          p.subject.name === pc.subject.name &&
+          p.subject.type === pc.subject.type &&
+          p.permission === pc.permission &&
+          p.resource.name === pc.resource.name &&
+          p.resource.type === pc.resource.type
+      );
+      if (pcExists) {
+        showError("Permission check already exists");
+        return { permissionChecks: state.permissionChecks };
+      }
+
+      return { permissionChecks: [pc, ...state.permissionChecks] };
+    }),
+  removePermissionCheck: (pc) =>
+    set((state) => ({
+      permissionChecks: state.permissionChecks.filter(
+        (p) =>
+          !(
+            p.subject.name === pc.subject.name &&
+            p.subject.type === pc.subject.type &&
+            p.permission === pc.permission &&
+            p.resource.name === pc.resource.name &&
+            p.resource.type === pc.resource.type
           )
       ),
     })),

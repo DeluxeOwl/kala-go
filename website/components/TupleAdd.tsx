@@ -82,6 +82,7 @@ export default function TupleAdd() {
             color="green"
             rightIcon={<Plus size={16} />}
             onClick={handleTupleAdd}
+            radius="xl"
           >
             Add tuple
           </Button>

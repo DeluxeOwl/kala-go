@@ -1,6 +1,7 @@
 import { Box, List, Tabs } from "@mantine/core";
 import { LockAccess, ThreeDCubeSphere } from "tabler-icons-react";
 import useTuples from "../hooks/useTuples";
+import PermissionChecksViz from "./PermissionChecksViz";
 import Tuple from "./Tuple";
 import TupleAdd from "./TupleAdd";
 
@@ -18,7 +19,6 @@ interface Tuple {
 
 const TuplesArea = () => {
   const tuples = useTuples((s) => s.tuples);
-  const subjects = useTuples((s) => s.getUniqueSubjects)();
 
   return (
     <Box
@@ -33,6 +33,7 @@ const TuplesArea = () => {
         style={{ marginTop: "0.5rem", height: "100%" }}
         styles={{ body: { height: "100%" } }}
         variant="default"
+        color={"violet"}
       >
         <Tabs.Tab label="Tuples" icon={<ThreeDCubeSphere size={14} />}>
           <Box style={{ overflow: "auto", height: "90%" }}>
@@ -49,7 +50,9 @@ const TuplesArea = () => {
           </Box>
         </Tabs.Tab>
         <Tabs.Tab label="PermissionCheck" icon={<LockAccess size={14} />}>
-          PermissionCheck
+          <Box style={{ overflow: "auto", height: "90%" }}>
+            <PermissionChecksViz />
+          </Box>
         </Tabs.Tab>
       </Tabs>
     </Box>
