@@ -5,11 +5,21 @@ import ReactFlow, {
   Background,
   Controls,
   Edge,
-  MarkerType,
   Node,
   useEdgesState,
   useNodesState,
 } from "react-flow-renderer";
+import {
+  cosDegrees,
+  relComposedEdge,
+  relComposedNode,
+  relComposedSubrelEdge,
+  relEdge,
+  relNode,
+  relToTcEdge,
+  sinDegrees,
+  tcNode,
+} from "../util/graphFunctions";
 
 type Point = {
   x: number;
@@ -24,13 +34,6 @@ type NodesAndEdges = {
 const refValueDelim = " | ";
 const refSubrelationDelim = "#";
 const parentRelDelim = ".";
-
-function sinDegrees(angleDegrees) {
-  return Math.sin((angleDegrees * Math.PI) / 180);
-}
-function cosDegrees(angleDegrees) {
-  return Math.cos((angleDegrees * Math.PI) / 180);
-}
 
 // TODO: calculate some stuff here to look good
 const getNodes = (graph: any): Node[] => {
@@ -57,11 +60,7 @@ const getNodes = (graph: any): Node[] => {
 
     // tcPoint.x += 250;
 
-    nodes.push({
-      id: tcId,
-      data: { label: tcLabel },
-      position: tcPosition,
-    });
+    nodes.push(tcNode(tcId, tcLabel, tcPosition));
 
     const tcEdges = tc?.edges;
 
@@ -88,120 +87,52 @@ const getNodes = (graph: any): Node[] => {
           relPoint.y += 250;
           relPoint.x += 250;
 
-          edges.push({
-            id: edgeId,
-            source: tcId,
-            label: "relation",
-            labelBgPadding: [8, 4],
-            labelBgBorderRadius: 4,
-            labelBgStyle: { fill: "#FFCC00", color: "#fff", fillOpacity: 0.7 },
-            markerEnd: {
-              type: MarkerType.ArrowClosed,
-            },
-            target: relId,
-            style: {
-              stroke: "yellow",
-            },
-          });
+          edges.push(relEdge(edgeId, tcId, relId));
 
-          nodes.push({
-            id: relId,
-            data: { label: relLabel },
-            position: relPosition,
-          });
+          nodes.push(relNode(relId, relLabel, relPosition));
 
           // Composed relation
           const relValue: string = rel?.value;
           if (relValue.includes(refValueDelim)) {
-            nodes.push({
-              id: `${relId}/or`,
-              data: { label: "|" },
-              position: { x: relPosition.x + 250, y: relPosition.y + 250 },
-            });
-            edges.push({
-              id: `${edgeId}/or`,
-              source: relId,
-              label: "includes",
-              labelBgPadding: [8, 4],
-              labelBgStyle: {
-                fill: "green",
-                color: "#fff",
-                fillOpacity: 0.7,
-              },
-              style: {
-                stroke: "green",
-              },
-              markerEnd: {
-                type: MarkerType.ArrowClosed,
-              },
-              target: `${relId}/or`,
-            });
+            nodes.push(
+              relComposedNode(`${relId}`, {
+                x: relPosition.x + 250,
+                y: relPosition.y + 250,
+              })
+            );
+
+            edges.push(relComposedEdge(edgeId, relId, relId));
+
             for (const [i, composedRel] of relValue
               .split(refValueDelim)
               .entries()) {
               if (composedRel.includes(refSubrelationDelim)) {
                 const s: string = composedRel.split(refSubrelationDelim);
-                edges.push({
-                  id: `${edgeId}/or/${composedRel}/${i}`,
-                  source: `${relId}/or`,
-                  label: "OR",
-                  labelBgPadding: [8, 4],
-                  labelBgBorderRadius: 4,
-                  labelBgStyle: {
-                    fill: "#0000FF",
-                    color: "#fff",
-                    fillOpacity: 0.7,
-                  },
-                  markerEnd: {
-                    type: MarkerType.ArrowClosed,
-                  },
-                  target: `tc/${s[0]}/rel/${s[1]}`,
-                  style: {
-                    stroke: "blue",
-                  },
-                });
+                edges.push(
+                  relComposedSubrelEdge(
+                    `${edgeId}/or/${composedRel}/${i}`,
+                    `${relId}/or`,
+                    `tc/${s[0]}/rel/${s[1]}`
+                  )
+                );
               } else {
-                edges.push({
-                  id: `${edgeId}/or/${composedRel}/${i}`,
-                  source: `${relId}/or`,
-                  label: "OR",
-                  labelBgPadding: [8, 4],
-                  labelBgBorderRadius: 4,
-                  labelBgStyle: {
-                    fill: "#0000FF",
-                    color: "#fff",
-                    fillOpacity: 0.7,
-                  },
-                  markerEnd: {
-                    type: MarkerType.ArrowClosed,
-                  },
-                  target: `tc/${composedRel}`,
-                  style: {
-                    stroke: "blue",
-                  },
-                });
+                edges.push(
+                  relComposedSubrelEdge(
+                    `${edgeId}/or/${composedRel}/${i}`,
+                    `${relId}/or`,
+                    `tc/${composedRel}`
+                  )
+                );
               }
             }
           } else {
-            edges.push({
-              id: `${tcId}-${relId}-${relValue}`,
-              source: relId,
-              label: "includes",
-              labelBgPadding: [8, 4],
-              labelBgBorderRadius: 4,
-              labelBgStyle: {
-                fill: "green",
-                color: "#fff",
-                fillOpacity: 0.7,
-              },
-              style: {
-                stroke: "green",
-              },
-              markerEnd: {
-                type: MarkerType.ArrowClosed,
-              },
-              target: `tc/${relValue}`,
-            });
+            edges.push(
+              relToTcEdge(
+                `${tcId}-${relId}-${relValue}`,
+                relId,
+                `tc/${relValue}`
+              )
+            );
           }
         });
       }
