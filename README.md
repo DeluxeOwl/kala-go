@@ -1,5 +1,7 @@
 # https://kala.andreisurugiu.com/
 
+<img src="./img/logo.png" width="200"/>
+
 An authorization and policy engine written in go.
 
 ![1](./img/graph.png)
