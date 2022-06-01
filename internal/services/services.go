@@ -116,22 +116,23 @@ func (h *Handler) CreateTuple(ctx context.Context, tr *models.TupleReqRelation) 
 // 	return hasRel
 // }
 
-func (h *Handler) CheckPermission(ctx context.Context, tr *models.TupleReqPermission) (bool, error) {
+func (h *Handler) CheckPermission(ctx context.Context, tr *models.TupleReqPermission) (bool, []string, error) {
 	hasRel := false
+	logs := []string{}
 
 	if err := h.WithTx(ctx, func(tx *ent.Tx) error {
 		newH := Handler{
 			Db: tx.Client(),
 		}
 		var err error
-		hasRel, err = newH.DoCheckPermission(ctx, tr)
+		hasRel, logs, err = newH.DoCheckPermission(ctx, tr)
 
 		return err
 	}); err != nil {
-		return false, err
+		return false, logs, err
 	}
 
-	return hasRel, nil
+	return hasRel, logs, nil
 }
 
 func (h *Handler) DoCreateTypeConfig(ctx context.Context, tcInput *models.TypeConfigReq) (*ent.TypeConfig, error) {
@@ -490,13 +491,19 @@ func (h *Handler) DoCreateTuple(ctx context.Context, tr *models.TupleReqRelation
 }
 
 // TODO: add some depth, maybe add path taken (ident in a json and print graph?), goroutines
-func (h *Handler) CheckRelation(ctx context.Context, rc *models.RelationCheck, depth int) bool {
+func (h *Handler) CheckRelation(ctx context.Context, rc *models.RelationCheck, depth int, logChan chan string) bool {
 
 	if ctx.Err() != nil {
 		return false
 	}
 
 	subjTypeString, err := rc.Subj.QueryType().Select(typeconfig.FieldName).String(ctx)
+	if err != nil {
+		fmt.Printf("getting type string in check relation: %s\n", err)
+		return false
+	}
+
+	resTypeString, err := rc.Res.QueryType().Select(typeconfig.FieldName).String(ctx)
 	if err != nil {
 		fmt.Printf("getting type string in check relation: %s\n", err)
 		return false
@@ -525,8 +532,14 @@ func (h *Handler) CheckRelation(ctx context.Context, rc *models.RelationCheck, d
 			).
 			Exist(ctx)
 
-		fmt.Printf("%s• Checking relation: %v\n", strings.Repeat("\t", depth+1), rc)
-		fmt.Printf("\t\tDirect relationship? %t\n", tupleExists)
+		logChan <- fmt.Sprintf("%srelationCheck: is `%s:%s` a `%s` on `%s:%s`? %t\n", strings.Repeat("\t", depth+1),
+			subjTypeString,
+			rc.Subj.Name,
+			rc.Rel.Name,
+			resTypeString,
+			rc.Res.Name,
+			tupleExists,
+		)
 
 		if err != nil {
 			fmt.Printf("check if tuple exists in check relation: %s\n", err)
@@ -553,8 +566,15 @@ func (h *Handler) CheckRelation(ctx context.Context, rc *models.RelationCheck, d
 					).
 					Exist(ctx)
 
-				fmt.Printf("%s• Checking relation: %v\n", strings.Repeat("\t", depth+1), rc)
-				fmt.Printf("\t\tDirect relationship? %t\n", tupleExists)
+				// is `%s:%s` a `%s` on `%s:%s`?
+				logChan <- fmt.Sprintf("%srelationCheck: is `%s:%s` a `%s` on `%s:%s`? %t\n", strings.Repeat("\t", depth+1),
+					subjTypeString,
+					rc.Subj.Name,
+					rc.Rel.Name,
+					resTypeString,
+					rc.Res.Name,
+					tupleExists,
+				)
 
 				if err != nil {
 					fmt.Printf("check if tuple exists in check relation: %s\n", err)
@@ -572,14 +592,12 @@ func (h *Handler) CheckRelation(ctx context.Context, rc *models.RelationCheck, d
 				refTypeRelation := s[1]
 
 				// Get all refTypeName and get the relation refTypeName (e.g. group#member) with relation rc.Rel.Name
-				fmt.Printf("%sGetting all `%s:<name>#%s` with relation `%s` on `%s`\n",
+				logChan <- fmt.Sprintf("%sadditionalInfo: getting all `%s:<name>#%s` with relation `%s` on `%s` and checking if subject `%s` has relation `%s` on each group\n",
 					strings.Repeat("\t", depth+2),
 					refTypeName,
 					refTypeRelation,
 					rc.Rel.Name,
-					rc.Res.Name)
-				fmt.Printf("%sand checking if subject `%s` has relation `%s` on each group\n",
-					strings.Repeat("\t", depth+2),
+					rc.Res.Name,
 					rc.Subj.Name,
 					refTypeRelation)
 
@@ -629,7 +647,7 @@ func (h *Handler) CheckRelation(ctx context.Context, rc *models.RelationCheck, d
 						Subj: rc.Subj,
 						Rel:  refTypeRelationObject,
 						Res:  s,
-					}, depth+1)
+					}, depth+1, logChan)
 
 					if relExists {
 						return relExists
@@ -642,7 +660,7 @@ func (h *Handler) CheckRelation(ctx context.Context, rc *models.RelationCheck, d
 	return false
 }
 
-func (h *Handler) DoCheckPermission(ctx context.Context, tr *models.TupleReqPermission) (bool, error) {
+func (h *Handler) DoCheckPermission(ctx context.Context, tr *models.TupleReqPermission) (bool, []string, error) {
 	fmt.Printf("====> Does `%s:%s` have `%s` permission on `%s:%s`?\n",
 		tr.Subject.TypeConfigName,
 		tr.Subject.SubjectName,
@@ -653,7 +671,7 @@ func (h *Handler) DoCheckPermission(ctx context.Context, tr *models.TupleReqPerm
 	subj, err := h.subject(ctx, tr.Subject.TypeConfigName, tr.Subject.SubjectName)
 
 	if err != nil {
-		return false, fmt.Errorf("error when querying subject: %w", err)
+		return false, []string{}, fmt.Errorf("error when querying subject: %w", err)
 	}
 
 	fmt.Println("Checking if subject exists:", subj)
@@ -661,7 +679,7 @@ func (h *Handler) DoCheckPermission(ctx context.Context, tr *models.TupleReqPerm
 	res, err := h.subject(ctx, tr.Resource.TypeConfigName, tr.Resource.SubjectName)
 
 	if err != nil {
-		return false, fmt.Errorf("error when querying resource: %w", err)
+		return false, []string{}, fmt.Errorf("error when querying resource: %w", err)
 	}
 
 	fmt.Println("Checking if resource exists:", res)
@@ -675,22 +693,22 @@ func (h *Handler) DoCheckPermission(ctx context.Context, tr *models.TupleReqPerm
 		Only(ctx)
 
 	if err != nil {
-		return false, fmt.Errorf("error when querying permission: %w", err)
+		return false, []string{}, fmt.Errorf("error when querying permission: %w", err)
 	}
 
 	fmt.Println("Getting relations for perm:", perm)
 
 	// Getting the result from the check relations
 
-	hasPerm, err := h.ParsePermissionAndEvaluate(perm.Value, &models.PermissionCheck{
+	hasPerm, logs, err := h.ParsePermissionAndEvaluate(perm.Value, &models.PermissionCheck{
 		Subj: subj,
 		Perm: perm,
 		Res:  res,
 	})
 	if err != nil {
-		return false, fmt.Errorf("error when parsing and evaluation permissions: %w", err)
+		return false, []string{}, fmt.Errorf("error when parsing and evaluation permissions: %w", err)
 	}
-	return hasPerm, nil
+	return hasPerm, logs, nil
 }
 
 func (h *Handler) subject(ctx context.Context, tfName string, name string) (*ent.Subject, error) {

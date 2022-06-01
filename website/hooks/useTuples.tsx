@@ -182,7 +182,8 @@ interface TuplesState {
   removePermissionCheck: (pc: PermissionCheck) => void;
   updatePermissionStatus: (
     pc: PermissionCheck,
-    permission: boolean | undefined
+    permission: boolean | undefined,
+    logs?: string[]
   ) => void;
   addTuple: (tuple: Tuple) => void;
   removeTuple: (tuple: Tuple) => void;
@@ -224,7 +225,8 @@ const useTuples = create<TuplesState>((set, get) => ({
     })),
   updatePermissionStatus: (
     pc: PermissionCheck,
-    permission: boolean | undefined
+    permission: boolean | undefined,
+    logs?: string[]
   ) => {
     set((state) => {
       return {
@@ -234,7 +236,7 @@ const useTuples = create<TuplesState>((set, get) => ({
           p.permission === pc.permission &&
           p.resource.name === pc.resource.name &&
           p.resource.type === pc.resource.type
-            ? { ...p, hasPermission: permission }
+            ? { ...p, hasPermission: permission, logs: logs }
             : p
         ),
       };

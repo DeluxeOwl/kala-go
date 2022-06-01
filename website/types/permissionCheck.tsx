@@ -9,6 +9,7 @@ interface PermissionCheck {
     name: string;
   };
   hasPermission?: boolean;
+  logs?: string[];
 }
 
 export default PermissionCheck;

@@ -13,29 +13,29 @@ import (
 
 var ErrParsing = errors.New("error when parsing expression")
 
-func EvalExpr(ctx context.Context, done chan bool, expr *ast.Expr, pc *models.PermissionCheck, h *Handler) bool {
+func EvalExpr(ctx context.Context, done chan bool, expr *ast.Expr, pc *models.PermissionCheck, h *Handler, logChan chan string) bool {
 	if ctx.Err() != nil {
 		return false
 	}
 
 	switch (*expr).(type) {
 	case *ast.ParenExpr:
-		return EvalParenExpr(ctx, done, expr, pc, h)
+		return EvalParenExpr(ctx, done, expr, pc, h, logChan)
 	case *ast.SelectorExpr:
-		return EvalSelectorExpr(ctx, done, expr, pc, h)
+		return EvalSelectorExpr(ctx, done, expr, pc, h, logChan)
 	case *ast.Ident:
-		return EvalIdent(ctx, done, expr, pc, h)
+		return EvalIdent(ctx, done, expr, pc, h, logChan)
 	case *ast.UnaryExpr:
-		return EvalUnaryExpr(ctx, done, expr, pc, h)
+		return EvalUnaryExpr(ctx, done, expr, pc, h, logChan)
 	case *ast.BinaryExpr:
-		return EvalBinaryExpr(ctx, done, expr, pc, h)
+		return EvalBinaryExpr(ctx, done, expr, pc, h, logChan)
 	}
 
 	return false
 
 }
 
-func EvalParenExpr(ctx context.Context, done chan bool, expr *ast.Expr, pc *models.PermissionCheck, h *Handler) bool {
+func EvalParenExpr(ctx context.Context, done chan bool, expr *ast.Expr, pc *models.PermissionCheck, h *Handler, logChan chan string) bool {
 
 	if ctx.Err() != nil {
 		return false
@@ -43,12 +43,12 @@ func EvalParenExpr(ctx context.Context, done chan bool, expr *ast.Expr, pc *mode
 
 	switch n := (*expr).(type) {
 	case *ast.ParenExpr:
-		return EvalExpr(ctx, done, &n.X, pc, h)
+		return EvalExpr(ctx, done, &n.X, pc, h, logChan)
 	}
 	return false
 }
 
-func EvalSelectorExpr(ctx context.Context, done chan bool, expr *ast.Expr, pc *models.PermissionCheck, h *Handler) bool {
+func EvalSelectorExpr(ctx context.Context, done chan bool, expr *ast.Expr, pc *models.PermissionCheck, h *Handler, logChan chan string) bool {
 	if ctx.Err() != nil {
 		return false
 	}
@@ -65,7 +65,7 @@ func EvalSelectorExpr(ctx context.Context, done chan bool, expr *ast.Expr, pc *m
 				Only(ctx)
 
 			if err != nil {
-				fmt.Printf("check relation in eval expr: %s\n", err)
+				logChan <- fmt.Sprintf("check relation in eval expr: %s\n", err)
 				return false
 			}
 			// Get all referenced subjects
@@ -77,7 +77,7 @@ func EvalSelectorExpr(ctx context.Context, done chan bool, expr *ast.Expr, pc *m
 				All(ctx)
 
 			if err != nil {
-				fmt.Printf("get subjects in eval expr: %s\n", err)
+				logChan <- fmt.Sprintf("get subjects in eval expr: %s\n", err)
 				return false
 			}
 
@@ -88,7 +88,7 @@ func EvalSelectorExpr(ctx context.Context, done chan bool, expr *ast.Expr, pc *m
 					Subj: pc.Subj,
 					Rel:  rel,
 					Res:  s,
-				}, 0)
+				}, 0, logChan)
 
 				if hasAnyRelPerm {
 					return hasAnyRelPerm
@@ -101,7 +101,7 @@ func EvalSelectorExpr(ctx context.Context, done chan bool, expr *ast.Expr, pc *m
 	return false
 }
 
-func EvalIdent(ctx context.Context, done chan bool, expr *ast.Expr, pc *models.PermissionCheck, h *Handler) bool {
+func EvalIdent(ctx context.Context, done chan bool, expr *ast.Expr, pc *models.PermissionCheck, h *Handler, logChan chan string) bool {
 	if ctx.Err() != nil {
 		return false
 	}
@@ -115,7 +115,7 @@ func EvalIdent(ctx context.Context, done chan bool, expr *ast.Expr, pc *models.P
 			Only(ctx)
 
 		if err != nil {
-			fmt.Printf("get relations in eval ident: %s\n", err)
+			logChan <- fmt.Sprintf("get relations in eval ident: %s\n", err)
 			return false
 		}
 
@@ -123,13 +123,13 @@ func EvalIdent(ctx context.Context, done chan bool, expr *ast.Expr, pc *models.P
 			Subj: pc.Subj,
 			Rel:  rel,
 			Res:  pc.Res,
-		}, 0)
+		}, 0, logChan)
 	}
 
 	return false
 }
 
-func EvalUnaryExpr(ctx context.Context, done chan bool, expr *ast.Expr, pc *models.PermissionCheck, h *Handler) bool {
+func EvalUnaryExpr(ctx context.Context, done chan bool, expr *ast.Expr, pc *models.PermissionCheck, h *Handler, logChan chan string) bool {
 
 	if ctx.Err() != nil {
 		return false
@@ -137,7 +137,7 @@ func EvalUnaryExpr(ctx context.Context, done chan bool, expr *ast.Expr, pc *mode
 
 	switch n := (*expr).(type) {
 	case *ast.UnaryExpr:
-		return !EvalExpr(ctx, done, &n.X, pc, h)
+		return !EvalExpr(ctx, done, &n.X, pc, h, logChan)
 	}
 
 	return false
@@ -146,7 +146,7 @@ func EvalUnaryExpr(ctx context.Context, done chan bool, expr *ast.Expr, pc *mode
 // EvalBinaryExpr runs both sides of the binary tree concurrently
 // for a short circuit evaluation, if one branch in OR returns true, cancel all other goroutines
 // if one in AND returns false, cancel all other goroutines as well
-func EvalBinaryExpr(ctx context.Context, done chan bool, expr *ast.Expr, pc *models.PermissionCheck, h *Handler) bool {
+func EvalBinaryExpr(ctx context.Context, done chan bool, expr *ast.Expr, pc *models.PermissionCheck, h *Handler, logChan chan string) bool {
 
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
@@ -154,10 +154,10 @@ func EvalBinaryExpr(ctx context.Context, done chan bool, expr *ast.Expr, pc *mod
 	switch n := (*expr).(type) {
 	case *ast.BinaryExpr:
 		go func() {
-			done <- EvalExpr(ctx, done, &n.X, pc, h)
+			done <- EvalExpr(ctx, done, &n.X, pc, h, logChan)
 		}()
 		go func() {
-			done <- EvalExpr(ctx, done, &n.Y, pc, h)
+			done <- EvalExpr(ctx, done, &n.Y, pc, h, logChan)
 		}()
 
 		if n.Op.String() == "|" {
@@ -191,26 +191,33 @@ func EvalBinaryExpr(ctx context.Context, done chan bool, expr *ast.Expr, pc *mod
 	return false
 }
 
-func StartEval(expr *ast.Expr, pc *models.PermissionCheck, h *Handler) bool {
+func StartEval(expr *ast.Expr, pc *models.PermissionCheck, h *Handler) (bool, []string) {
 	ctx := context.Background()
 	done := make(chan bool, 2)
 
 	returned := make(chan bool)
 
+	logs := []string{}
+	logChan := make(chan string)
+
 	go func() {
-		returned <- EvalExpr(ctx, done, expr, pc, h)
+		returned <- EvalExpr(ctx, done, expr, pc, h, logChan)
 	}()
 
-	select {
-	case returnValue := <-returned:
-		return returnValue
-	case <-ctx.Done():
-		return false
+	for {
+		select {
+		case returnValue := <-returned:
+			return returnValue, logs
+		case logLine := <-logChan:
+			logs = append(logs, logLine)
+		case <-ctx.Done():
+			return false, logs
+		}
 	}
 
 }
 
-func (h *Handler) ParsePermissionAndEvaluate(permValue string, pc *models.PermissionCheck) (bool, error) {
+func (h *Handler) ParsePermissionAndEvaluate(permValue string, pc *models.PermissionCheck) (bool, []string, error) {
 	// fs := token.NewFileSet()
 
 	tr, err := parser.ParseExpr(permValue)
@@ -218,12 +225,12 @@ func (h *Handler) ParsePermissionAndEvaluate(permValue string, pc *models.Permis
 	// ast.Print(fs, tr)
 
 	if err != nil {
-		return false, ErrParsing
+		return false, []string{}, ErrParsing
 	}
 
-	hasPerm := StartEval(&tr, pc, h)
+	hasPerm, logs := StartEval(&tr, pc, h)
 
-	return hasPerm, nil
+	return hasPerm, logs, nil
 }
 
 // func main() {
@@ -260,7 +267,7 @@ func (h *Handler) ParsePermissionAndEvaluate(permValue string, pc *models.Permis
 // 		if err != nil {
 // 			fmt.Println(err)
 // 		}
-// 		fmt.Printf("has permission `%s`? %t\n", v, hasPerm)
+// 		logChan <- fmt.Sprintf("has permission `%s`? %t\n", v, hasPerm)
 // 	}
 
 // }

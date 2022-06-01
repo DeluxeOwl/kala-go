@@ -117,12 +117,13 @@ func main() {
 		for _, permReq := range *permReqs {
 
 			permCtx := context.Background()
-			hasPerm, err := h.CheckPermission(permCtx, &permReq)
+			hasPerm, logs, err := h.CheckPermission(permCtx, &permReq)
 
 			if err != nil {
 				response = append(response, map[string]any{
 					"permission": false,
 					"message":    err.Error(),
+					"logs":       logs,
 				})
 			} else {
 				var msgFormat string
@@ -158,12 +159,13 @@ func main() {
 		var response map[string]any
 
 		permCtx := c.Request().Context()
-		hasPerm, err := h.CheckPermission(permCtx, permReq)
+		hasPerm, logs, err := h.CheckPermission(permCtx, permReq)
 
 		if err != nil {
 			response = map[string]any{
 				"permission": false,
 				"message":    err.Error(),
+				"logs":       logs,
 			}
 		} else {
 			var msgFormat string
@@ -182,6 +184,7 @@ func main() {
 					permReq.Permission,
 					permReq.Resource.TypeConfigName,
 					permReq.Resource.SubjectName),
+				"logs": logs,
 			}
 		}
 

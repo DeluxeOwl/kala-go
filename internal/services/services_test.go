@@ -402,7 +402,7 @@ func TestPermissionCheck(t *testing.T) {
 
 	for i := 0; i < 100; i++ {
 		for _, table := range tables {
-			hasPerm, err := h.CheckPermission(ctx, &models.TupleReqPermission{
+			hasPerm, _, err := h.CheckPermission(ctx, &models.TupleReqPermission{
 				Subject:    table.subject,
 				Permission: table.permission,
 				Resource:   resource,

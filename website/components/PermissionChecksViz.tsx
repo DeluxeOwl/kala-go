@@ -37,7 +37,7 @@ export default function PermissionChecksViz() {
       try {
         const res = await postReq(`${BACKEND_URL}/permission-check`, pc);
         const resJson = await res.json();
-        updatePcStatus(pc, resJson?.permission);
+        updatePcStatus(pc, resJson?.permission, resJson?.logs);
       } catch (error) {
         // @ts-ignore
         showError(error.message);
