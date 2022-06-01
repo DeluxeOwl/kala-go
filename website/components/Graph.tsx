@@ -186,11 +186,24 @@ const getNodes = (graph: any): NodesAndEdges => {
             switch (node.type) {
               case "Identifier":
                 // Means direct relation
-                edges.push({
-                  id: `${permId}/computedTree/${nanoid(6)}`,
-                  source: sourceId,
-                  target: `${tcId}/rel/${node.name}`,
-                });
+                if (sourceId.includes("operator/")) {
+                  const operator = sourceId.split("operator/")[1];
+                  edges.push(
+                    binaryExprOperatorEdge(
+                      `${permId}/computedTree/${nanoid(6)}`,
+                      sourceId,
+                      `${tcId}/rel/${node.name}`,
+                      operator
+                    )
+                  );
+                } else {
+                  edges.push({
+                    id: `${permId}/computedTree/${nanoid(6)}`,
+                    source: sourceId,
+                    target: `${tcId}/rel/${node.name}`,
+                  });
+                }
+
                 break;
               case "UnaryExpression":
                 const notNodeId = `${permId}/computedTree/${nanoid(6)}`;
@@ -206,7 +219,8 @@ const getNodes = (graph: any): NodesAndEdges => {
                   binaryExprOperatorEdge(
                     `${permId}/computedTree/${nanoid(6)}`,
                     sourceId,
-                    notNodeId
+                    notNodeId,
+                    "!"
                   )
                 );
                 edges.push(
@@ -214,14 +228,18 @@ const getNodes = (graph: any): NodesAndEdges => {
                     `${permId}/computedTree/${nanoid(6)}`,
                     notNodeId,
                     // @ts-ignore
-                    `${tcId}/rel/${node?.argument?.name}`
+                    `${tcId}/rel/${node?.argument?.name}`,
+
+                    "!"
                   )
                 );
 
                 break;
               case "BinaryExpression":
                 // Insert Operator node, recurse
-                const operatorNodeId = `${permId}/computedTree/${nanoid(6)}`;
+                const operatorNodeId = `${permId}/computedTree/${nanoid(
+                  6
+                )}/operator/${node.operator}`;
 
                 nodes.push(
                   // @ts-ignore
@@ -235,7 +253,9 @@ const getNodes = (graph: any): NodesAndEdges => {
                   binaryExprOperatorEdge(
                     `${permId}/computedTree/${nanoid(6)}`,
                     sourceId,
-                    operatorNodeId
+                    operatorNodeId,
+                    // @ts-ignore
+                    node.operator
                   )
                 );
 

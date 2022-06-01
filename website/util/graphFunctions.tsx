@@ -99,7 +99,7 @@ const relComposedEdge = (
     id: `${id}/or`,
     source: sourceId,
     style: {
-      strokeWidth: 5,
+      strokeWidth: 4,
     },
     markerEnd: {
       type: MarkerType.Arrow,
@@ -167,7 +167,7 @@ const relComposedSubrelEdge = (
     target: targetId,
     style: {
       stroke: "#008000",
-      strokeWidth: 5,
+      strokeWidth: 4,
     },
   };
 };
@@ -176,7 +176,7 @@ const relToTcEdge = (id: string, sourceId: string, targetId: string): Edge => {
     id: id,
     source: sourceId,
     style: {
-      strokeWidth: 5,
+      strokeWidth: 4,
     },
     markerEnd: {
       type: MarkerType.Arrow,
@@ -214,8 +214,13 @@ const memberExprEdge = (
     id: id,
     source: sourceId,
     target: targetId,
+    markerEnd: {
+      type: MarkerType.ArrowClosed,
+      color: "#1f77b4",
+    },
     style: {
-      stroke: "cyan",
+      stroke: "#1f77b4",
+      strokeWidth: 4,
     },
     animated: true,
   };
@@ -224,16 +229,40 @@ const memberExprEdge = (
 const binaryExprOperatorEdge = (
   id: string,
   sourceId: string,
-  targetId: string
+  targetId: string,
+  operator: string
 ): Edge => {
+  let colorDependingOnOperator: string;
+  switch (operator) {
+    case "|":
+      colorDependingOnOperator = "#008000";
+      break;
+
+    case "&":
+      colorDependingOnOperator = "#f29d02";
+      break;
+
+    case "!":
+      colorDependingOnOperator = "#A7171A";
+      break;
+
+    default:
+      colorDependingOnOperator = "#fff";
+      break;
+  }
+
   return {
     id: id,
     source: sourceId,
     target: targetId,
-    style: {
-      stroke: "cyan",
+    markerEnd: {
+      type: MarkerType.ArrowClosed,
+      color: colorDependingOnOperator,
     },
-    animated: true,
+    style: {
+      stroke: colorDependingOnOperator,
+      strokeWidth: 4,
+    },
   };
 };
 
