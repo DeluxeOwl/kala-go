@@ -1,6 +1,6 @@
-# fly.toml file generated for kala on 2022-06-01T23:41:02+03:00
+# fly.toml file generated for kala-go on 2022-06-02T00:00:58+03:00
 
-app = "kala"
+app = "kala-go"
 
 kill_signal = "SIGINT"
 kill_timeout = 5
