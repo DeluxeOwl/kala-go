@@ -1,6 +1,6 @@
 import { Kbd, Text } from "@mantine/core";
 import { showNotification } from "@mantine/notifications";
-import { Help, X as Check } from "tabler-icons-react";
+import { Help, InfoCircle, X as Check } from "tabler-icons-react";
 
 const showError = (errorMessage: string) => {
   showNotification({
@@ -34,6 +34,19 @@ const showHelpNotif = () => {
         You can press
         <Kbd>Ctrl</Kbd> + <Kbd>Shift</Kbd> + <Kbd>K</Kbd> at any time to bring
         up the help menu.
+      </Text>
+    ),
+    radius: "lg",
+    style: { whiteSpace: "pre-line" },
+  });
+  showNotification({
+    title: <Text size="xl">Welcome!</Text>,
+    icon: <InfoCircle size={18} />,
+    color: "blue",
+    message: (
+      <Text size="md">
+        Press
+        <Kbd>Ctrl</Kbd> + <Kbd>K</Kbd> to load the configuration.
       </Text>
     ),
     radius: "lg",
