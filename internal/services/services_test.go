@@ -400,20 +400,22 @@ func TestPermissionCheck(t *testing.T) {
 		},
 	}
 
-	for _, table := range tables {
-		hasPerm, err := h.CheckPermission(ctx, &models.TupleReqPermission{
-			Subject:    table.subject,
-			Permission: table.permission,
-			Resource:   resource,
-		})
-		if err != nil {
+	for i := 0; i < 100; i++ {
+		for _, table := range tables {
+			hasPerm, err := h.CheckPermission(ctx, &models.TupleReqPermission{
+				Subject:    table.subject,
+				Permission: table.permission,
+				Resource:   resource,
+			})
 			if err != nil {
-				t.Fatalf("at subject `%s` and permission `%s`, shouldn't get error %s",
-					table.subject.SubjectName, table.permission, err)
-			}
-			if hasPerm != table.hasPerm {
-				t.Errorf("at subject `%s` and permission %s, wanted `%t` got `%t`",
-					table.subject.SubjectName, table.permission, table.hasPerm, hasPerm)
+				if err != nil {
+					t.Fatalf("at subject `%s` and permission `%s`, shouldn't get error %s",
+						table.subject.SubjectName, table.permission, err)
+				}
+				if hasPerm != table.hasPerm {
+					t.Errorf("at subject `%s` and permission %s, wanted `%t` got `%t`",
+						table.subject.SubjectName, table.permission, table.hasPerm, hasPerm)
+				}
 			}
 		}
 	}
