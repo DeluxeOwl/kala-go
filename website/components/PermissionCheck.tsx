@@ -28,6 +28,10 @@ type PermissionCheckProps = {
   pc: IPc;
 };
 
+function sleep(time: number) {
+  return new Promise((resolve) => setTimeout(resolve, time));
+}
+
 export default function PermissionCheck({ pc: pc }: PermissionCheckProps) {
   const removePermissionCheck = useTuples((s) => s.removePermissionCheck);
   const updatePcStatus = useTuples((s) => s.updatePermissionStatus);
@@ -37,6 +41,10 @@ export default function PermissionCheck({ pc: pc }: PermissionCheckProps) {
   };
 
   const handlePermCheck = async () => {
+    updatePcStatus(pc, undefined);
+
+    await sleep(300);
+
     try {
       const res = await postReq(`${BACKEND_URL}/permission-check`, pc);
       const resJson = await res.json();

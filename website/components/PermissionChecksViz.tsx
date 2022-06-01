@@ -8,6 +8,11 @@ import {
 import useTuples from "../hooks/useTuples";
 import { BACKEND_URL } from "../url";
 import { postReq } from "../util/fetchAll";
+
+function sleep(time: number) {
+  return new Promise((resolve) => setTimeout(resolve, time));
+}
+
 export default function PermissionChecksViz() {
   const permissionChecks = useTuples((s) => s.permissionChecks);
   const updatePcStatus = useTuples((s) => s.updatePermissionStatus);
@@ -23,6 +28,11 @@ export default function PermissionChecksViz() {
   ).length;
 
   const handleAllRuns = async () => {
+    permissionChecks.forEach(async (pc) => {
+      updatePcStatus(pc, undefined);
+    });
+
+    await sleep(300);
     permissionChecks.forEach(async (pc) => {
       try {
         const res = await postReq(`${BACKEND_URL}/permission-check`, pc);
