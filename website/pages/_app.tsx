@@ -43,7 +43,6 @@ export default function App(props: AppProps) {
             withNormalizeCSS
             theme={{
               fontFamily: "Poppins",
-              /** Put your mantine theme override here */
               colorScheme: colorScheme,
             }}
           >

@@ -15,6 +15,7 @@ function cosDegrees(angleDegrees: number) {
 const tcNode = (id: string, label: string, position: Point): Node => {
   return {
     id: id,
+    type: "typeConfigNode",
     data: { label: label },
     position: position,
   };
@@ -23,6 +24,7 @@ const tcNode = (id: string, label: string, position: Point): Node => {
 const relNode = (id: string, label: string, position: Point): Node => {
   return {
     id: id,
+    type: "relationNode",
     data: { label: label },
     position: position,
   };
@@ -31,6 +33,7 @@ const relNode = (id: string, label: string, position: Point): Node => {
 const permNode = (id: string, label: string, position: Point): Node => {
   return {
     id: id,
+    type: "permissionNode",
     data: { label: label },
     position: position,
   };
@@ -74,6 +77,7 @@ const relEdge = (id: string, sourceId: string, targetId: string): Edge => {
 const relComposedNode = (id: string, position: Point): Node => {
   return {
     id: `${id}/or`,
+    type: "relComposedNode",
     data: { label: "|" },
     position: position,
   };
@@ -246,6 +250,7 @@ const binaryExprOperatorNode = (
 ): Node => {
   return {
     id: id,
+    type: "binaryExprOperatorNode",
     data: { label: label },
     position: position,
   };

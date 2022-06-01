@@ -1,7 +1,7 @@
 import { Checkbox, CheckboxGroup, Stack } from "@mantine/core";
 import jsep from "jsep";
 import { nanoid } from "nanoid";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import ReactFlow, {
   Background,
   Controls,
@@ -29,6 +29,11 @@ import {
   subjectNode,
   tcNode,
 } from "../util/graphFunctions";
+import BinaryExprOperatorNode from "./CustomNodes/BinaryExprOperatorNode";
+import PermissionNode from "./CustomNodes/PermissionNode";
+import RelationNode from "./CustomNodes/RelationNode";
+import RelComposedNode from "./CustomNodes/RelComposedNode";
+import TypeConfigNode from "./CustomNodes/TypeConfigNode";
 
 type Point = {
   x: number;
@@ -324,6 +329,17 @@ const Graph = ({ data }: GraphProps) => {
   const initialNodes = useRef<Node[]>([]);
   const initialEdges = useRef<Edge[]>([]);
 
+  const nodeTypes = useMemo(
+    () => ({
+      typeConfigNode: TypeConfigNode,
+      relationNode: RelationNode,
+      permissionNode: PermissionNode,
+      relComposedNode: RelComposedNode,
+      binaryExprOperatorNode: BinaryExprOperatorNode,
+    }),
+    []
+  );
+
   const [checkboxValues, setCheckboxValues] = useState<string[]>([
     "includesRelEdges",
   ]);
@@ -373,6 +389,9 @@ const Graph = ({ data }: GraphProps) => {
       // @ts-ignore
       connectionMode={"loose"}
       fitView
+      snapToGrid={true}
+      snapGrid={[20, 20]}
+      nodeTypes={nodeTypes}
     >
       <Controls />
       <Background />
