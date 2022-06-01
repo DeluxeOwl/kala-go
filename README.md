@@ -8,28 +8,9 @@ An authorization and policy engine written in go.
 
 # TODO
 
-- separate in modules
-- run every operation in a transaction
-- add some logging and replace instances of fmt.Println
-- add expression parsing: paranthesis support, http calls
-  - Parser supports paranthesis by default
-  - `tr, _ := parser.ParseExpr("(reader | writer) & !parent_folder.reader")`
-  - add binary expr type in ent
-  - convert to breadth first search
 - **Check structured logging across goroutines**
 - Run on `fly.io` automatically, deploy using GH actions
 - add header to UI
-- Add fullscreen option to graph
-- Add toggles for different things
-
-```
-[00] operation: &
-[00] operation: |
-[00] check relation: reader
-[00] check relation: writer
-[00] negation: !
-[00] composed relation: parent_folder.reader
-```
 
 # Example of config
 
@@ -82,5 +63,6 @@ folder:secret_folder #reader @group:test_group#member
 3. Does `user:anna` have `read_only` permission on `document:report.csv`?
 4. Does `user:steve` have `read` permission on `document:report.csv`?
 
+Future features:
 - List everyone with `read` permission on `document:report.csv`
 - List everyone with `read_only` permission on `document:report.csv`
