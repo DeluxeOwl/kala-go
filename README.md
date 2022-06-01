@@ -6,6 +6,14 @@ An authorization and policy engine written in go.
 
 ![1](./img/graph.png)
 
+# DEV
+
+In `./website`, create an `.env.local` with:
+
+```
+NEXT_PUBLIC_BACKEND_URL="http://127.0.0.1:1323/v0"
+```
+
 # TODO
 
 - **Check structured logging across goroutines**
@@ -64,5 +72,6 @@ folder:secret_folder #reader @group:test_group#member
 4. Does `user:steve` have `read` permission on `document:report.csv`?
 
 Future features:
+
 - List everyone with `read` permission on `document:report.csv`
 - List everyone with `read_only` permission on `document:report.csv`
