@@ -81,7 +81,6 @@ func EvalSelectorExpr(ctx context.Context, done chan bool, expr *ast.Expr, pc *m
 				return false
 			}
 
-			// TODO: goroutines
 			hasAnyRelPerm := false
 
 			for _, s := range subjects {

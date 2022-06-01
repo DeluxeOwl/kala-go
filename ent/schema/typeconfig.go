@@ -12,7 +12,6 @@ type TypeConfig struct {
 }
 
 // Fields of the TypeConfig.
-// TODO: validation
 func (TypeConfig) Fields() []ent.Field {
 	return []ent.Field{
 		// The name of the type

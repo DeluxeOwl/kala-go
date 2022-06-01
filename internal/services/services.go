@@ -134,7 +134,6 @@ func (h *Handler) CheckPermission(ctx context.Context, tr *models.TupleReqPermis
 	return hasRel, nil
 }
 
-// TODO: make the errors as variables?
 func (h *Handler) DoCreateTypeConfig(ctx context.Context, tcInput *models.TypeConfigReq) (*ent.TypeConfig, error) {
 
 	if !regexTypeName.MatchString(tcInput.Name) {
@@ -567,7 +566,6 @@ func (h *Handler) CheckRelation(ctx context.Context, rc *models.RelationCheck, d
 
 			} else {
 				// checking composed relation
-				// TODO: repeated, own function
 				s := strings.Split(referencedType, refSubrelationDelim)
 
 				refTypeName := s[0]

@@ -49,7 +49,6 @@ type NodesAndEdges = {
 const refValueDelim = " | ";
 const refSubrelationDelim = "#";
 
-// TODO: calculate some stuff here to look good
 const getNodes = (graph: any): NodesAndEdges => {
   let nodes: Node[] = [];
   let edges: Edge[] = [];
