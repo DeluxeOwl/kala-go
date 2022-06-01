@@ -4,7 +4,7 @@ const PermissionNode = ({ data }: any) => {
   return (
     <div
       style={{
-        backgroundColor: "#285546",
+        backgroundColor: "#1acc92",
         padding: "1em",
         borderRadius: "10%",
         color: "#fefefe",

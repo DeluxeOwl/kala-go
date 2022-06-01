@@ -1,3 +1,4 @@
+import { Title } from "@mantine/core";
 import { Handle, Position } from "react-flow-renderer";
 
 const RelComposedNode = ({ data }: any) => {
@@ -23,7 +24,9 @@ const RelComposedNode = ({ data }: any) => {
         style={{ borderRadius: "0", visibility: "hidden" }}
       />
 
-      <div id={data.id}>{data.label}</div>
+      <div id={data.id}>
+        <Title order={2}>{data.label}</Title>
+      </div>
       <Handle
         type="source"
         position={Position.Bottom}

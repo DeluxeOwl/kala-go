@@ -24,8 +24,8 @@ const RelationNode = ({ data }: any) => {
       <div id={data.id}>{data.label}</div>
       <Handle
         type="source"
-        position={Position.Right}
-        id={`${data.id}.right1`}
+        position={Position.Bottom}
+        id={`${data.id}.bottom`}
         style={{ top: "30%", borderRadius: 0, visibility: "hidden" }}
       />
     </div>

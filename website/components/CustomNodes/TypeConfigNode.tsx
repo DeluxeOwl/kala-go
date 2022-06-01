@@ -17,8 +17,8 @@ const TypeConfigNode = ({ data }: any) => {
     >
       <Handle
         type="target"
-        position={Position.Left}
-        id={`${data.id}.left`}
+        position={Position.Bottom}
+        id={`${data.id}.bottom`}
         style={{ borderRadius: "0", visibility: "hidden" }}
       />
       <div id={data.id} style={{ margin: "1em" }}>

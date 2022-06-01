@@ -46,13 +46,17 @@ const permEdge = (id: string, sourceId: string, targetId: string): Edge => {
     label: "permission",
     labelBgPadding: [8, 4],
     labelBgBorderRadius: 4,
-    labelBgStyle: { fill: "#7F00FF ", color: "#fff", fillOpacity: 0.7 },
+    labelBgStyle: { fill: "#1acc92", color: "#fff", fillOpacity: 0.7 },
     markerEnd: {
       type: MarkerType.ArrowClosed,
+      color: "#1acc92",
+      height: 30,
+      width: 30,
     },
     target: targetId,
     style: {
-      stroke: "violet",
+      stroke: "#1acc92",
+      opacity: 0.5,
     },
   };
 };
@@ -63,13 +67,17 @@ const relEdge = (id: string, sourceId: string, targetId: string): Edge => {
     label: "relation",
     labelBgPadding: [8, 4],
     labelBgBorderRadius: 4,
-    labelBgStyle: { fill: "#FFCC00", color: "#fff", fillOpacity: 0.7 },
+    labelBgStyle: { fill: "#ffa887", color: "#fff", fillOpacity: 0.7 },
     markerEnd: {
       type: MarkerType.ArrowClosed,
+      color: "#ffa887",
+      height: 30,
+      width: 30,
     },
     target: targetId,
     style: {
-      stroke: "yellow",
+      stroke: "#ffa887",
+      opacity: 0.5,
     },
   };
 };
@@ -90,19 +98,13 @@ const relComposedEdge = (
   return {
     id: `${id}/or`,
     source: sourceId,
-    label: "includes",
-    labelBgPadding: [8, 4],
-    labelBgStyle: {
-      fill: "green",
-      color: "#fff",
-      fillOpacity: 0.7,
-    },
     style: {
-      stroke: "green",
+      strokeWidth: 5,
     },
     markerEnd: {
-      type: MarkerType.ArrowClosed,
+      type: MarkerType.Arrow,
     },
+    animated: true,
     target: `${targetId}/or`,
   };
 };
@@ -115,6 +117,9 @@ const permNotEdge = (id: string, sourceId: string, targetId: string): Edge => {
     },
     markerEnd: {
       type: MarkerType.ArrowClosed,
+
+      height: 30,
+      width: 30,
     },
     target: `${targetId}`,
   };
@@ -139,6 +144,9 @@ const permDirectEdge = (
     },
     markerEnd: {
       type: MarkerType.ArrowClosed,
+
+      height: 30,
+      width: 30,
     },
     target: `${targetId}/not`,
   };
@@ -152,20 +160,14 @@ const relComposedSubrelEdge = (
   return {
     id: id,
     source: sourceId,
-    label: "OR",
-    labelBgPadding: [8, 4],
-    labelBgBorderRadius: 4,
-    labelBgStyle: {
-      fill: "#0000FF",
-      color: "#fff",
-      fillOpacity: 0.7,
-    },
+
     markerEnd: {
       type: MarkerType.ArrowClosed,
     },
     target: targetId,
     style: {
-      stroke: "blue",
+      stroke: "#008000",
+      strokeWidth: 5,
     },
   };
 };
@@ -173,21 +175,14 @@ const relToTcEdge = (id: string, sourceId: string, targetId: string): Edge => {
   return {
     id: id,
     source: sourceId,
-    label: "includes",
-    labelBgPadding: [8, 4],
-    labelBgBorderRadius: 4,
-    labelBgStyle: {
-      fill: "green",
-      color: "#fff",
-      fillOpacity: 0.7,
-    },
     style: {
-      stroke: "green",
+      strokeWidth: 5,
     },
     markerEnd: {
-      type: MarkerType.ArrowClosed,
+      type: MarkerType.Arrow,
     },
     target: targetId,
+    animated: true,
   };
 };
 
