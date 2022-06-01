@@ -1,3 +1,5 @@
-const BACKEND_URL = "http://127.0.0.1:1323/v0";
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
+
+console.log(BACKEND_URL);
 
 export { BACKEND_URL };
