@@ -33,6 +33,7 @@ import BinaryExprOperatorNode from "./CustomNodes/BinaryExprOperatorNode";
 import PermissionNode from "./CustomNodes/PermissionNode";
 import RelationNode from "./CustomNodes/RelationNode";
 import RelComposedNode from "./CustomNodes/RelComposedNode";
+import SubjectNode from "./CustomNodes/SubjectNode";
 import TypeConfigNode from "./CustomNodes/TypeConfigNode";
 
 type Point = {
@@ -323,7 +324,7 @@ const getNodes = (graph: any): NodesAndEdges => {
           subjPoint.x += 250;
 
           nodes.push(subjectNode(subjId, subj.name, subjPosition));
-          edges.push(subjectEdge(edgeId, tcId, subjId));
+          edges.push(subjectEdge(edgeId, subjId, tcId));
         });
       }
     }
@@ -356,6 +357,7 @@ const Graph = ({ data }: GraphProps) => {
       permissionNode: PermissionNode,
       relComposedNode: RelComposedNode,
       binaryExprOperatorNode: BinaryExprOperatorNode,
+      subjectNode: SubjectNode,
     }),
     []
   );

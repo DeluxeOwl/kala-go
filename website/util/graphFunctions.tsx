@@ -189,6 +189,7 @@ const relToTcEdge = (id: string, sourceId: string, targetId: string): Edge => {
 const subjectNode = (id: string, label: string, position: Point): Node => {
   return {
     id: id,
+    type: "subjectNode",
     data: { label: label },
     position: position,
   };
@@ -199,8 +200,13 @@ const subjectEdge = (id: string, sourceId: string, targetId: string): Edge => {
     id: id,
     source: sourceId,
     target: targetId,
+    markerEnd: {
+      type: MarkerType.Arrow,
+      color: "#b22cd3",
+    },
     style: {
-      stroke: "red",
+      stroke: "#b22cd3",
+      strokeWidth: 4,
     },
   };
 };
