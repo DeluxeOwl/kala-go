@@ -71,6 +71,8 @@ const SelectItem = forwardRef<HTMLDivElement, ItemProps>(
   )
 );
 
+SelectItem.displayName = "SelectItem";
+
 interface ExampleChangeProps {
   value: string;
   setValue: any;
