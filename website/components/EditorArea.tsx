@@ -7,6 +7,7 @@ import useGraph from "../hooks/useGraph";
 import useTuples from "../hooks/useTuples";
 import { fetchAll } from "../util/fetchAll";
 import { showError, showSuccess } from "../util/notifications";
+import ExampleChange from "./ExampleChange";
 
 type EditorAreaProps = {
   children?: React.ReactNode;
@@ -100,27 +101,30 @@ const EditorArea = ({ children }: EditorAreaProps) => {
   };
 
   return (
-    <Box
-      style={{
-        flex: 1,
-        minHeight: "50%",
-      }}
-    >
-      <Editor
-        defaultLanguage="yaml"
-        defaultValue={defaultExample}
-        options={{
-          minimap: {
-            enabled: false,
-          },
-          fontSize: width > 2000 ? 20 : 16,
-          wordWrap: "on",
+    <>
+      <ExampleChange />
+      <Box
+        style={{
+          flex: 1,
+          minHeight: "50%",
         }}
-        theme={colorScheme === "dark" ? "vs-dark-custom" : "vs-light"}
-        beforeMount={handleEditorWillMount}
-        onMount={handleEditorDidMount}
-      />
-    </Box>
+      >
+        <Editor
+          defaultLanguage="yaml"
+          defaultValue={defaultExample}
+          options={{
+            minimap: {
+              enabled: false,
+            },
+            fontSize: width > 2000 ? 20 : 16,
+            wordWrap: "on",
+          }}
+          theme={colorScheme === "dark" ? "vs-dark-custom" : "vs-light"}
+          beforeMount={handleEditorWillMount}
+          onMount={handleEditorDidMount}
+        />
+      </Box>
+    </>
   );
 };
 

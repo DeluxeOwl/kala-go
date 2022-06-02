@@ -26,10 +26,15 @@ export default function App(props: AppProps) {
   return (
     <>
       <Head>
-        <title>Kala app</title>
+        <title>Kala</title>
         <meta
           name="viewport"
           content="minimum-scale=1, initial-scale=1, width=device-width"
+        />
+        <meta
+          property="og:title"
+          content="Kala - authorization framework"
+          key="title"
         />
       </Head>
 
@@ -46,7 +51,7 @@ export default function App(props: AppProps) {
               colorScheme: colorScheme,
             }}
           >
-            <NotificationsProvider position="top-center">
+            <NotificationsProvider position="top-right">
               <Component {...pageProps} />
             </NotificationsProvider>
           </MantineProvider>
