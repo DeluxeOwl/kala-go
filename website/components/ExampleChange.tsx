@@ -76,7 +76,7 @@ interface ExampleChangeProps {
   setValue: any;
 }
 
-const ExampleChange = ({ value, setValue }: ExampleChangeProps) => {
+export default function ExampleChange({ value, setValue }: ExampleChangeProps) {
   return (
     <Group
       style={{
@@ -106,6 +106,4 @@ const ExampleChange = ({ value, setValue }: ExampleChangeProps) => {
       />
     </Group>
   );
-};
-
-export default ExampleChange;
+}
