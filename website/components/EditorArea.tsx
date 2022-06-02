@@ -1,10 +1,21 @@
 import { Box, useMantineColorScheme } from "@mantine/core";
 import { useHotkeys, useViewportSize } from "@mantine/hooks";
 import Editor from "@monaco-editor/react";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import YAML from "yaml";
 import useGraph from "../hooks/useGraph";
 import useTuples from "../hooks/useTuples";
+import {
+  defaultPc,
+  defaultTuples,
+  defaultYaml,
+  gdrivePc,
+  gdriveTuples,
+  gdriveYaml,
+  rbacPc,
+  rbacTuples,
+  rbacYaml,
+} from "../ideconfigs/configs";
 import { fetchAll } from "../util/fetchAll";
 import { showError, showSuccess } from "../util/notifications";
 import ExampleChange from "./ExampleChange";
@@ -13,29 +24,14 @@ type EditorAreaProps = {
   children?: React.ReactNode;
 };
 
-const defaultExample = `
-type: user
----
-type: group
-relations:
-  member: user
-
----
-type: folder
-relations:
-  reader: user | group#member
-
----
-type: document
-relations:
-  parent_folder: folder
-  writer: user
-  reader: user
-permissions:
-  read: reader | writer | parent_folder.reader
-  read_and_write: reader & writer
-  read_only: reader & !writer
-`;
+type SelectValues =
+  | ""
+  | "Github"
+  | "Your Authorization model"
+  | "Documents"
+  | "Google Drive"
+  | "RBAC"
+  | "Custom Roles";
 
 const EditorArea = ({ children }: EditorAreaProps) => {
   const { colorScheme } = useMantineColorScheme();
@@ -45,6 +41,8 @@ const EditorArea = ({ children }: EditorAreaProps) => {
   const { refetch } = useGraph();
   const tuples = useTuples((s) => s.tuples);
   const subjects = useTuples((s) => s.getUniqueSubjects)();
+  const setState = useTuples((s) => s.setState);
+  const [selectValue, setSelectValue] = useState<SelectValues>("");
 
   useEffect(() => {
     if (monacoRef) {
@@ -55,6 +53,55 @@ const EditorArea = ({ children }: EditorAreaProps) => {
 
   // For getting the value
   useHotkeys([["mod+K", () => handleEditorValue()]]);
+
+  useEffect(() => {
+    switch (selectValue) {
+      case "":
+        break;
+      case "Github":
+        break;
+      case "Your Authorization model":
+        // @ts-ignore
+        monacoRef?.current?.setValue(
+          `
+type: your_type
+---
+type: your_other_type
+relations:
+  your_rel: your_type
+permissions:
+  your_perm: your_rel
+          `
+        );
+        setState([], []);
+        break;
+      case "Documents":
+        // @ts-ignore
+        monacoRef?.current?.setValue(defaultYaml);
+        setState(defaultTuples, defaultPc);
+        break;
+      case "Google Drive":
+        // @ts-ignore
+        monacoRef?.current?.setValue(gdriveYaml);
+        setState(gdriveTuples, gdrivePc);
+        break;
+      case "RBAC":
+        // @ts-ignore
+        monacoRef?.current?.setValue(rbacYaml);
+        setState(rbacTuples, rbacPc);
+        break;
+      case "Custom Roles":
+        // @ts-ignore
+        monacoRef?.current?.setValue("");
+        setState([], []);
+        break;
+      default:
+        // @ts-ignore
+        monacoRef?.current?.setValue(defaultYaml);
+        setState(defaultTuples, defaultPc);
+        break;
+    }
+  }, [selectValue]);
 
   const handleEditorValue = async () => {
     if (!monacoRef) {
@@ -102,7 +149,7 @@ const EditorArea = ({ children }: EditorAreaProps) => {
 
   return (
     <>
-      <ExampleChange />
+      <ExampleChange value={selectValue} setValue={setSelectValue} />
       <Box
         style={{
           flex: 1,
@@ -111,7 +158,7 @@ const EditorArea = ({ children }: EditorAreaProps) => {
       >
         <Editor
           defaultLanguage="yaml"
-          defaultValue={defaultExample}
+          defaultValue={defaultYaml}
           options={{
             minimap: {
               enabled: false,

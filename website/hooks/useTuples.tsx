@@ -1,179 +1,9 @@
 import create from "zustand";
+import { defaultPc, defaultTuples } from "../ideconfigs/configs";
 import PermissionCheck from "../types/permissionCheck";
 import Subject from "../types/subject";
 import Tuple from "../types/tuple";
 import { showError } from "../util/notifications";
-
-const initialTuples: Tuple[] = [
-  {
-    subject: {
-      type: "user",
-      name: "anna",
-    },
-    relation: "reader",
-    resource: {
-      type: "document",
-      name: "report.csv",
-    },
-  },
-  {
-    subject: {
-      type: "user",
-      name: "anna",
-    },
-    relation: "writer",
-    resource: {
-      type: "document",
-      name: "report.csv",
-    },
-  },
-  {
-    subject: {
-      type: "folder",
-      name: "secret_folder",
-    },
-    relation: "parent_folder",
-    resource: {
-      type: "document",
-      name: "report.csv",
-    },
-  },
-  {
-    subject: {
-      type: "user",
-      name: "john",
-    },
-    relation: "reader",
-    resource: {
-      type: "folder",
-      name: "secret_folder",
-    },
-  },
-  {
-    subject: {
-      type: "user",
-      name: "john",
-    },
-    relation: "member",
-    resource: {
-      type: "group",
-      name: "dev",
-    },
-  },
-  {
-    subject: {
-      type: "group",
-      name: "dev#member",
-    },
-    relation: "reader",
-    resource: {
-      type: "folder",
-      name: "secret_folder",
-    },
-  },
-  {
-    subject: {
-      type: "group",
-      name: "test_group#member",
-    },
-    relation: "reader",
-    resource: {
-      type: "folder",
-      name: "secret_folder",
-    },
-  },
-  {
-    subject: {
-      type: "user",
-      name: "steve",
-    },
-    relation: "member",
-    resource: {
-      type: "group",
-      name: "dev",
-    },
-  },
-];
-
-const initialPc: PermissionCheck[] = [
-  {
-    subject: {
-      type: "user",
-      name: "john",
-    },
-    permission: "read",
-    resource: {
-      type: "document",
-      name: "report.csv",
-    },
-  },
-  {
-    subject: {
-      type: "user",
-      name: "anna",
-    },
-    permission: "read",
-    resource: {
-      type: "document",
-      name: "report.csv",
-    },
-  },
-  {
-    subject: {
-      type: "user",
-      name: "steve",
-    },
-    permission: "read",
-    resource: {
-      type: "document",
-      name: "report.csv",
-    },
-  },
-  {
-    subject: {
-      type: "user",
-      name: "anna",
-    },
-    permission: "read_only",
-    resource: {
-      type: "document",
-      name: "report.csv",
-    },
-  },
-  {
-    subject: {
-      type: "user",
-      name: "anna",
-    },
-    permission: "read_and_write",
-    resource: {
-      type: "document",
-      name: "report.csv",
-    },
-  },
-  {
-    subject: {
-      type: "user",
-      name: "steve",
-    },
-    permission: "read_and_write",
-    resource: {
-      type: "document",
-      name: "report.csv",
-    },
-  },
-  {
-    subject: {
-      type: "user",
-      name: "john",
-    },
-    permission: "read_and_write",
-    resource: {
-      type: "document",
-      name: "report.csv",
-    },
-  },
-];
 
 interface TuplesState {
   tuples: Tuple[];
@@ -188,11 +18,16 @@ interface TuplesState {
   addTuple: (tuple: Tuple) => void;
   removeTuple: (tuple: Tuple) => void;
   getUniqueSubjects: () => Subject[];
+  setState: (tuples: Tuple[], pcs: PermissionCheck[]) => void;
 }
 
 const useTuples = create<TuplesState>((set, get) => ({
-  tuples: initialTuples,
-  permissionChecks: initialPc,
+  tuples: defaultTuples,
+  permissionChecks: defaultPc,
+
+  setState: (tuples, pcs) =>
+    set((state) => ({ ...state, tuples: tuples, permissionChecks: pcs })),
+
   addTuple: (tuple) =>
     set((state) => {
       const tupleExists = state.tuples.some(

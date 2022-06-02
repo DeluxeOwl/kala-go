@@ -7,7 +7,6 @@ import {
   Folder,
   LockAccess,
   User,
-  Users,
 } from "tabler-icons-react";
 import logo from "../public/logo.png";
 
@@ -18,12 +17,12 @@ const data = [
     value: "Your Authorization model",
     description: "Your own custom authorization model",
   },
-  {
-    icon: <BrandGithub />,
-    label: "Github",
-    value: "Github",
-    description: "Github's organization and member permission",
-  },
+  // {
+  //   icon: <BrandGithub />,
+  //   label: "Github",
+  //   value: "Github",
+  //   description: "Github's organization and member permission",
+  // },
   {
     icon: <LockAccess />,
     label: "RBAC",
@@ -42,12 +41,12 @@ const data = [
     value: "Google Drive",
     description: "GDrive's permissions for folders and documents",
   },
-  {
-    icon: <Users />,
-    label: "Custom Roles",
-    value: "Custom Roles",
-    description: "Example of custom roles",
-  },
+  // {
+  //   icon: <Users />,
+  //   label: "Custom Roles",
+  //   value: "Custom Roles",
+  //   description: "Example of custom roles",
+  // },
 ];
 
 interface ItemProps extends React.ComponentPropsWithoutRef<"div"> {
@@ -72,7 +71,12 @@ const SelectItem = forwardRef<HTMLDivElement, ItemProps>(
   )
 );
 
-const ExampleChange = () => {
+interface ExampleChangeProps {
+  value: string;
+  setValue: any;
+}
+
+const ExampleChange = ({ value, setValue }: ExampleChangeProps) => {
   return (
     <Group
       style={{
@@ -97,6 +101,8 @@ const ExampleChange = () => {
         data={data}
         maxDropdownHeight={400}
         radius="lg"
+        value={value}
+        onChange={setValue}
       />
     </Group>
   );
