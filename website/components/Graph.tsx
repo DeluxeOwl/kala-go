@@ -6,6 +6,7 @@ import ReactFlow, {
   Background,
   Controls,
   Edge,
+  MarkerType,
   Node,
   useEdgesState,
   useNodesState,
@@ -201,6 +202,14 @@ const getNodes = (graph: any): NodesAndEdges => {
                     id: `${permId}/computedTree/${nanoid(6)}`,
                     source: sourceId,
                     target: `${tcId}/rel/${node.name}`,
+                    style: {
+                      stroke: "#1acc92",
+                      strokeWidth: 4,
+                    },
+                    markerEnd: {
+                      type: MarkerType.ArrowClosed,
+                      color: "#1acc92",
+                    },
                   });
                 }
 
