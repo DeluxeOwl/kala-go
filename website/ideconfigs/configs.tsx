@@ -324,23 +324,23 @@ const gdriveTuples: Tuple[] = [
   {
     subject: {
       type: "folder",
-      name: "product-2021",
+      name: "produs-2022",
     },
     relation: "parent",
     resource: {
       type: "doc",
-      name: "2021-roadmap",
+      name: "finalizare_studii.docx",
     },
   },
   {
     subject: {
       type: "user",
-      name: "beth",
+      name: "maria",
     },
     relation: "viewer",
     resource: {
       type: "doc",
-      name: "2021-roadmap",
+      name: "finalizare_studii.docx",
     },
   },
   {
@@ -351,18 +351,18 @@ const gdriveTuples: Tuple[] = [
     relation: "owner",
     resource: {
       type: "folder",
-      name: "product-2021",
+      name: "produs-2022",
     },
   },
   {
     subject: {
       type: "group",
-      name: "fabrikam#member",
+      name: "acme_group#member",
     },
     relation: "viewer",
     resource: {
       type: "folder",
-      name: "product-2021",
+      name: "produs-2022",
     },
   },
   {
@@ -379,12 +379,12 @@ const gdriveTuples: Tuple[] = [
   {
     subject: {
       type: "user",
-      name: "charles",
+      name: "darius",
     },
     relation: "member",
     resource: {
       type: "group",
-      name: "fabrikam",
+      name: "acme_group",
     },
   },
 ];
@@ -398,7 +398,7 @@ const gdrivePc: PermissionCheck[] = [
     permission: "write",
     resource: {
       type: "doc",
-      name: "2021-roadmap",
+      name: "finalizare_studii.docx",
     },
   },
   {
@@ -409,40 +409,40 @@ const gdrivePc: PermissionCheck[] = [
     permission: "change_owner",
     resource: {
       type: "doc",
-      name: "2021-roadmap",
+      name: "finalizare_studii.docx",
     },
   },
   {
     subject: {
       type: "user",
-      name: "beth",
+      name: "maria",
     },
     permission: "change_owner",
     resource: {
       type: "doc",
-      name: "2021-roadmap",
+      name: "finalizare_studii.docx",
     },
   },
   {
     subject: {
       type: "user",
-      name: "charles",
+      name: "darius",
     },
     permission: "read",
     resource: {
       type: "doc",
-      name: "2021-roadmap",
+      name: "finalizare_studii.docx",
     },
   },
   {
     subject: {
       type: "user",
-      name: "charles",
+      name: "darius",
     },
     permission: "write",
     resource: {
       type: "doc",
-      name: "2021-roadmap",
+      name: "finalizare_studii.docx",
     },
   },
   {
@@ -453,7 +453,7 @@ const gdrivePc: PermissionCheck[] = [
     permission: "read",
     resource: {
       type: "doc",
-      name: "2021-roadmap",
+      name: "finalizare_studii.docx",
     },
   },
 ];
