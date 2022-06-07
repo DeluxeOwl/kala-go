@@ -54,18 +54,10 @@ folder:secret_folder #reader @group:dev#member
 folder:secret_folder #reader @group:test_group#member
 ```
 
-## Relation answering
+# How to use
 
-1. Is `user:john` a `reader` on `folder:secret_folder`
+The whole website is CLI driven, press `Ctrl+Shift+K` for help
 
-## Permission answering
-
-1. Does `user:anna` have `read` permission on `document:report.csv`?
-2. Does `user:john` have `read` permission on `document:report.csv`?
-3. Does `user:anna` have `read_only` permission on `document:report.csv`?
-4. Does `user:steve` have `read` permission on `document:report.csv`?
-
-Future features:
-
-- List everyone with `read` permission on `document:report.csv`
-- List everyone with `read_only` permission on `document:report.csv`
+1. After you finish modifying your config, you need to reload the changes by pressing `Ctrl+K`
+2. Add tuples to the database using the "Tuples" tab
+3. Verify permissions using the "PermissionCheck" tab
