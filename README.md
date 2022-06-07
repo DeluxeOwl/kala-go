@@ -14,12 +14,6 @@ In `./website`, create an `.env.local` with:
 NEXT_PUBLIC_BACKEND_URL="http://127.0.0.1:1323/v0"
 ```
 
-# TODO
-
-- **Check structured logging across goroutines**
-- Run on `fly.io` automatically, deploy using GH actions
-- add header to UI
-
 # Example of config
 
 ```yaml
