@@ -23,5 +23,4 @@ var parentRelDelim = "."
 // delimiter for permissions
 var permDelim = regexp.MustCompile(`[a-zA-Z_]{1,64}(\.([a-zA-Z_]{1,64}))?`)
 
-
-var regexSubjName = regexp.MustCompile(`^[a-zA-Z0-9\._\/-]{1,64}$`)
+var regexSubjName = regexp.MustCompile(`^[a-zA-Z0-9\:\._\/-]{1,64}$`)
