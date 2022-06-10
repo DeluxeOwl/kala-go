@@ -6,6 +6,9 @@ import YAML from "yaml";
 import useGraph from "../hooks/useGraph";
 import useTuples from "../hooks/useTuples";
 import {
+  blocklistPcs,
+  blocklistTuples,
+  blocklistYaml,
   defaultPc,
   defaultTuples,
   defaultYaml,
@@ -31,7 +34,8 @@ type SelectValues =
   | "Documents"
   | "Google Drive"
   | "RBAC"
-  | "Custom Roles";
+  | "Custom Roles"
+  | "Blocklist";
 
 const EditorArea = ({ children }: EditorAreaProps) => {
   const { colorScheme } = useMantineColorScheme();
@@ -94,6 +98,11 @@ permissions:
         // @ts-ignore
         monacoRef?.current?.setValue("");
         setState([], []);
+        break;
+      case "Blocklist":
+        // @ts-ignore
+        monacoRef?.current?.setValue(blocklistYaml);
+        setState(blocklistTuples, blocklistPcs);
         break;
       default:
         // @ts-ignore

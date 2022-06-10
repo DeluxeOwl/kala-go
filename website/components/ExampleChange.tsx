@@ -2,6 +2,7 @@ import { Anchor, Group, Select, Text, ThemeIcon } from "@mantine/core";
 import Image from "next/image";
 import { forwardRef } from "react";
 import {
+  BarrierBlock,
   BrandGithub,
   BrandGoogleDrive,
   Folder,
@@ -40,6 +41,12 @@ const data = [
     label: "Google Drive",
     value: "Google Drive",
     description: "GDrive's permissions for folders and documents",
+  },
+  {
+    icon: <BarrierBlock />,
+    label: "Blocklist",
+    value: "Blocklist",
+    description: "Example of a blocklist with banned user",
   },
   // {
   //   icon: <Users />,
@@ -90,7 +97,7 @@ export default function ExampleChange({ value, setValue }: ExampleChangeProps) {
       }}
       position="center"
     >
-      <Image width={"45px"} height={"45px"} src={logo} />
+      <Image alt="logo-gopher" width={"45px"} height={"45px"} src={logo} />
       <Anchor href="https://github.com/DeluxeOwl/kala-go" target={"_blank"}>
         {" "}
         <ThemeIcon radius={"xl"} size="lg" color={"gray"}>

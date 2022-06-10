@@ -458,6 +458,56 @@ const gdrivePc: PermissionCheck[] = [
   },
 ];
 
+const blocklistYaml = `
+type: user
+
+---
+type: folder
+relations:
+  reader: user
+  banned: user
+permissions:
+  read: reader & !banned
+`;
+const blocklistTuples: Tuple[] = [
+  {
+    subject: {
+      type: "user",
+      name: "andrei",
+    },
+    relation: "reader",
+    resource: {
+      type: "folder",
+      name: "date_companie",
+    },
+  },
+  {
+    subject: {
+      type: "user",
+      name: "andrei",
+    },
+    relation: "banned",
+    resource: {
+      type: "folder",
+      name: "date_companie",
+    },
+  },
+];
+
+const blocklistPcs: PermissionCheck[] = [
+  {
+    subject: {
+      type: "user",
+      name: "andrei",
+    },
+    permission: "read",
+    resource: {
+      type: "folder",
+      name: "date_companie",
+    },
+  },
+];
+
 export {
   defaultTuples,
   defaultPc,
@@ -468,4 +518,7 @@ export {
   gdriveYaml,
   gdriveTuples,
   gdrivePc,
+  blocklistYaml,
+  blocklistPcs,
+  blocklistTuples,
 };
