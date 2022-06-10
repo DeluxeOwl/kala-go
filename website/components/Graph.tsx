@@ -141,13 +141,27 @@ const getNodes = (graph: any): NodesAndEdges => {
               }
             }
           } else {
-            edges.push(
-              relToTcEdge(
-                `${tcId}-${relId}-${relValue}`,
-                relId,
-                `tc/${relValue}`
-              )
-            );
+            if (relValue.includes(refSubrelationDelim)) {
+              console.log(relValue);
+              const s: string[] = relValue.split(refSubrelationDelim);
+              console.log(s);
+
+              edges.push(
+                relComposedSubrelEdge(
+                  `${edgeId}/${relValue}/${nanoid(6)}`,
+                  `${relId}`,
+                  `tc/${s[0]}/rel/${s[1]}`
+                )
+              );
+            } else {
+              edges.push(
+                relToTcEdge(
+                  `${tcId}-${relId}-${relValue}`,
+                  relId,
+                  `tc/${relValue}`
+                )
+              );
+            }
           }
         });
       }
