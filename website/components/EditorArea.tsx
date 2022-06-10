@@ -163,7 +163,7 @@ permissions:
             minimap: {
               enabled: false,
             },
-            fontSize: width > 2000 ? 20 : 16,
+            fontSize: width > 2000 ? 24 : 20,
             wordWrap: "on",
           }}
           theme={colorScheme === "dark" ? "vs-dark-custom" : "vs-light"}
