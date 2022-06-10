@@ -507,6 +507,61 @@ const blocklistPcs: PermissionCheck[] = [
     },
   },
 ];
+const customrolesYaml = `
+type: user
+---
+type: role
+relations:
+  assigned: user
+
+---
+type: blog_post
+relations:
+  viewer: role#assigned
+  editor: role#assigned
+permissions:
+  view: viewer | editor
+  edit: editor
+`;
+
+const customrolesTuples: Tuple[] = [
+  {
+    subject: {
+      type: "user",
+      name: "alexandra",
+    },
+    relation: "assigned",
+    resource: {
+      type: "role",
+      name: "blog_manager",
+    },
+  },
+  {
+    subject: {
+      type: "role",
+      name: "blog_manager#assigned",
+    },
+    relation: "editor",
+    resource: {
+      type: "blog_post",
+      name: "cake_recipes",
+    },
+  },
+];
+
+const customrolesPcs: PermissionCheck[] = [
+  {
+    subject: {
+      type: "user",
+      name: "alexandra",
+    },
+    permission: "view",
+    resource: {
+      type: "blog_post",
+      name: "cake_recipes",
+    },
+  },
+];
 
 export {
   defaultTuples,
@@ -521,4 +576,7 @@ export {
   blocklistYaml,
   blocklistPcs,
   blocklistTuples,
+  customrolesYaml,
+  customrolesPcs,
+  customrolesTuples,
 };

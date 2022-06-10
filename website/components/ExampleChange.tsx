@@ -8,6 +8,7 @@ import {
   Folder,
   LockAccess,
   User,
+  Users,
 } from "tabler-icons-react";
 import logo from "../public/logo.png";
 
@@ -48,12 +49,12 @@ const data = [
     value: "Blocklist",
     description: "Example of a blocklist with banned user",
   },
-  // {
-  //   icon: <Users />,
-  //   label: "Custom Roles",
-  //   value: "Custom Roles",
-  //   description: "Example of custom roles",
-  // },
+  {
+    icon: <Users />,
+    label: "Custom Roles",
+    value: "Custom Roles",
+    description: "Example of custom roles",
+  },
 ];
 
 interface ItemProps extends React.ComponentPropsWithoutRef<"div"> {

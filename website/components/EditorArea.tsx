@@ -9,6 +9,9 @@ import {
   blocklistPcs,
   blocklistTuples,
   blocklistYaml,
+  customrolesPcs,
+  customrolesTuples,
+  customrolesYaml,
   defaultPc,
   defaultTuples,
   defaultYaml,
@@ -96,8 +99,8 @@ permissions:
         break;
       case "Custom Roles":
         // @ts-ignore
-        monacoRef?.current?.setValue("");
-        setState([], []);
+        monacoRef?.current?.setValue(customrolesYaml);
+        setState(customrolesTuples, customrolesPcs);
         break;
       case "Blocklist":
         // @ts-ignore

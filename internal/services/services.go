@@ -512,40 +512,113 @@ func (h *Handler) CheckRelation(ctx context.Context, rc *models.RelationCheck, d
 	// check if direct
 	if !strings.Contains(rc.Rel.Value, refValueDelim) {
 
-		if rc.Rel.Value != subjTypeString {
-			fmt.Println("\t\t Type doesnt match with subject")
-			return false
-		}
+		// if direct type
+		if !strings.Contains(rc.Rel.Value, refSubrelationDelim) {
+			if rc.Rel.Value != subjTypeString {
+				logChan <- fmt.Sprintf("Relation type `%s` doesn't match with subject type `%s`", rc.Rel.Value, subjTypeString)
+				return false
+			}
 
-		if ctx.Err() != nil {
-			return false
-		}
+			if ctx.Err() != nil {
+				return false
+			}
 
-		tupleExists, err := h.Db.Tuple.
-			Query().
-			Where(
-				tuple.And(
-					tuple.SubjectID(rc.Subj.ID),
+			tupleExists, err := h.Db.Tuple.
+				Query().
+				Where(
+					tuple.And(
+						tuple.SubjectID(rc.Subj.ID),
+						tuple.RelationID(rc.Rel.ID),
+						tuple.ResourceID(rc.Res.ID),
+					),
+				).
+				Exist(ctx)
+
+			logChan <- fmt.Sprintf("%srelationCheck: is `%s:%s` a `%s` on `%s:%s`? %t\n", strings.Repeat("\t", depth+1),
+				subjTypeString,
+				rc.Subj.Name,
+				rc.Rel.Name,
+				resTypeString,
+				rc.Res.Name,
+				tupleExists,
+			)
+
+			if err != nil {
+				fmt.Printf("check if tuple exists in check relation: %s\n", err)
+			}
+
+			return tupleExists
+		} else {
+			// checking composed relation
+			s := strings.Split(rc.Rel.Value, refSubrelationDelim)
+
+			refTypeName := s[0]
+			refTypeRelation := s[1]
+
+			// Get all refTypeName and get the relation refTypeName (e.g. group#member) with relation rc.Rel.Name
+			logChan <- fmt.Sprintf("%sadditionalInfo: getting all `%s:<name>#%s` with relation `%s` on `%s` and checking if subject `%s` has relation `%s` on each %s\n",
+				strings.Repeat("\t", depth+2),
+				refTypeName,
+				refTypeRelation,
+				rc.Rel.Name,
+				rc.Res.Name,
+				rc.Subj.Name,
+				refTypeRelation,
+				refTypeName)
+
+			if ctx.Err() != nil {
+				return false
+			}
+
+			refTypeRelationObject, err := h.Db.TypeConfig.
+				Query().
+				Where(typeconfig.NameEQ(refTypeName)).
+				QueryRelations().
+				Where(relation.NameEQ(refTypeRelation)).
+				Only(ctx)
+
+			if err != nil {
+				fmt.Printf("getting parent relation in check relation: %s\n", err)
+				return false
+			}
+
+			if ctx.Err() != nil {
+				return false
+			}
+
+			subjects, err := h.Db.Tuple.
+				Query().
+				Where(tuple.And(
+					tuple.SubjectRelEQ(refTypeRelation),
 					tuple.RelationID(rc.Rel.ID),
 					tuple.ResourceID(rc.Res.ID),
-				),
-			).
-			Exist(ctx)
+				)).
+				QuerySubject().
+				All(ctx)
 
-		logChan <- fmt.Sprintf("%srelationCheck: is `%s:%s` a `%s` on `%s:%s`? %t\n", strings.Repeat("\t", depth+1),
-			subjTypeString,
-			rc.Subj.Name,
-			rc.Rel.Name,
-			resTypeString,
-			rc.Res.Name,
-			tupleExists,
-		)
+			if err != nil {
+				fmt.Printf("getting subjects in check relation: %s\n", err)
+				return false
+			}
 
-		if err != nil {
-			fmt.Printf("check if tuple exists in check relation: %s\n", err)
+			if ctx.Err() != nil {
+				return false
+			}
+
+			relExists := false
+			for _, s := range subjects {
+
+				relExists = relExists || h.CheckRelation(ctx, &models.RelationCheck{
+					Subj: rc.Subj,
+					Rel:  refTypeRelationObject,
+					Res:  s,
+				}, depth+1, logChan)
+
+				if relExists {
+					return relExists
+				}
+			}
 		}
-
-		return tupleExists
 
 	} else {
 		for _, referencedType := range strings.Split(rc.Rel.Value, refValueDelim) {
@@ -592,14 +665,15 @@ func (h *Handler) CheckRelation(ctx context.Context, rc *models.RelationCheck, d
 				refTypeRelation := s[1]
 
 				// Get all refTypeName and get the relation refTypeName (e.g. group#member) with relation rc.Rel.Name
-				logChan <- fmt.Sprintf("%sadditionalInfo: getting all `%s:<name>#%s` with relation `%s` on `%s` and checking if subject `%s` has relation `%s` on each group\n",
+				logChan <- fmt.Sprintf("%sadditionalInfo: getting all `%s:<name>#%s` with relation `%s` on `%s` and checking if subject `%s` has relation `%s` on each %s\n",
 					strings.Repeat("\t", depth+2),
 					refTypeName,
 					refTypeRelation,
 					rc.Rel.Name,
 					rc.Res.Name,
 					rc.Subj.Name,
-					refTypeRelation)
+					refTypeRelation,
+					refTypeName)
 
 				if ctx.Err() != nil {
 					return false
