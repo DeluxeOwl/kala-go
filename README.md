@@ -2,11 +2,12 @@
 
 <img src="./img/logo.png" width="100"/>
 
-An authorization and policy engine written in go based on [Zanzibar: Google’s Consistent, Global Authorization System](https://storage.googleapis.com/pub-tools-public-publication-data/pdf/10683a8987dbf0c6d4edcafb9b4f05cc9de5974a.pdf).
+An authorization framework written in go based on [Zanzibar: Google’s Consistent, Global Authorization System](https://storage.googleapis.com/pub-tools-public-publication-data/pdf/10683a8987dbf0c6d4edcafb9b4f05cc9de5974a.pdf).
 
 It offers an IDE with a graph for visualizing the relations and permissions between entities.
 
-**!!! This is not meant for production usage, there are still a lot of things missing and the quality and organization of code is questionable since this is my first Go project and was done in a serious hurry!!!** See below for "planned" things.
+**!!! This is not meant for production usage, there are still a lot of things missing and the quality and organization of code is questionable since this is my first Go project and was done in a serious hurry!!!**  
+See below for "planned" things.
 
 ![graph](./img/graph.png)
 
@@ -14,7 +15,6 @@ It offers an IDE with a graph for visualizing the relations and permissions betw
 
 In the editor, you can define the relation between entities using `yaml`, for example, the default configuration is this:
 
-````yaml
 ```yaml
 type: user
 ---
@@ -37,7 +37,7 @@ permissions:
   read: reader | writer | parent_folder.reader
   read_and_write: reader & writer
   read_only: reader & !writer
-````
+```
 
 This is just an example, Kala is able to model and combine every type of authorization (**RBAC, ABAC, ACL, Custom Roles etc.**), you can find some examples in the dropdown.
 
