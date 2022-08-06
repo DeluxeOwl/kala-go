@@ -1,5 +1,7 @@
 # https://kala.andreisurugiu.com/
 
+Not a final version.
+
 <img src="./img/logo.png" width="100"/>
 
 An authorization framework written in go based on [Zanzibar: Google’s Consistent, Global Authorization System](https://storage.googleapis.com/pub-tools-public-publication-data/pdf/10683a8987dbf0c6d4edcafb9b4f05cc9de5974a.pdf).
