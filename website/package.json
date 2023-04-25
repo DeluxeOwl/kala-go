@@ -22,7 +22,7 @@
     "react-flow-renderer": "^10.3.0",
     "react-query": "^3.39.0",
     "tabler-icons-react": "^1.48.0",
-    "yaml": "^2.1.0",
+    "yaml": "^2.2.2",
     "zustand": "^4.0.0-rc.1"
   },
   "devDependencies": {
